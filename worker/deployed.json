@@ -6,5 +6,9 @@
   "sourceChainId": 11155111,
   "sourceChainKey": 1,
   "minConfirmations": 64,
+  "deed": "0xee79491615882b5421dACEb765564f4c4a09dd64",
+  "harbor": "0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5",
+  "meridian": "0xfA72380654232c5538d1F17e2D8d6c261bd263AD",
+  "borrower": "0x59De8802122068A3fc2950812d4621E8Aa0F8516",
   "tokenId": 42
 }
