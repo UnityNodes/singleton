@@ -137,6 +137,20 @@ try {
     console.log(`  assetKey  ${decoded.args.assetKey}`);
     console.log(`  incumbent ${decoded.args.incumbent}`);
     console.log(`  this asset is already pledged; the registry will not record a second lien`);
+
+    /**
+     * The refusal is already conclusive off-chain, so submitting it costs gas
+     * and produces a failed transaction on purpose. Worth it for a demo: a
+     * reverted transaction in the explorer is checkable by anybody, while a
+     * console line is not.
+     */
+    if (process.env.FORCE_SUBMIT === "1") {
+      const rejected = await registry.registerPledge(proof, { gasLimit: 1_000_000 });
+      console.log(`\n  submitted anyway ${rejected.hash}`);
+      const outcome = await cc3.waitForTransaction(rejected.hash);
+      console.log(`  mined    block ${outcome.blockNumber}, status ${outcome.status} (0 is the refusal)`);
+      console.log(`  explorer ${EXPLORER}/tx/${rejected.hash}`);
+    }
     process.exit(2);
   }
   throw error;

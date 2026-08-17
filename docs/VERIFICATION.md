@@ -164,6 +164,51 @@ obvious guess decodes to `BAD_DATA`.
 
 ---
 
+## W1 live run: a Sepolia pledge registered on Creditcoin
+
+Both acts of the demo, on public testnets, on 2026-08-17. Every hash below is
+checkable by anybody.
+
+**Sepolia**, deployed from `0x59De8802122068A3fc2950812d4621E8Aa0F8516`:
+
+```
+deed      0xee79491615882b5421dACEb765564f4c4a09dd64   RwaDeed, token 42
+harbor    0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5   HarborCredit
+meridian  0xfA72380654232c5538d1F17e2D8d6c261bd263AD   MeridianCredit
+```
+
+**Act 1, first to file.** Harbor opened a lien on deed 42, Sepolia transaction
+`0x00df961cd3753ccb3f1d06a251128a48103b0f54b177a2e52b8e8050e45bdc0b`, block
+11,510,076. The relay waited for `11510076 + 64 <= attestedTip`, which took about
+fifteen minutes, then submitted the inclusion proof.
+
+Registered on CC3, transaction
+`0xe2091d601f72d74fc61b1369aa9f5603d850f80301c3369c13a4523f27caf3f4`, block
+5,327,220, 282,534 gas. Record: `assetKey`
+`0x8927ac9951b14386e6acf9c4865f37908223c007edc4d987aec68f7ad9334171`, state
+PLEDGED, emitter Harbor, amount 1000, source height 11,510,076.
+
+**Act 2, collision.** Meridian, a contract sharing no code with Harbor, drew
+against the same deed 42, Sepolia transaction
+`0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b`, block
+11,510,077. Its log derives the same `assetKey` and the registry refused it:
+CC3 transaction
+`0x274eb0563cf9d4b355596d24181a339c04c36f401109631f40507dc90ae65b02`, block
+5,327,230, status 0, reverting with `AssetNotFree` naming Harbor as incumbent.
+
+After both, `ownerOf(42)` on Sepolia is still the borrower. The two liens exist
+because neither lender took custody, which is what makes the collision possible
+at all.
+
+**Finding to settle in W2.** `registerPledge` emits `DoublePledge` and then
+reverts in the same branch, so the event never survives: a revert discards logs.
+The refusal is visible only as a failed transaction and an error selector. Either
+drop the unreachable emit, or record the attempt through a path that does not
+revert, which would also give lenders a queryable history of attempted double
+pledges. That is a product decision, not a patch.
+
+---
+
 ## Deployment, forge on Creditcoin
 
 `forge script` cannot run against CC3. Its fork backend fetches the current block
