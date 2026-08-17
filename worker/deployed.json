@@ -1,0 +1,10 @@
+{
+  "registryNetwork": "cc3-testnet",
+  "registryChainId": 102031,
+  "registry": "0x6A44dE8E02b2617A569FDc147c45F8a15D0087De",
+  "sourceNetwork": "sepolia",
+  "sourceChainId": 11155111,
+  "sourceChainKey": 1,
+  "minConfirmations": 64,
+  "tokenId": 42
+}
