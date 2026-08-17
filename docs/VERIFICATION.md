@@ -122,6 +122,66 @@ call fails with "invalid BytesLike value".
 
 ---
 
+## Gate 3: the Sepolia read path, end to end
+
+**Question.** Both earlier gates ran against Ethereum, chain key 3. The demo
+emits its pledges on Sepolia, chain key 1. Does the prover service serve that
+chain, does the precompile verify what it returns, and does `calculateTxIndex`
+agree with the index the prover reports?
+
+**Method.** `worker/probe-source.mjs`. It picks a settled Sepolia transaction
+near the attested tip, asks `prover.cc3-testnet` for a proof with chain key 1,
+then re-checks everything through `eth_call` on live CC3: `BlockProver.verify`,
+`BlockProver.calculateTxIndex`, and `EvmV1Decoder.decodeReceiptFields` called
+directly on the deployed library. Nothing is spent on either chain, which is why
+this could be run with an unfunded Sepolia wallet.
+
+**Result**, transaction `0xa25b64146a58be2edeaa9ae497013b0a371de6ed5dfccb3078bd367e10b735e0`,
+Sepolia block 11,509,882:
+
+```
+BlockProver.verify        true
+calculateTxIndex          2       (prover reports txIndex 2)
+decoded receiptStatus     1       (source RPC: 1)
+decoded log count         2       (source RPC: 2)
+first log emitter         matched source RPC
+first log topic0          matched source RPC
+```
+
+**Verdict.** PASS. Chain key 1 is served, and the nullifier derivation is
+confirmed against an independent source: the prover's own `txIndex` field, which
+the on-chain payload does not carry.
+
+**Attestation lag, measured the same day.** Sepolia attested tip 11,509,840
+against a head of 11,509,880: 40 blocks, roughly eight minutes. With
+`MIN_CONFIRMATIONS = 64` a fresh pledge becomes registrable about twenty minutes
+after it is mined. That is the wait the relay polls out, not a failure mode.
+
+**`ReceiptFields` field order.** `(uint8 receiptStatus, uint64 receiptGasUsed,
+LogEntry[] receiptLogs, bytes receiptLogsBloom)`. Logs come before the bloom, and
+the gas field is `uint64`, not a `uint256` cumulative. An ABI written from the
+obvious guess decodes to `BAD_DATA`.
+
+---
+
+## Deployment, forge on Creditcoin
+
+`forge script` cannot run against CC3. Its fork backend fetches the current block
+to build the simulation environment, Creditcoin's RPC returns blocks with no
+`mixHash` field, and the run dies with `header validation error: prevrandao not
+set` before broadcasting anything.
+
+`forge create` logs the same fetch failure and proceeds, so deployment goes
+through it and configuration through `cast`. That is what `script/deploy-cc3.sh`
+does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
+field.
+
+**Live on CC3 testnet:** registry `0x6A44dE8E02b2617A569FDc147c45F8a15D0087De`,
+decoder linked to `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`,
+`minConfirmations[1] = 64`, admin `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
+
+---
+
 ## Prior work carried in
 
 A hardened base contract was written and deployed before this repository existed,
