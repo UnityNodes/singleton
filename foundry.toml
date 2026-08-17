@@ -1,0 +1,20 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.30"
+optimizer = true
+via_ir = true
+optimizer_runs = 200
+evm_version = "shanghai"
+
+# EvmV1Decoder has public functions, so it is a deployed library rather than
+# inlined code. Tests let forge deploy a local copy; only real deployments pin
+# the CC3 address, because pinning it here would make every test delegatecall
+# into an address with no code and revert without data.
+[profile.cc3]
+libraries = ["src/vendor/EvmV1Decoder.sol:EvmV1Decoder:0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f"]
+
+[profile.gates]
+src = "gates/src"
+libraries = ["src/vendor/EvmV1Decoder.sol:EvmV1Decoder:0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f"]
