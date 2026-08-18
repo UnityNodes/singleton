@@ -168,11 +168,13 @@ export default function Landing() {
           </div>
 
           {/* the live record, sitting at the centre of the coil */}
+          {/*
+            The strip mounts once and then only warms: replaying an entrance when
+            the chain answers turns a normal read into a flicker.
+          */}
           <div
-            key={record ? "live" : "idle"}
             className={cn(
-              "rise mt-14 grid gap-px border border-line bg-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]",
-              record && "scan",
+              "rise mt-14 grid gap-px border border-line bg-line transition-shadow duration-1000 ease-out lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]",
               claimed && "lit-live",
             )}
             style={{ "--d": "0.54s" } as React.CSSProperties}
@@ -203,7 +205,7 @@ export default function Landing() {
                 <div className="label">{cell.k}</div>
                 <div
                   className={cn(
-                    "mt-1.5 font-mono text-[15px] tabular",
+                    "mt-1.5 font-mono text-[15px] tabular transition-colors duration-700",
                     cell.lit && "text-live",
                     cell.red && "text-refused",
                     !cell.v && "text-paper-3",
@@ -277,12 +279,7 @@ export default function Landing() {
                       className="pointer-events-none absolute -left-24 top-1/2 h-64 w-[560px] -translate-y-1/2 rounded-full bg-refused/12 blur-3xl"
                     />
                   </>
-                ) : (
-                  <span
-                    aria-hidden
-                    className="absolute inset-y-0 left-0 w-px bg-transparent transition-colors group-hover:bg-line-2"
-                  />
-                )}
+                ) : null}
 
                 <span
                   className={cn(
