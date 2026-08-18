@@ -213,8 +213,8 @@ contract SingletonRegistry {
      * authority, not the sender.
      */
     function registerPledge(Proof calldata p) external returns (bytes32 assetKey) {
-        Pledge memory pledge = _readPledge(p, KIND_PLEDGE);
         _burnNullifier(p, KIND_PLEDGE);
+        Pledge memory pledge = _readPledge(p, KIND_PLEDGE);
 
         assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
@@ -248,8 +248,8 @@ contract SingletonRegistry {
      * the same losing pledge and keeps it, without touching the incumbent.
      */
     function reportCollision(Proof calldata p) external returns (uint256 index) {
-        Pledge memory pledge = _readPledge(p, KIND_PLEDGE);
         _burnNullifier(p, KIND_PLEDGE + 3);
+        Pledge memory pledge = _readPledge(p, KIND_PLEDGE);
 
         bytes32 assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
@@ -282,8 +282,8 @@ contract SingletonRegistry {
      * it, a settlement proved for last year's lien would settle this year's.
      */
     function registerSettlement(Proof calldata p) external returns (bytes32 assetKey) {
-        Pledge memory ev = _readPledge(p, KIND_SETTLE);
         _burnNullifier(p, KIND_SETTLE);
+        Pledge memory ev = _readPledge(p, KIND_SETTLE);
 
         assetKey = _assetKey(p.chainKey, ev.token, ev.tokenId);
         Record storage r = _records[assetKey];
@@ -305,8 +305,8 @@ contract SingletonRegistry {
      * assets in the registry that the source chain has already freed.
      */
     function registerRelease(Proof calldata p) external returns (bytes32 assetKey) {
-        Pledge memory ev = _readPledge(p, KIND_RELEASE);
         _burnNullifier(p, KIND_RELEASE);
+        Pledge memory ev = _readPledge(p, KIND_RELEASE);
 
         assetKey = _assetKey(p.chainKey, ev.token, ev.tokenId);
         Record storage r = _records[assetKey];
@@ -430,8 +430,14 @@ contract SingletonRegistry {
     }
 
     /**
-     * The emitter is taken from the first log of the receipt whose address is
-     * allowlisted, so a transaction touching several protocols still resolves.
+     * The emitter is the first allowlisted address in the receipt, because the
+     * adapter, and therefore the signature to search for, is chosen per emitter
+     * before any log is read.
+     *
+     * A receipt carrying logs from two allowlisted protocols resolves to the
+     * first of them, and if the matching log turns out to belong to the other
+     * the proof is refused rather than misread. Refusing a rare shape is the
+     * safe direction; nothing here can bind a log to the wrong emitter.
      */
     function _emitterOf(uint64 chainKey, EvmV1Decoder.ReceiptFields memory receipt)
         private
@@ -489,6 +495,12 @@ contract SingletonRegistry {
         }
     }
 
+    /**
+     * Spends the proof for one operation, before anything external is called.
+     *
+     * The domain matters: reporting a collision must not spend the proof that
+     * would register the same pledge legitimately once the asset is released.
+     */
     function _burnNullifier(Proof calldata p, uint8 domain) private {
         uint64 txIndex = PROVER.calculateTxIndex(p.merkleProof);
         bytes32 nullifier = keccak256(abi.encode(domain, p.chainKey, p.height, txIndex));
