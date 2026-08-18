@@ -102,3 +102,182 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* ---------------------------------------------------------------- depth */
+/*
+  A single flat fill reads as a dead room no matter how good the type is. Two
+  very low chroma washes sit behind everything, warm where a lien is live and
+  cool where an asset is free, drifting slowly enough that you notice only if
+  you wait. Grain on top gives the surface a texture rather than a value, which
+  is what stops large dark areas from looking like an unpainted div.
+*/
+body::before {
+  content: "";
+  position: fixed;
+  inset: -25%;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(34% 38% at 76% 8%, color-mix(in oklch, var(--color-live) 16%, transparent), transparent 72%),
+    radial-gradient(40% 44% at 8% 82%, color-mix(in oklch, var(--color-open) 12%, transparent), transparent 72%),
+    radial-gradient(55% 55% at 46% 46%, color-mix(in oklch, var(--color-line-2) 22%, transparent), transparent 76%);
+  animation: drift 38s ease-in-out infinite alternate;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-4%, 3%, 0) scale(1.08); }
+  100% { transform: translate3d(3%, -4%, 0) scale(1.03); }
+}
+
+/* --------------------------------------------------------------- motion */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* mount entrance: never scroll gated, so content exists even if nothing runs */
+.rise { animation: rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: var(--d, 0s); }
+
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(26px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes enter-up-lit {
+  from { opacity: 0.42; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+
+/*
+  Scroll driven where the browser has a scroll timeline, plain on load where it
+  does not. The scroll variant never starts from nothing: a section that is
+  still below the fold has to be legible the moment it is painted, because a
+  reveal must never be the reason something cannot be read. The load variant can
+  start from nothing, since it always runs to the end.
+*/
+.reveal { animation: enter-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation-name: enter-up-lit;
+    animation-timeline: view();
+    animation-range: entry 0% entry 44%;
+  }
+}
+
+@keyframes sweep-x {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(110%); }
+}
+
+/* a proof landing should look like something arrived, not like a repaint */
+.scan { position: relative; overflow: hidden; }
+.scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--color-paper) 10%, transparent) 45%,
+    color-mix(in oklch, var(--color-paper) 16%, transparent) 50%,
+    transparent 100%
+  );
+  animation: sweep-x 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.25s 1 both;
+}
+
+@keyframes ping-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  75%, 100% { transform: scale(3.2); opacity: 0; }
+}
+
+.ping { position: relative; }
+.ping::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: ping-ring 2.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: -150% 0; }
+  to { background-position: 250% 0; }
+}
+
+.skeleton {
+  background-color: var(--color-raised);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, var(--color-paper) 11%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 55% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin-slow 180s linear infinite; transform-origin: 50% 50%; }
+
+/* light buttons take a dark sweep, dark ones a light one */
+.sheen { position: relative; overflow: hidden; isolation: isolate; }
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent 32%, var(--sheen, rgba(0, 0, 0, 0.16)) 50%, transparent 68%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sheen:hover::after { transform: translateX(120%); }
+
+/* --------------------------------------------------------------- colour */
+/*
+  State is the only thing allowed to light up, so a claimed asset feels warm and
+  a free one feels open before a word has been read.
+*/
+.lit-live {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-live) 34%, transparent),
+    0 0 46px -14px color-mix(in oklch, var(--color-live) 70%, transparent);
+}
+.lit-open {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-open) 32%, transparent),
+    0 0 46px -14px color-mix(in oklch, var(--color-open) 65%, transparent);
+}
+.lit-refused {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-refused) 38%, transparent),
+    0 0 52px -14px color-mix(in oklch, var(--color-refused) 70%, transparent);
+}
+.lit-paper { box-shadow: 0 0 34px -10px color-mix(in oklch, var(--color-paper) 45%, transparent); }
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.breathe { animation: breathe 3.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  body::before, .spin-slow, .ping::after, .breathe, .skeleton { animation: none !important; }
+  .scan::after { display: none; }
+}

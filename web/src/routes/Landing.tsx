@@ -47,7 +47,7 @@ const ACTS = [
 function Rule({ label }: { label?: string }) {
   return (
     <div className="flex items-center gap-4">
-      <div className="h-px flex-1 bg-line" />
+      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-line to-line-2" />
       {label && <span className="label shrink-0">{label}</span>}
       <div className="h-px w-10 bg-line" />
     </div>
@@ -80,15 +80,18 @@ export default function Landing() {
   const claimed = record && record.state !== "free";
 
   return (
-    <div className="min-h-full bg-ink">
+    <div className="min-h-full">
       {/* ----------------------------------------------------------- header */}
-      <header className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-line bg-ink/70 backdrop-blur-xl">
         <div className="mx-auto flex h-[76px] max-w-[1240px] items-center gap-8 px-6">
           <Link to="/" className="h-8 shrink-0" aria-label="Singleton, home">
             <img src="/brand/singleton-wordmark-white.svg" alt="Singleton" className="wordmark" />
           </Link>
 
-          <span className="label hidden md:block">a register of liens on creditcoin</span>
+          <span className="label hidden items-center gap-2.5 md:flex">
+            <span className="ping inline-block size-1.5 shrink-0 rounded-full bg-open text-open" />
+            a register of liens on creditcoin
+          </span>
 
           <nav className="ml-auto flex items-center gap-6">
             <a
@@ -109,7 +112,7 @@ export default function Landing() {
             </a>
             <Link
               to="/register"
-              className="rounded-sm bg-paper px-4 py-2 text-[13px] font-semibold text-ink transition-opacity hover:opacity-90"
+              className="sheen rounded-sm bg-paper px-4 py-2 text-[13px] font-semibold text-ink transition-shadow hover:[box-shadow:0_0_28px_-8px_color-mix(in_oklch,var(--color-paper)_60%,transparent)]"
             >
               open the register
             </Link>
@@ -119,25 +122,38 @@ export default function Landing() {
 
       {/* ------------------------------------------------------------- hero */}
       <section className="relative overflow-hidden border-b border-line">
-        <Coil className="absolute -right-[14%] top-1/2 hidden h-[820px] w-[820px] -translate-y-1/2 text-line-2/90 lg:block xl:-right-[8%]" />
+        <Coil
+          pulse
+          spin
+          className="absolute -right-[14%] top-1/2 hidden h-[820px] w-[820px] -translate-y-1/2 text-line-2 lg:block xl:-right-[8%]"
+        />
 
         <div className="relative mx-auto max-w-[1240px] px-6 pb-12 pt-20 lg:pb-16 lg:pt-24">
           <h1 className="display max-w-[13ch] text-[clamp(46px,8.4vw,92px)]">
-            one asset,
-            <br />
-            one lien.
+            <span className="rise block" style={{ "--d": "0.05s" } as React.CSSProperties}>
+              one asset,
+            </span>
+            <span className="rise block" style={{ "--d": "0.16s" } as React.CSSProperties}>
+              one lien.
+            </span>
           </h1>
 
-          <p className="mt-7 max-w-[54ch] text-[16px] leading-relaxed text-paper-2">
+          <p
+            className="rise mt-7 max-w-[54ch] text-[16px] leading-relaxed text-paper-2"
+            style={{ "--d": "0.3s" } as React.CSSProperties}
+          >
             Two lending protocols that never heard of each other will each lend against the same
             collateral, because neither can see what the other recorded. Singleton witnesses their
             pledges from the outside, asks them for nothing, and refuses the second claim.
           </p>
 
-          <div className="mt-10 flex flex-wrap items-center gap-3">
+          <div
+            className="rise mt-10 flex flex-wrap items-center gap-3"
+            style={{ "--d": "0.42s" } as React.CSSProperties}
+          >
             <Link
               to="/register"
-              className="rounded-sm bg-paper px-6 py-3 text-[14px] font-semibold text-ink transition-opacity hover:opacity-90"
+              className="sheen rounded-sm bg-paper px-6 py-3 text-[14px] font-semibold text-ink transition-shadow hover:[box-shadow:0_0_36px_-8px_color-mix(in_oklch,var(--color-paper)_65%,transparent)]"
             >
               check an asset
             </Link>
@@ -145,14 +161,22 @@ export default function Landing() {
               href="https://github.com/UnityNodes/singleton"
               target="_blank"
               rel="noreferrer"
-              className="rounded-sm border border-line-2 px-6 py-3 text-[14px] font-medium transition-colors hover:bg-surface"
+              className="rounded-sm border border-line-2 px-6 py-3 text-[14px] font-medium transition-colors hover:border-paper-3 hover:bg-surface"
             >
               read the contracts
             </a>
           </div>
 
           {/* the live record, sitting at the centre of the coil */}
-          <div className="mt-14 grid gap-px border border-line bg-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+          <div
+            key={record ? "live" : "idle"}
+            className={cn(
+              "rise mt-14 grid gap-px border border-line bg-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]",
+              record && "scan",
+              claimed && "lit-live",
+            )}
+            style={{ "--d": "0.54s" } as React.CSSProperties}
+          >
             {[
               {
                 k: "asset on file",
@@ -161,8 +185,13 @@ export default function Landing() {
               {
                 k: "lien held by",
                 v: claimed ? (nameOf(PROTOCOLS, record!.emitter) ?? short(record!.emitter, 6, 4)) : "none",
+                lit: !!claimed,
               },
-              { k: "pledges refused", v: record ? String(record.collisions.length) : null, red: !!record?.collisions.length },
+              {
+                k: "pledges refused",
+                v: record ? String(record.collisions.length) : null,
+                red: !!record?.collisions.length,
+              },
               {
                 k: "proven from",
                 v: claimed
@@ -170,11 +199,12 @@ export default function Landing() {
                   : "nothing on file",
               },
             ].map((cell) => (
-              <div key={cell.k} className="bg-ink px-5 py-4">
+              <div key={cell.k} className="bg-ink/60 px-5 py-4 backdrop-blur-sm">
                 <div className="label">{cell.k}</div>
                 <div
                   className={cn(
-                    "mt-1.5 font-mono text-[15px]",
+                    "mt-1.5 font-mono text-[15px] tabular",
+                    cell.lit && "text-live",
                     cell.red && "text-refused",
                     !cell.v && "text-paper-3",
                   )}
@@ -187,14 +217,23 @@ export default function Landing() {
 
           <div className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-2">
             {Object.entries(chains).map(([id, f]) => (
-              <span key={id} className="label">
-                {SOURCES[Number(id)].name.toLowerCase()} attested to{" "}
-                <span className="tabular text-paper-2">{num(f.tip)}</span>, accepted {f.depth} deep
+              <span key={id} className="label inline-flex items-center gap-2">
+                <span className="ping inline-block size-1 shrink-0 rounded-full bg-settled text-settled" />
+                <span>
+                  {SOURCES[Number(id)].name.toLowerCase()} attested to{" "}
+                  <span className="tabular text-paper-2">{num(f.tip)}</span>, accepted {f.depth} deep
+                </span>
               </span>
             ))}
             {record && (
-              <Link to="/register" className="label ml-auto transition-colors hover:text-paper">
-                open the full record &rarr;
+              <Link
+                to="/register"
+                className="label group ml-auto transition-colors hover:text-paper"
+              >
+                open the full record{" "}
+                <span className="inline-block transition-transform group-hover:translate-x-1">
+                  &rarr;
+                </span>
               </Link>
             )}
           </div>
@@ -202,11 +241,16 @@ export default function Landing() {
       </section>
 
       {/* -------------------------------------------------------- collision */}
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
+      <section className="relative overflow-hidden border-b border-line">
+        <Coil
+          pulse
+          className="absolute -bottom-[38%] -left-[16%] hidden h-[620px] w-[620px] text-refused/25 lg:block"
+          rings={20}
+        />
+        <div className="relative mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
           <Rule label="what happened, on public networks" />
 
-          <h2 className="display mt-8 max-w-[18ch] text-[clamp(30px,4.4vw,50px)]">
+          <h2 className="display reveal mt-8 max-w-[18ch] text-[clamp(30px,4.4vw,50px)]">
             one asset. two lenders. a refusal you can open yourself.
           </h2>
 
@@ -215,10 +259,23 @@ export default function Landing() {
               <li
                 key={act.tx}
                 className={cn(
-                  "grid gap-x-8 gap-y-3 border-t border-line py-7 md:grid-cols-[64px_minmax(0,1.1fr)_minmax(0,1fr)_auto]",
+                  "reveal group relative grid gap-x-8 gap-y-3 border-t border-line py-7 transition-colors md:grid-cols-[64px_minmax(0,1.1fr)_minmax(0,1fr)_auto]",
                   i === ACTS.length - 1 && "border-b",
+                  act.refused ? "hover:bg-refused-dim/15" : "hover:bg-surface/60",
                 )}
               >
+                <span
+                  className={cn(
+                    "absolute inset-y-0 left-0 w-px transition-colors",
+                    act.refused ? "bg-refused shadow-[0_0_18px_2px_var(--color-refused)]" : "bg-transparent group-hover:bg-line-2",
+                  )}
+                />
+                {act.refused && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -left-24 top-1/2 h-56 w-[520px] -translate-y-1/2 rounded-full bg-refused/12 blur-3xl"
+                  />
+                )}
                 <span className={cn("label pt-1 tabular", act.refused && "text-refused")}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -267,7 +324,7 @@ export default function Landing() {
       {/* ------------------------------------------------------- mechanism */}
       <section className="border-b border-line">
         <div className="mx-auto grid max-w-[1240px] gap-14 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20 lg:py-24">
-          <div>
+          <div className="reveal">
             <Rule label="why it exists only here" />
             <h2 className="display mt-8 max-w-[16ch] text-[clamp(28px,3.6vw,44px)]">
               a contract cannot read a log. not even its own.
@@ -304,11 +361,13 @@ export default function Landing() {
               <li
                 key={step.k}
                 className={cn(
-                  "grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-line py-6",
+                  "reveal group grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-line py-6 transition-colors hover:bg-surface/60",
                   i === 2 && "border-b",
                 )}
               >
-                <span className="label tabular pt-1">{String(i + 1).padStart(2, "0")}</span>
+                <span className="label tabular pt-1 transition-colors group-hover:text-paper">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 <div>
                   <div className="font-mono text-[13px] text-paper">{step.k}</div>
                   <p className="mt-2 text-[14px] leading-relaxed text-paper-2">{step.v}</p>
@@ -323,7 +382,7 @@ export default function Landing() {
       <section>
         <div className="mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
           <div className="grid gap-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-20">
-            <div>
+            <div className="reveal">
               <Rule label="said before anybody has to ask" />
               <h2 className="display mt-8 max-w-[20ch] text-[clamp(26px,3.2vw,40px)]">
                 a positive record and a priority rule, not proof of absence.
@@ -337,8 +396,16 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="relative flex flex-col justify-center overflow-hidden border border-line bg-surface p-9">
-              <Coil className="absolute -right-24 -top-24 h-72 w-72 text-line-2" rings={16} />
+            <div className="reveal relative flex flex-col justify-center overflow-hidden border border-line bg-surface/70 p-9 backdrop-blur-sm">
+              <Coil
+                pulse
+                className="absolute -right-32 -top-32 h-96 w-96 text-open/55"
+                rings={16}
+              />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-open/12 blur-3xl"
+              />
               <div className="relative">
                 <div className="text-[20px] font-semibold tracking-tight">check before you lend</div>
                 <p className="mt-3 max-w-[38ch] text-[14px] leading-relaxed text-paper-2">
@@ -347,7 +414,7 @@ export default function Landing() {
                 </p>
                 <Link
                   to="/register"
-                  className="mt-7 inline-block rounded-sm bg-paper px-6 py-3 text-[14px] font-semibold text-ink transition-opacity hover:opacity-90"
+                  className="sheen mt-7 inline-block rounded-sm bg-paper px-6 py-3 text-[14px] font-semibold text-ink transition-shadow hover:[box-shadow:0_0_36px_-8px_color-mix(in_oklch,var(--color-paper)_65%,transparent)]"
                 >
                   open the register
                 </Link>
@@ -359,7 +426,7 @@ export default function Landing() {
             <img
               src="/brand/singleton-wordmark-white.svg"
               alt="Singleton"
-              className="h-9 w-auto opacity-90"
+              className="h-9 w-auto opacity-90 transition-opacity hover:opacity-100"
             />
             <span className="label">buidl ctc 2026, on the attestcoin protocol</span>
             <a

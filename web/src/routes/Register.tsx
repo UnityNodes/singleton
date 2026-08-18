@@ -67,15 +67,15 @@ function StateChip({ state }: { state: AssetState }) {
     <span
       className={cn(
         "inline-flex items-center gap-2.5 whitespace-nowrap border px-4 py-2 font-mono text-[13px]",
-        state === "pledged" && "border-live/50 bg-live-dim/25 text-live",
-        state === "settled" && "border-live/40 bg-live-dim/15 text-live",
-        state === "free" && "border-open/50 bg-open-dim/25 text-open",
+        state === "pledged" && "border-live/50 bg-live-dim/25 text-live lit-live",
+        state === "settled" && "border-live/40 bg-live-dim/15 text-live lit-live",
+        state === "free" && "border-open/50 bg-open-dim/25 text-open lit-open",
       )}
     >
       <span
         className={cn(
-          "size-2 rounded-full",
-          state === "free" ? "bg-open" : "bg-live",
+          "ping size-2 rounded-full",
+          state === "free" ? "bg-open text-open" : "bg-live text-live",
         )}
       />
       {state === "free" ? "free to lend against" : state === "pledged" ? "claimed, first to file" : "settled, still on file"}
@@ -85,7 +85,7 @@ function StateChip({ state }: { state: AssetState }) {
 
 function Fact({ term, children }: { term: string; children: React.ReactNode }) {
   return (
-    <div className="bg-ink p-4 shadow-[0_0_0_1px_var(--color-line)]">
+    <div className="bg-ink/60 p-4 shadow-[0_0_0_1px_var(--color-line)] backdrop-blur-sm transition-shadow hover:shadow-[0_0_0_1px_var(--color-line-2)]">
       <dt className="label">{term}</dt>
       <dd className="mt-0.5 text-[13.5px] break-words">{children}</dd>
     </div>
@@ -94,7 +94,7 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
 
 function Step({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border border-line p-4">
+    <div className="border border-line p-4 transition-colors hover:border-line-2 hover:bg-surface/60">
       <div className="label">{title}</div>
       <div className="mt-1 text-[13px]">{children}</div>
     </div>
@@ -204,7 +204,7 @@ export default function Register() {
   return (
     <div className="grid h-full grid-rows-[auto_auto_1fr] md:grid-cols-[340px_1fr] md:grid-rows-[auto_1fr] md:overflow-hidden">
       {/* -------------------------------------------------------- top bar */}
-      <header className="flex h-[68px] items-center gap-5 border-b border-line bg-surface px-4 md:col-span-2">
+      <header className="flex h-[68px] items-center gap-5 border-b border-line bg-surface/70 px-4 backdrop-blur-xl md:col-span-2">
         <Link to="/" className="flex h-7 items-center gap-3.5" aria-label="Singleton, home">
           <img src="/brand/singleton-wordmark-white.svg" alt="Singleton" className="wordmark" />
           <span className="hidden text-[13px] font-normal text-paper-2 sm:inline">
@@ -219,7 +219,7 @@ export default function Register() {
               className="flex items-center gap-2"
               title={`Creditcoin has attested ${SOURCES[Number(chainId)].name} to this block. A pledge is accepted once it is ${facts.depth} blocks deep.`}
             >
-              <span className="size-1.5 rounded-full bg-settled" />
+              <span className="ping inline-block size-1.5 shrink-0 rounded-full bg-settled text-settled" />
               {SOURCES[Number(chainId)].name} attested to{" "}
               <b className="tabular font-medium text-paper">{num(facts.tip)}</b>
             </span>
@@ -237,7 +237,7 @@ export default function Register() {
       </header>
 
       {/* ---------------------------------------------------- mobile tabs */}
-      <nav className="grid grid-cols-2 border-b border-line bg-surface md:hidden">
+      <nav className="grid grid-cols-2 border-b border-line bg-surface/70 backdrop-blur-xl md:hidden">
         {(["register", "record"] as const).map((p) => (
           <button
             key={p}
@@ -255,7 +255,7 @@ export default function Register() {
       {/* ------------------------------------------------------------ rail */}
       <aside
         className={cn(
-          "grid min-h-0 grid-rows-[auto_auto_1fr] border-line bg-surface md:border-r",
+          "grid min-h-0 grid-rows-[auto_auto_1fr] border-line bg-surface/70 backdrop-blur-xl md:border-r",
           pane === "record" && "hidden md:grid",
         )}
       >
@@ -295,7 +295,7 @@ export default function Register() {
           </div>
           <button
             type="submit"
-            className="rounded-none bg-paper px-3.5 py-1.5 text-[13px] font-medium text-ink transition-opacity hover:opacity-90"
+            className="sheen rounded-none bg-paper px-3.5 py-1.5 text-[13px] font-medium text-ink transition-shadow hover:[box-shadow:0_0_26px_-8px_color-mix(in_oklch,var(--color-paper)_65%,transparent)]"
           >
             check the register
           </button>
@@ -311,7 +311,7 @@ export default function Register() {
           {!rail &&
             [0, 1, 2].map((i) => (
               <div key={i} className="px-2.5 py-3">
-                <div className="h-3 w-3/4 animate-pulse rounded bg-raised" />
+                <div className="skeleton h-3 w-3/4 rounded" />
               </div>
             ))}
 
@@ -321,14 +321,25 @@ export default function Register() {
               onClick={() => select(a.chainId, a.token, a.tokenId)}
               aria-current={record?.assetKey === a.assetKey}
               className={cn(
-                "grid w-full grid-cols-[8px_1fr_auto] items-center gap-2.5 px-2.5 py-2.5 text-left transition-colors",
-                record?.assetKey === a.assetKey ? "bg-raised" : "hover:bg-raised",
+                "relative grid w-full grid-cols-[8px_1fr_auto] items-center gap-2.5 px-2.5 py-2.5 text-left transition-colors",
+                record?.assetKey === a.assetKey ? "bg-raised" : "hover:bg-raised/60",
               )}
             >
               <span
                 className={cn(
+                  "absolute inset-y-0 left-0 w-[2px] transition-colors",
+                  record?.assetKey !== a.assetKey
+                    ? "bg-transparent"
+                    : a.state === "free"
+                      ? "bg-open"
+                      : "bg-live",
+                )}
+              />
+              <span
+                className={cn(
                   "size-2 rounded-full",
-                  a.state === "free" ? "bg-open" : "bg-live",
+                  a.state === "free" ? "bg-open text-open" : "bg-live text-live",
+                  record?.assetKey === a.assetKey && "ping",
                 )}
               />
               <span>
@@ -358,21 +369,35 @@ export default function Register() {
         {rail && (
           <div className="grid grid-cols-3 border-b border-line">
             {[
-              { k: "assets on file", v: String(rail.length), tone: "" },
+              { k: "assets on file", v: String(rail.length), tone: "", glow: false },
               {
                 k: "liens live now",
                 v: String(rail.filter((a) => a.state !== "free").length),
                 tone: "text-live",
+                glow: rail.some((a) => a.state !== "free"),
               },
               {
                 k: "pledges refused",
                 v: String(rail.reduce((n, a) => n + a.collisions, 0)),
                 tone: "text-refused",
+                glow: rail.some((a) => a.collisions > 0),
               },
-            ].map((cell) => (
-              <div key={cell.k} className="border-r border-line px-6 py-3 last:border-r-0">
+            ].map((cell, i) => (
+              <div
+                key={cell.k}
+                className="rise border-r border-line px-6 py-3 last:border-r-0"
+                style={{ "--d": `${i * 0.08}s` } as React.CSSProperties}
+              >
                 <div className="label">{cell.k}</div>
-                <div className={cn("mt-0.5 font-mono text-[17px] tabular", cell.tone)}>{cell.v}</div>
+                <div
+                  className={cn(
+                    "mt-0.5 font-mono text-[17px] tabular",
+                    cell.tone,
+                    cell.glow && "[text-shadow:0_0_20px_currentColor]",
+                  )}
+                >
+                  {cell.v}
+                </div>
               </div>
             ))}
           </div>
@@ -390,19 +415,30 @@ export default function Register() {
 
         {!error && loading && (
           <div className="max-w-[1100px] p-6">
-            <div className="h-5 w-56 animate-pulse rounded bg-raised" />
-            <div className="mt-3 h-3 w-80 animate-pulse rounded bg-raised" />
+            <div className="skeleton h-5 w-56 rounded" />
+            <div className="skeleton mt-3 h-3 w-80 rounded" />
             <div className="mt-7 grid gap-2.5">
-              <div className="h-14 animate-pulse rounded bg-raised" />
-              <div className="h-14 animate-pulse rounded bg-raised" />
+              <div className="skeleton h-14 rounded" />
+              <div className="skeleton h-14 rounded" />
             </div>
           </div>
         )}
 
         {!error && !loading && record && chain && source && (
-          <div className="relative max-w-[1100px] px-6 pb-10 pt-6">
+          <div key={record.assetKey} className="rise relative max-w-[1100px] px-6 pb-10 pt-6">
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute -top-40 right-0 h-[440px] w-[640px] rounded-full blur-3xl",
+                record.state === "free" ? "bg-open/12" : "bg-live/12",
+              )}
+            />
             <Coil
-              className="pointer-events-none absolute -right-40 -top-24 hidden h-[460px] w-[460px] text-line/70 xl:block"
+              pulse
+              className={cn(
+                "pointer-events-none absolute -right-40 -top-24 hidden h-[460px] w-[460px] xl:block",
+                record.state === "free" ? "text-open/35" : "text-live/30",
+              )}
               rings={18}
             />
             <div className="flex flex-wrap items-start gap-4">
@@ -491,7 +527,7 @@ export default function Register() {
             </dl>
 
             {record.collisions.length > 0 && (
-              <div className="mt-6 border border-refused/40 bg-refused-dim/25 p-4">
+              <div className="lit-refused mt-6 border border-refused/40 bg-refused-dim/25 p-4">
                 <h2 className="font-mono text-[13px] text-refused">
                   a second protocol tried to lend against this asset
                 </h2>
@@ -527,7 +563,7 @@ export default function Register() {
             )}
 
             {record.state === "free" && (
-              <div className="mt-6 border border-open/35 bg-open-dim/15 p-5">
+              <div className="lit-open mt-6 border border-open/35 bg-open-dim/15 p-5">
                 <div className="font-mono text-[13px] text-open">nothing on file against this asset</div>
                 <p className="mt-2 max-w-[76ch] text-[13.5px] leading-relaxed text-paper-2">
                   No allowlisted protocol has a lien recorded here.{" "}
@@ -566,14 +602,14 @@ export default function Register() {
                 )}
               </Step>
               <div className="hidden place-items-center px-3 text-line-2 lg:grid">
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="breathe" />
               </div>
               <Step title="inclusion proof">
                 re-checked on chain by BlockProver <span className="font-mono">{CFG.prover}</span>,
                 accepted at {chain.depth} blocks deep
               </Step>
               <div className="hidden place-items-center px-3 text-line-2 lg:grid">
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="breathe" />
               </div>
               <Step title="the register">
                 {opening ? (
@@ -634,7 +670,7 @@ export default function Register() {
                     const kind = TOPIC[l.topics[0]];
                     const party = "0x" + (kind === "refused" ? l.topics[3] : l.topics[2]).slice(26);
                     return (
-                      <tr key={l.transactionHash + l.logIndex} className="hover:bg-surface">
+                      <tr key={l.transactionHash + l.logIndex} className="transition-colors hover:bg-raised/50">
                         <td className="border-b border-surface py-2 pr-3">
                           <span
                             className={cn(
