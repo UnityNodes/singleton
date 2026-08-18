@@ -49,7 +49,7 @@ function CopyKey({ value }: { value: string }) {
     <button
       type="button"
       aria-label="Copy asset key"
-      className="rounded p-1 text-ink-2 transition-colors hover:bg-accent-wash hover:text-accent"
+      className="rounded p-1 text-paper-2 transition-colors hover:bg-raised hover:text-paper"
       onClick={() => {
         navigator.clipboard?.writeText(value);
         setDone(true);
@@ -66,17 +66,17 @@ function StateChip({ state }: { state: AssetState }) {
     <span
       className={cn(
         "inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[12.5px] font-medium",
-        state === "pledged" && "border-accent bg-accent-wash text-accent",
-        state === "settled" && "border-good/45 bg-good/10 text-good",
-        state === "free" && "border-line-strong bg-panel-2 text-ink-2",
+        state === "pledged" && "border-paper bg-raised text-paper",
+        state === "settled" && "border-settled/45 bg-settled/10 text-settled",
+        state === "free" && "border-line-2 bg-raised text-paper-2",
       )}
     >
       <span
         className={cn(
           "size-2 rounded-[2px]",
-          state === "pledged" && "bg-accent",
-          state === "settled" && "bg-good",
-          state === "free" && "bg-line-strong",
+          state === "pledged" && "bg-paper",
+          state === "settled" && "bg-settled",
+          state === "free" && "bg-line-2",
         )}
       />
       {state}
@@ -88,7 +88,7 @@ function StateChip({ state }: { state: AssetState }) {
 function Fact({ term, children }: { term: string; children: React.ReactNode }) {
   return (
     <div className="rounded-[2px] p-3.5 shadow-[0_0_0_1px_var(--color-line)]">
-      <dt className="text-[12px] text-ink-2">{term}</dt>
+      <dt className="text-[12px] text-paper-2">{term}</dt>
       <dd className="mt-0.5 text-[13.5px] break-words">{children}</dd>
     </div>
   );
@@ -97,7 +97,7 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
 function Step({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-md border border-line p-3.5">
-      <div className="text-[12px] text-ink-2">{title}</div>
+      <div className="text-[12px] text-paper-2">{title}</div>
       <div className="mt-1 text-[13px]">{children}</div>
     </div>
   );
@@ -206,32 +206,30 @@ export default function Register() {
   return (
     <div className="grid h-full grid-rows-[auto_auto_1fr] md:grid-cols-[340px_1fr] md:grid-rows-[auto_1fr] md:overflow-hidden">
       {/* -------------------------------------------------------- top bar */}
-      <header className="flex h-13 items-center gap-4 border-b border-line bg-panel px-4 md:col-span-2">
-        <Link to="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-          <svg width="17" height="17" viewBox="0 0 32 32" aria-hidden>
-            <rect x="2" y="2" width="28" height="28" rx="6" fill="oklch(0.48 0.15 290)" />
-            <rect x="10" y="10" width="12" height="12" rx="2" fill="none" stroke="#fff" strokeWidth="2.4" />
-          </svg>
-          Singleton
-          <span className="hidden font-normal text-ink-2 sm:inline">register of liens</span>
+      <header className="flex h-14 items-center gap-4 border-b border-line bg-surface px-4 md:col-span-2">
+        <Link to="/" className="flex h-4 items-center gap-3" aria-label="Singleton, home">
+          <img src="/brand/singleton-wordmark-white.svg" alt="Singleton" className="wordmark" />
+          <span className="hidden text-[13px] font-normal text-paper-2 sm:inline">
+            register of liens
+          </span>
         </Link>
 
-        <div className="ml-auto hidden items-center gap-5 text-[12.5px] text-ink-2 lg:flex">
+        <div className="ml-auto hidden items-center gap-5 text-[12.5px] text-paper-2 lg:flex">
           {Object.entries(chains).map(([chainId, facts]) => (
             <span
               key={chainId}
               className="flex items-center gap-2"
               title={`Creditcoin has attested ${SOURCES[Number(chainId)].name} to this block. A pledge is accepted once it is ${facts.depth} blocks deep.`}
             >
-              <span className="size-1.5 rounded-full bg-good" />
+              <span className="size-1.5 rounded-full bg-settled" />
               {SOURCES[Number(chainId)].name} attested to{" "}
-              <b className="tabular font-medium text-ink">{num(facts.tip)}</b>
+              <b className="tabular font-medium text-paper">{num(facts.tip)}</b>
             </span>
           ))}
         </div>
 
         <a
-          className="ml-auto font-mono text-[12.5px] text-accent hover:underline lg:ml-0"
+          className="ml-auto font-mono text-[12.5px] text-paper hover:underline lg:ml-0"
           href={`${CFG.explorer}/address/${CFG.registry}`}
           target="_blank"
           rel="noreferrer"
@@ -241,14 +239,14 @@ export default function Register() {
       </header>
 
       {/* ---------------------------------------------------- mobile tabs */}
-      <nav className="grid grid-cols-2 border-b border-line bg-panel md:hidden">
+      <nav className="grid grid-cols-2 border-b border-line bg-surface md:hidden">
         {(["register", "record"] as const).map((p) => (
           <button
             key={p}
             onClick={() => setPane(p)}
             className={cn(
               "border-b-2 py-2.5 text-[13px] capitalize transition-colors",
-              pane === p ? "border-accent text-accent" : "border-transparent text-ink-2",
+              pane === p ? "border-paper text-paper" : "border-transparent text-paper-2",
             )}
           >
             {p}
@@ -259,12 +257,12 @@ export default function Register() {
       {/* ------------------------------------------------------------ rail */}
       <aside
         className={cn(
-          "grid min-h-0 grid-rows-[auto_auto_1fr] border-line bg-panel md:border-r",
+          "grid min-h-0 grid-rows-[auto_auto_1fr] border-line bg-surface md:border-r",
           pane === "record" && "hidden md:grid",
         )}
       >
         <form onSubmit={submit} className="grid gap-2 border-b border-line p-3.5" autoComplete="off">
-          <label className="text-[12px] text-ink-2" htmlFor="token">
+          <label className="text-[12px] text-paper-2" htmlFor="token">
             Look up an asset
           </label>
           <input
@@ -273,14 +271,14 @@ export default function Register() {
             onChange={(e) => setForm({ ...form, token: e.target.value })}
             placeholder="collateral contract 0x..."
             spellCheck={false}
-            className="w-full rounded-md border border-line-strong bg-white px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-ink-2 hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-wash"
+            className="w-full rounded-md border border-line-2 bg-ink px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-paper-2 hover:border-line-2 focus:border-paper focus:outline-none focus:ring-3 focus:ring-line-2"
           />
           <div className="grid grid-cols-[1fr_92px] gap-2">
             <select
               aria-label="Source chain"
               value={form.chainId}
               onChange={(e) => setForm({ ...form, chainId: e.target.value })}
-              className="w-full rounded-md border border-line-strong bg-white px-2.5 py-1.5 text-[13px] transition-colors hover:border-ink-2 focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-line-2 bg-ink px-2.5 py-1.5 text-[13px] transition-colors hover:border-line-2 focus:border-paper focus:outline-none"
             >
               {Object.keys(chains).map((id) => (
                 <option key={id} value={id}>
@@ -294,19 +292,19 @@ export default function Register() {
               onChange={(e) => setForm({ ...form, tokenId: e.target.value })}
               placeholder="token id"
               spellCheck={false}
-              className="w-full rounded-md border border-line-strong bg-white px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-ink-2 hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-3 focus:ring-accent-wash"
+              className="w-full rounded-md border border-line-2 bg-ink px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-paper-2 hover:border-line-2 focus:border-paper focus:outline-none focus:ring-3 focus:ring-line-2"
             />
           </div>
           <button
             type="submit"
-            className="rounded-md bg-accent px-3.5 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
+            className="rounded-md bg-paper px-3.5 py-1.5 text-[13px] font-medium text-ink transition-opacity hover:opacity-90"
           >
             Check the register
           </button>
-          {formError && <p className="text-[12.5px] text-danger">{formError}</p>}
+          {formError && <p className="text-[12.5px] text-refused">{formError}</p>}
         </form>
 
-        <div className="flex items-baseline justify-between px-3.5 pb-2 pt-3 text-[12.5px] text-ink-2">
+        <div className="flex items-baseline justify-between px-3.5 pb-2 pt-3 text-[12.5px] text-paper-2">
           <span>On file</span>
           <span>{rail ? `${rail.length} assets` : ""}</span>
         </div>
@@ -315,7 +313,7 @@ export default function Register() {
           {!rail &&
             [0, 1, 2].map((i) => (
               <div key={i} className="px-2.5 py-3">
-                <div className="h-3 w-3/4 animate-pulse rounded bg-panel-2" />
+                <div className="h-3 w-3/4 animate-pulse rounded bg-raised" />
               </div>
             ))}
 
@@ -326,32 +324,32 @@ export default function Register() {
               aria-current={record?.assetKey === a.assetKey}
               className={cn(
                 "grid w-full grid-cols-[8px_1fr_auto] items-center gap-2.5 rounded-md px-2.5 py-2.5 text-left transition-colors",
-                record?.assetKey === a.assetKey ? "bg-accent-wash" : "hover:bg-panel-2",
+                record?.assetKey === a.assetKey ? "bg-raised" : "hover:bg-raised",
               )}
             >
               <span
                 className={cn(
                   "size-2 rounded-[2px]",
-                  a.state === "pledged" && "bg-accent",
-                  a.state === "settled" && "bg-good",
-                  a.state === "free" && "bg-line-strong",
+                  a.state === "pledged" && "bg-paper",
+                  a.state === "settled" && "bg-settled",
+                  a.state === "free" && "bg-line-2",
                 )}
               />
               <span>
                 <span
                   className={cn(
                     "block text-[13px]",
-                    record?.assetKey === a.assetKey && "font-medium text-accent",
+                    record?.assetKey === a.assetKey && "font-medium text-paper",
                   )}
                 >
                   {label(a.token, a.tokenId)}
                 </span>
-                <span className="block text-[12px] text-ink-2">
+                <span className="block text-[12px] text-paper-2">
                   {a.holder ?? "no lien on file"}
                   {a.collisions > 0 && ` · ${a.collisions} refused`}
                 </span>
               </span>
-              <span className="text-right text-[11.5px] text-ink-2">{a.when}</span>
+              <span className="text-right text-[11.5px] text-paper-2">{a.when}</span>
             </button>
           ))}
         </div>
@@ -360,8 +358,8 @@ export default function Register() {
       {/* ---------------------------------------------------------- record */}
       <main className={cn("min-h-0 overflow-auto", pane === "register" && "hidden md:block")}>
         {error && (
-          <div className="max-w-[60ch] p-10 text-ink-2">
-            <h2 className="mb-2 text-[15px] font-medium text-ink">The register did not answer</h2>
+          <div className="max-w-[60ch] p-10 text-paper-2">
+            <h2 className="mb-2 text-[15px] font-medium text-paper">The register did not answer</h2>
             <p className="text-[13.5px]">{error}</p>
             <p className="mt-2.5 text-[13.5px]">
               This page reads one Creditcoin node directly. If it is unreachable nothing can be
@@ -372,11 +370,11 @@ export default function Register() {
 
         {!error && loading && (
           <div className="max-w-[1100px] p-6">
-            <div className="h-5 w-56 animate-pulse rounded bg-panel-2" />
-            <div className="mt-3 h-3 w-80 animate-pulse rounded bg-panel-2" />
+            <div className="h-5 w-56 animate-pulse rounded bg-raised" />
+            <div className="mt-3 h-3 w-80 animate-pulse rounded bg-raised" />
             <div className="mt-7 grid gap-2.5">
-              <div className="h-14 animate-pulse rounded bg-panel-2" />
-              <div className="h-14 animate-pulse rounded bg-panel-2" />
+              <div className="h-14 animate-pulse rounded bg-raised" />
+              <div className="h-14 animate-pulse rounded bg-raised" />
             </div>
           </div>
         )}
@@ -388,9 +386,9 @@ export default function Register() {
                 <h1 className="text-xl font-semibold tracking-tight">
                   {label(record.token, record.tokenId)}
                 </h1>
-                <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-paper-2">
                   <a
-                    className="font-mono text-accent hover:underline"
+                    className="font-mono text-paper hover:underline"
                     href={srcUrl(record.chainId, `token/${record.token}`)}
                     target="_blank"
                     rel="noreferrer"
@@ -398,7 +396,7 @@ export default function Register() {
                     {short(record.token, 10, 8)}
                   </a>
                   on {source.name}
-                  <span className="text-line-strong">/</span>
+                  <span className="text-line-2">/</span>
                   <span className="font-mono" title={record.assetKey}>
                     key {short(record.assetKey, 8, 6)}
                   </span>
@@ -419,7 +417,7 @@ export default function Register() {
                   </Fact>
                   <Fact term="Collateral">
                     <a
-                      className="font-mono text-accent hover:underline"
+                      className="font-mono text-paper hover:underline"
                       href={srcUrl(record.chainId, `token/${record.token}`)}
                       target="_blank"
                       rel="noreferrer"
@@ -433,7 +431,7 @@ export default function Register() {
                   <Fact term="Lien held by">
                     {nameOf(PROTOCOLS, record.emitter) ?? ""}{" "}
                     <a
-                      className="font-mono text-accent hover:underline"
+                      className="font-mono text-paper hover:underline"
                       href={srcUrl(record.chainId, `address/${record.emitter}`)}
                       target="_blank"
                       rel="noreferrer"
@@ -443,7 +441,7 @@ export default function Register() {
                   </Fact>
                   <Fact term="Borrower">
                     <a
-                      className="font-mono text-accent hover:underline"
+                      className="font-mono text-paper hover:underline"
                       href={srcUrl(record.chainId, `address/${record.borrower}`)}
                       target="_blank"
                       rel="noreferrer"
@@ -453,7 +451,7 @@ export default function Register() {
                   </Fact>
                   <Fact term="Principal">
                     <span className="tabular">{ether(record.amount)}</span>{" "}
-                    <span className="text-ink-2">in the protocol's own unit</span>
+                    <span className="text-paper-2">in the protocol's own unit</span>
                   </Fact>
                   <Fact term="Lien instance">
                     <span className="font-mono">{short(record.instanceId, 10, 6)}</span>
@@ -469,8 +467,8 @@ export default function Register() {
             </dl>
 
             {record.collisions.length > 0 && (
-              <div className="mt-5 rounded-md border border-danger/35 bg-danger-wash p-4">
-                <h2 className="text-[13.5px] font-semibold text-danger">
+              <div className="mt-5 rounded-md border border-refused/40 bg-refused-dim/25 p-4">
+                <h2 className="text-[13.5px] font-semibold text-refused">
                   A second protocol tried to lend against this asset
                 </h2>
                 <p className="mt-1 max-w-[70ch] text-[13px]">
@@ -479,7 +477,7 @@ export default function Register() {
                   asset is taken.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[13px]">
-                  <span className="rounded-md border border-line bg-white px-2.5 py-1.5">
+                  <span className="rounded-md border border-line bg-ink px-2.5 py-1.5">
                     <b className="font-medium">
                       {nameOf(PROTOCOLS, record.collisions.at(-1)!.emitter) ??
                         short(record.collisions.at(-1)!.emitter, 8, 6)}
@@ -488,10 +486,10 @@ export default function Register() {
                     block <span className="tabular">{num(record.collisions.at(-1)!.sourceHeight)}</span>
                   </span>
                   {refusal && (
-                    <span className="text-ink-2">
+                    <span className="text-paper-2">
                       refusal on chain in{" "}
                       <a
-                        className="font-mono text-accent hover:underline"
+                        className="font-mono text-paper hover:underline"
                         href={txUrl(refusal.transactionHash)}
                         target="_blank"
                         rel="noreferrer"
@@ -506,7 +504,7 @@ export default function Register() {
 
             <h2 className="mt-7 flex items-baseline gap-2.5 text-[13px] font-semibold">
               How this is known
-              <span className="font-normal text-[12.5px] text-ink-2">
+              <span className="font-normal text-[12.5px] text-paper-2">
                 nobody was trusted for any step
               </span>
             </h2>
@@ -516,7 +514,7 @@ export default function Register() {
                   <>
                     {source.name} block{" "}
                     <a
-                      className="tabular text-accent hover:underline"
+                      className="tabular text-paper hover:underline"
                       href={srcUrl(record.chainId, `block/${record.sourceHeight}`)}
                       target="_blank"
                       rel="noreferrer"
@@ -530,14 +528,14 @@ export default function Register() {
                   "nothing on file"
                 )}
               </Step>
-              <div className="hidden place-items-center px-3 text-line-strong lg:grid">
+              <div className="hidden place-items-center px-3 text-line-2 lg:grid">
                 <ArrowRight size={16} />
               </div>
               <Step title="Inclusion proof">
                 re-checked on chain by BlockProver <span className="font-mono">{CFG.prover}</span>,
                 accepted at {chain.depth} blocks deep
               </Step>
-              <div className="hidden place-items-center px-3 text-line-strong lg:grid">
+              <div className="hidden place-items-center px-3 text-line-2 lg:grid">
                 <ArrowRight size={16} />
               </div>
               <Step title="The register">
@@ -545,7 +543,7 @@ export default function Register() {
                   <>
                     written in{" "}
                     <a
-                      className="font-mono text-accent hover:underline"
+                      className="font-mono text-paper hover:underline"
                       href={txUrl(opening.transactionHash)}
                       target="_blank"
                       rel="noreferrer"
@@ -556,7 +554,7 @@ export default function Register() {
                       <>
                         , closed in{" "}
                         <a
-                          className="font-mono text-accent hover:underline"
+                          className="font-mono text-paper hover:underline"
                           href={txUrl(closing.transactionHash)}
                           target="_blank"
                           rel="noreferrer"
@@ -574,7 +572,7 @@ export default function Register() {
 
             <h2 className="mt-7 flex items-baseline gap-2.5 text-[13px] font-semibold">
               History
-              <span className="font-normal text-[12.5px] text-ink-2">
+              <span className="font-normal text-[12.5px] text-paper-2">
                 {logs.length} {logs.length === 1 ? "entry" : "entries"}
               </span>
             </h2>
@@ -586,7 +584,7 @@ export default function Register() {
                     {["Entry", "What happened", "Protocol", "On Creditcoin"].map((h) => (
                       <th
                         key={h}
-                        className="border-b border-line pb-1.5 pr-3 text-left text-[12px] font-medium text-ink-2"
+                        className="border-b border-line pb-1.5 pr-3 text-left text-[12px] font-medium text-paper-2"
                       >
                         {h}
                       </th>
@@ -598,29 +596,29 @@ export default function Register() {
                     const kind = TOPIC[l.topics[0]];
                     const party = "0x" + (kind === "refused" ? l.topics[3] : l.topics[2]).slice(26);
                     return (
-                      <tr key={l.transactionHash + l.logIndex} className="hover:bg-panel">
-                        <td className="border-b border-panel-2 py-2 pr-3">
+                      <tr key={l.transactionHash + l.logIndex} className="hover:bg-surface">
+                        <td className="border-b border-surface py-2 pr-3">
                           <span
                             className={cn(
                               "inline-block rounded-full px-2 py-0.5 text-[11.5px] font-medium",
-                              kind === "pledge" && "bg-accent-wash text-accent",
-                              kind === "refused" && "bg-danger-wash text-danger",
-                              kind === "settled" && "bg-good/10 text-good",
-                              kind === "released" && "bg-panel-2 text-ink-2",
+                              kind === "pledge" && "bg-raised text-paper",
+                              kind === "refused" && "bg-refused-dim/30 text-refused",
+                              kind === "settled" && "bg-settled/10 text-settled",
+                              kind === "released" && "bg-raised text-paper-2",
                             )}
                           >
                             {kind}
                           </span>
                         </td>
-                        <td className="border-b border-panel-2 py-2 pr-3">{ENTRY_WORDS[kind]}</td>
-                        <td className="border-b border-panel-2 py-2 pr-3">
+                        <td className="border-b border-surface py-2 pr-3">{ENTRY_WORDS[kind]}</td>
+                        <td className="border-b border-surface py-2 pr-3">
                           {nameOf(PROTOCOLS, party) ?? (
                             <span className="font-mono">{short(party, 6, 4)}</span>
                           )}
                         </td>
-                        <td className="border-b border-panel-2 py-2 pr-3">
+                        <td className="border-b border-surface py-2 pr-3">
                           <a
-                            className="font-mono text-accent hover:underline"
+                            className="font-mono text-paper hover:underline"
                             href={txUrl(l.transactionHash)}
                             target="_blank"
                             rel="noreferrer"
@@ -634,14 +632,14 @@ export default function Register() {
                 </tbody>
               </table>
             ) : (
-              <p className="mt-1 max-w-[70ch] text-[13px] text-ink-2">
+              <p className="mt-1 max-w-[70ch] text-[13px] text-paper-2">
                 This asset has never been registered here. That is not the same as never pledged: the
                 register is a positive record, and Attestcoin cannot prove that something did not
                 happen.
               </p>
             )}
 
-            <p className="mt-7 max-w-[72ch] border-t border-line pt-3.5 text-[12.5px] text-ink-2">
+            <p className="mt-7 max-w-[72ch] border-t border-line pt-3.5 text-[12.5px] text-paper-2">
               Everything above is an <span className="font-mono">eth_call</span> against Creditcoin
               that anybody can repeat. There is no backend and no indexer between this page and the
               chain.
