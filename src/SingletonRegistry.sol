@@ -66,7 +66,8 @@ contract SingletonRegistry {
         IBlockProver.ContinuityProof continuityProof;
     }
 
-    struct Pledge {
+    /// One lifecycle event read out of a source chain receipt.
+    struct SourceEvent {
         address emitter;
         address token;
         uint256 tokenId;
@@ -80,6 +81,10 @@ contract SingletonRegistry {
     uint8 internal constant KIND_PLEDGE = 0;
     uint8 internal constant KIND_SETTLE = 1;
     uint8 internal constant KIND_RELEASE = 2;
+
+    /// Not a transition, so not a kind: its own nullifier domain, because a
+    /// report must not spend the proof of the pledge it reports.
+    uint8 internal constant DOMAIN_COLLISION = 3;
 
     /// keccak256("Pledged(address,uint256,address,uint256,bytes32)")
     bytes32 public constant PLEDGED_SIG =
@@ -214,7 +219,7 @@ contract SingletonRegistry {
      */
     function registerPledge(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_PLEDGE);
-        Pledge memory pledge = _readPledge(p, KIND_PLEDGE);
+        SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
 
         assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
@@ -248,8 +253,8 @@ contract SingletonRegistry {
      * the same losing pledge and keeps it, without touching the incumbent.
      */
     function reportCollision(Proof calldata p) external returns (uint256 index) {
-        _burnNullifier(p, KIND_PLEDGE + 3);
-        Pledge memory pledge = _readPledge(p, KIND_PLEDGE);
+        _burnNullifier(p, DOMAIN_COLLISION);
+        SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
 
         bytes32 assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
@@ -283,7 +288,7 @@ contract SingletonRegistry {
      */
     function registerSettlement(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_SETTLE);
-        Pledge memory ev = _readPledge(p, KIND_SETTLE);
+        SourceEvent memory ev = _readSourceEvent(p, KIND_SETTLE);
 
         assetKey = _assetKey(p.chainKey, ev.token, ev.tokenId);
         Record storage r = _records[assetKey];
@@ -306,7 +311,7 @@ contract SingletonRegistry {
      */
     function registerRelease(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_RELEASE);
-        Pledge memory ev = _readPledge(p, KIND_RELEASE);
+        SourceEvent memory ev = _readSourceEvent(p, KIND_RELEASE);
 
         assetKey = _assetKey(p.chainKey, ev.token, ev.tokenId);
         Record storage r = _records[assetKey];
@@ -395,7 +400,11 @@ contract SingletonRegistry {
 
     /// Verifies the proof, then reads exactly one log of the requested kind out
     /// of the receipt it carries.
-    function _readPledge(Proof calldata p, uint8 kind) private view returns (Pledge memory pledge) {
+    function _readSourceEvent(Proof calldata p, uint8 kind)
+        private
+        view
+        returns (SourceEvent memory found)
+    {
         _requireVerified(p);
         _requireFinal(p.chainKey, p.height);
 
@@ -417,14 +426,14 @@ contract SingletonRegistry {
         EvmV1Decoder.LogEntry memory log = matched[0];
         if (log.address_ != emitter) revert EmitterNotAllowed(p.chainKey, log.address_);
 
-        pledge.emitter = emitter;
+        found.emitter = emitter;
         if (adapter == address(0)) {
-            pledge.token = address(uint160(uint256(log.topics[1])));
-            pledge.tokenId = uint256(log.topics[2]);
-            pledge.borrower = address(uint160(uint256(log.topics[3])));
-            (pledge.amount, pledge.instanceId) = abi.decode(log.data, (uint256, bytes32));
+            found.token = address(uint160(uint256(log.topics[1])));
+            found.tokenId = uint256(log.topics[2]);
+            found.borrower = address(uint160(uint256(log.topics[3])));
+            (found.amount, found.instanceId) = abi.decode(log.data, (uint256, bytes32));
         } else {
-            (pledge.token, pledge.tokenId, pledge.borrower, pledge.amount, pledge.instanceId) =
+            (found.token, found.tokenId, found.borrower, found.amount, found.instanceId) =
                 IPledgeAdapter(adapter).translate(kind, log);
         }
     }
