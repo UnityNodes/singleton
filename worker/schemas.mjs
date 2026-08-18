@@ -26,6 +26,7 @@ const NFTFI_V3_ABI = [
 const BLEND_ABI = [
   "event LoanOfferTaken(bytes32 offerHash,uint256 lienId,address collection,address lender,address borrower,uint256 loanAmount,uint256 rate,uint256 tokenId,uint256 auctionDuration)",
   "event Repay(uint256 lienId,address collection)",
+  "event Seize(uint256 lienId,address collection)",
 ];
 
 export const SCHEMAS = [
@@ -72,7 +73,13 @@ export const SCHEMAS = [
     abi: BLEND_ABI,
     // Blend indexes nothing, and its repayment names no token id, so a release
     // carries only the lien: the registry resolves it through its own index.
-    events: { pledge: "LoanOfferTaken", collision: "LoanOfferTaken", release: "Repay" },
+    // A Blend lien ends two ways: the borrower repays, or a failed auction lets
+    // the lender seize the token. Both are releases and both logs read alike.
+    events: {
+      pledge: "LoanOfferTaken",
+      collision: "LoanOfferTaken",
+      release: ["Repay", "Seize"],
+    },
     read: (parsed) => {
       if (parsed.name === "LoanOfferTaken") {
         return {
@@ -105,6 +112,7 @@ export function findSourceEvent(receipt, operation) {
   for (const schema of SCHEMAS) {
     const wanted = schema.events[operation];
     if (!wanted) continue;
+    const names = Array.isArray(wanted) ? wanted : [wanted];
     const iface = new ethers.Interface(schema.abi);
 
     for (const log of receipt.logs) {
@@ -114,7 +122,7 @@ export function findSourceEvent(receipt, operation) {
       } catch {
         continue;
       }
-      if (parsed?.name !== wanted) continue;
+      if (!parsed || !names.includes(parsed.name)) continue;
       hits.push({ schema, log, parsed, fields: schema.read(parsed, log) });
     }
   }

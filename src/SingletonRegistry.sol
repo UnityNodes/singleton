@@ -448,14 +448,8 @@ contract SingletonRegistry {
         if (!allowedEmitter[p.chainKey][emitter]) revert EmitterNotAllowed(p.chainKey, emitter);
 
         address adapter = adapterOf[p.chainKey][emitter];
-        bytes32 signature = _signatureFor(adapter, emitter, kind);
-
-        EvmV1Decoder.LogEntry[] memory matched =
-            EvmV1Decoder.getLogsByEventSignature(receipt, signature);
-        if (matched.length == 0) revert NoPledgeLog();
-        if (matched.length > 1) revert AmbiguousPledgeLogs(matched.length);
-
-        EvmV1Decoder.LogEntry memory log = matched[0];
+        EvmV1Decoder.LogEntry memory log =
+            _singleLog(receipt, _signaturesFor(adapter, emitter, kind));
         if (log.address_ != emitter) revert EmitterNotAllowed(p.chainKey, log.address_);
 
         found.emitter = emitter;
@@ -493,22 +487,47 @@ contract SingletonRegistry {
         return count == 0 ? address(0) : receipt.receiptLogs[0].address_;
     }
 
-    function _signatureFor(address adapter, address emitter, uint8 kind)
+    /**
+     * Which topic zeroes carry this transition for this emitter.
+     *
+     * A protocol may end a lien in more than one way, so a transition can name
+     * several events. An adapter that names none has declared the transition
+     * unprovable for its protocol, which is refused rather than approximated.
+     */
+    function _signaturesFor(address adapter, address emitter, uint8 kind)
         private
         view
-        returns (bytes32 signature)
+        returns (bytes32[] memory signatures)
     {
         if (adapter == address(0)) {
-            signature = kind == KIND_PLEDGE
+            signatures = new bytes32[](1);
+            signatures[0] = kind == KIND_PLEDGE
                 ? PLEDGED_SIG
                 : (kind == KIND_SETTLE ? SETTLED_SIG : RELEASED_SIG);
-        } else {
-            (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig) =
-                IPledgeAdapter(adapter).eventSignatures();
-            signature =
-                kind == KIND_PLEDGE ? pledgeSig : (kind == KIND_SETTLE ? settleSig : releaseSig);
-            if (signature == bytes32(0)) revert TransitionUnsupported(emitter, kind);
+            return signatures;
         }
+
+        signatures = IPledgeAdapter(adapter).signaturesFor(kind);
+        if (signatures.length == 0) revert TransitionUnsupported(emitter, kind);
+    }
+
+    /// Exactly one log across every signature the transition accepts. Two would
+    /// be a batch, and a batch is caveat 7.
+    function _singleLog(EvmV1Decoder.ReceiptFields memory receipt, bytes32[] memory signatures)
+        private
+        pure
+        returns (EvmV1Decoder.LogEntry memory log)
+    {
+        uint256 found;
+        for (uint256 i; i < signatures.length; i++) {
+            EvmV1Decoder.LogEntry[] memory matched =
+                EvmV1Decoder.getLogsByEventSignature(receipt, signatures[i]);
+            if (matched.length == 0) continue;
+            found += matched.length;
+            if (found > 1) revert AmbiguousPledgeLogs(found);
+            log = matched[0];
+        }
+        if (found == 0) revert NoPledgeLog();
     }
 
     function _requireVerified(Proof calldata p) private view {

@@ -152,8 +152,10 @@ contract HalfAdapter is IPledgeAdapter {
     bytes32 public constant LOCKED_SIG =
         keccak256("CollateralLocked(bytes32,address,address,uint256,uint256)");
 
-    function eventSignatures() external pure returns (bytes32, bytes32, bytes32) {
-        return (LOCKED_SIG, bytes32(0), bytes32(0));
+    function signaturesFor(uint8 kind) external pure returns (bytes32[] memory signatures) {
+        if (kind != 0) return new bytes32[](0);
+        signatures = new bytes32[](1);
+        signatures[0] = LOCKED_SIG;
     }
 
     function translate(uint8, EvmV1Decoder.LogEntry calldata log)

@@ -28,6 +28,11 @@ contract BlendAdapterTest is SourceChain {
     uint64 constant TAKEN_AT = 25_711_377;
     uint64 constant REPAID_AT = 25_721_378;
 
+    uint256 constant SEIZED_TOKEN = 4271;
+    bytes32 constant SEIZED_LIEN_ID = bytes32(uint256(0x6b2ac));
+    uint64 constant SEIZED_TAKEN_AT = 25_550_390;
+    uint64 constant SEIZED_AT = 25_651_509;
+
     SingletonRegistry registry;
     BlendAdapter adapter;
 
@@ -149,6 +154,54 @@ contract BlendAdapterTest is SourceChain {
             abi.encodeWithSelector(SingletonRegistry.AssetNotFree.selector, assetKey, BLEND)
         );
         registry.registerPledge(again);
+    }
+
+    /// A seized lien, in real bytes: lien 438956, Pudgy Penguin 4271, taken for
+    /// 3.868 ether in block 25,550,390 and taken away in block 25,651,509 when
+    /// the auction failed. Blend ends a lien two ways and both are proven.
+    function test_aSeizedLienIsClosedToo() public {
+        registry.registerPledge(_relayFrom(ETHEREUM, SEIZED_TAKEN_AT, _seizedLoanTaken()));
+
+        bytes32 seizedKey = registry.assetKeyOf(ETHEREUM, COLLECTION, SEIZED_TOKEN);
+        assertEq(
+            uint8(registry.getStatus(seizedKey).state), uint8(SingletonRegistry.AssetState.PLEDGED)
+        );
+
+        registry.registerRelease(_relayFrom(ETHEREUM, SEIZED_AT, _seize()));
+
+        assertEq(uint8(registry.getStatus(seizedKey).state), uint8(SingletonRegistry.AssetState.FREE));
+        assertEq(registry.assetOfInstance(ETHEREUM, BLEND, SEIZED_LIEN_ID), bytes32(0));
+    }
+
+    /// LoanOfferTaken, transaction 0xa4e776eeca5fd7f35209c94f92523847920d2c113f21baee7d13ee50c3a79e8c
+    function _seizedLoanTaken() internal pure returns (Vm.Log memory entry) {
+        bytes32[] memory topics = new bytes32[](1);
+        topics[0] = 0x06a333c2d6fe967ca967f7a35be2eb45e8caeb6cf05e16f55d42b91b5fe31255;
+
+        entry.emitter = BLEND;
+        entry.topics = topics;
+        entry.data =
+            hex"c0d37f3496d3a1eee34b7a04a3fbb2e258fcb4c8e633978a42473a9455855d7d"
+            hex"000000000000000000000000000000000000000000000000000000000006b2ac"
+            hex"000000000000000000000000bd3531da5cf5857e7cfaa92426877b022e612cf8"
+            hex"000000000000000000000000223ee0c3dc4be9fadb623c12e8be9443130e8377"
+            hex"0000000000000000000000002d5b791946e6602df44c511610f984b0884ff6f5"
+            hex"00000000000000000000000000000000000000000000000035aee9f75243ac8e"
+            hex"0000000000000000000000000000000000000000000000000000000000000186"
+            hex"00000000000000000000000000000000000000000000000000000000000010af"
+            hex"0000000000000000000000000000000000000000000000000000000000002328";
+    }
+
+    /// Seize, transaction 0xf6605120155b6b3e6edb8b97b6a6c70a9f3e6b0044dd126e4827627983172a33
+    function _seize() internal pure returns (Vm.Log memory entry) {
+        bytes32[] memory topics = new bytes32[](1);
+        topics[0] = 0xb71caf41fe0e019dbe21a1ae3493f11a729c31548ed1e304ae7f6e8c8df275de;
+
+        entry.emitter = BLEND;
+        entry.topics = topics;
+        entry.data =
+            hex"000000000000000000000000000000000000000000000000000000000006b2ac"
+            hex"000000000000000000000000bd3531da5cf5857e7cfaa92426877b022e612cf8";
     }
 
     /// A repayment log from a contract nobody allowlisted resolves to nothing.

@@ -111,19 +111,23 @@ An adapter can only carry what the protocol actually emits, and protocols emit
 less than one would like. Blur's Blend publishes the token id when a loan is
 taken and omits it when the loan is repaid; NFTfi has no settlement step at all.
 
-Two answers, depending on which is missing. Where a transition does not exist,
-the adapter declares it unsupported and the registry refuses it with
-`TransitionUnsupported` rather than mapping some other event onto it. Where the
-transition exists but does not name the collateral, the adapter returns a zero
-token and the registry resolves the lien through the instance id it recorded
-when the loan was opened, keyed by that emitter and no other. An opening pledge
-never gets that fallback: a lien has to name what it claims.
+Three answers, depending on what is missing.
 
-Seizure is the remaining gap. When a Blend auction fails, the lender takes the
-token through `Seize`, which ends the lien as surely as repayment does, but an
-adapter may declare only one release event. A seized lien stays on file until
-somebody proves otherwise. For a registry whose job is to be slow to release a
-claim that is the conservative direction, and it is still a gap.
+Where a transition does not exist at all, the adapter declares it unsupported
+and the registry refuses it with `TransitionUnsupported` rather than mapping
+some other event onto it.
+
+Where the transition exists but does not name the collateral, the adapter
+returns a zero token and the registry resolves the lien through the instance id
+it recorded when the loan was opened, keyed by that emitter and no other. An
+opening pledge never gets that fallback: a lien has to name what it claims.
+
+Where a protocol ends a lien in more than one way, the adapter names every event
+that ends it. Blend closes a lien with `Repay` when the borrower pays and with
+`Seize` when an auction fails, and both are proven. Missing one of them would
+leave liens on file that the source chain has already closed, which is the
+failure mode a registry has to care about most: a stale claim looks exactly like
+a live one.
 
 An adapter is also a per protocol integration written by us, not by the
 protocol. It is the one place where being wrong looks like being right, which is

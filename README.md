@@ -45,14 +45,15 @@ the reason the product has no equivalent anywhere else.
 The registry is live on CC3 testnet and has taken one asset through its whole
 life against two unrelated lenders on Sepolia: pledged, a second pledge refused
 live, the refusal kept on file, settled, released, and re-pledged by the lender
-that lost the first race. Four more proofs read two real protocols on Ethereum
-mainnet, which have never heard of it. Ten proofs, every hash in
+that lost the first race. Six more proofs read two real protocols on Ethereum
+mainnet, which have never heard of it, including a lien that ended in a failed
+auction rather than a repayment. Twelve proofs, every hash in
 [docs/VERIFICATION.md](docs/VERIFICATION.md), replayable with
 `node worker/demo.mjs`.
 
 | | |
 |---|---|
-| Registry, CC3 testnet | `0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` |
+| Registry, CC3 testnet | `0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
@@ -129,7 +130,9 @@ settlement proof is refused rather than approximated.
 [Blur's Blend](src/adapters/BlendAdapter.sol) indexes nothing at all, and its
 `Repay` names no token id, so the adapter returns a zero token and the registry
 resolves the lien through the instance id it recorded when the loan was opened,
-under that emitter and no other.
+under that emitter and no other. Blend also ends liens two ways, by repayment and
+by seizure after a failed auction, so a transition may name several events and
+both are proven.
 
 Nothing was deployed on mainnet and nothing was asked of either protocol.
 Creditcoin attests Ethereum, so an existing loan can simply be read.

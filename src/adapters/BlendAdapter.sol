@@ -23,12 +23,9 @@ import {EvmV1Decoder} from "../vendor/EvmV1Decoder.sol";
  * the verified ABI of the implementation at
  * 0xB258CA5559b11cD702F363796522b04D7722Ea56.
  *
- * Seizure is not mapped. When a Blend auction fails the lender takes the token
- * through `Seize(lienId, collection)`, which ends the lien as surely as a
- * repayment does, but an adapter may declare only one release event and
- * repayment is the ordinary path. A seized lien therefore stays on file until
- * somebody proves otherwise, which is the conservative direction for a registry
- * whose whole job is to be slow to release a claim.
+ * A lien here ends two ways and both are proven: `Repay` when the borrower pays,
+ * `Seize` when an auction fails and the lender takes the token. The two logs are
+ * identical in shape, so one branch reads both.
  */
 contract BlendAdapter is IPledgeAdapter {
     /// LoanOfferTaken(bytes32,uint256,address,address,address,uint256,uint256,uint256,uint256)
@@ -39,17 +36,36 @@ contract BlendAdapter is IPledgeAdapter {
     bytes32 public constant REPAY_SIG =
         0x2469cc9e12e74c63438d5b1117b318cd3a4cdaf9d659d9eac6d975d14d963254;
 
+    /// Seize(uint256,address), identical in shape to Repay
+    bytes32 public constant SEIZE_SIG =
+        0xb71caf41fe0e019dbe21a1ae3493f11a729c31548ed1e304ae7f6e8c8df275de;
+
     uint8 internal constant KIND_PLEDGE = 0;
     uint8 internal constant KIND_RELEASE = 2;
 
     error UnsupportedKind(uint8 kind);
 
-    function eventSignatures()
-        external
-        pure
-        returns (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig)
-    {
-        return (LOAN_OFFER_TAKEN_SIG, bytes32(0), REPAY_SIG);
+    /**
+     * Blend ends a lien two ways and the registry accepts both: `Repay` when the
+     * borrower pays, `Seize` when an auction fails and the lender takes the
+     * token. Either way the lien is over, and either way the log carries the
+     * lien id and nothing else useful, which the instance index resolves.
+     *
+     * There is no settlement: Blend has no state between drawn and closed.
+     */
+    function signaturesFor(uint8 kind) external pure returns (bytes32[] memory signatures) {
+        if (kind == KIND_PLEDGE) {
+            signatures = new bytes32[](1);
+            signatures[0] = LOAN_OFFER_TAKEN_SIG;
+            return signatures;
+        }
+        if (kind == KIND_RELEASE) {
+            signatures = new bytes32[](2);
+            signatures[0] = REPAY_SIG;
+            signatures[1] = SEIZE_SIG;
+            return signatures;
+        }
+        return new bytes32[](0);
     }
 
     function translate(uint8 kind, EvmV1Decoder.LogEntry calldata log)
@@ -73,8 +89,8 @@ contract BlendAdapter is IPledgeAdapter {
         }
 
         if (kind == KIND_RELEASE) {
-            // Repay carries the lien and its collection, never the token id, so
-            // the registry is asked to resolve the lien it already recorded.
+            // Repay and Seize carry the lien and its collection, never the token
+            // id, so the registry is asked to resolve the lien it recorded.
             (uint256 lienId,) = abi.decode(log.data, (uint256, address));
             return (address(0), 0, address(0), 0, bytes32(lienId));
         }

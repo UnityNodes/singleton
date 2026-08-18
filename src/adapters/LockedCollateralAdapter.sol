@@ -31,12 +31,9 @@ contract LockedCollateralAdapter is IPledgeAdapter {
 
     error UnexpectedTopics(uint256 count);
 
-    function eventSignatures()
-        external
-        pure
-        returns (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig)
-    {
-        return (LOCKED_SIG, CLEARED_SIG, UNLOCKED_SIG);
+    function signaturesFor(uint8 kind) external pure returns (bytes32[] memory signatures) {
+        signatures = new bytes32[](1);
+        signatures[0] = kind == 0 ? LOCKED_SIG : (kind == 1 ? CLEARED_SIG : UNLOCKED_SIG);
     }
 
     function translate(uint8, EvmV1Decoder.LogEntry calldata log)

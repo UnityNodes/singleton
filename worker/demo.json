@@ -69,6 +69,22 @@
       "sourceRpc": "https://ethereum-rpc.publicnode.com",
       "note": "its repayment names no token id and closes the lien anyway",
       "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0xa4e776eeca5fd7f35209c94f92523847920d2c113f21baee7d13ee50c3a79e8c",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "a second Blend lien, this one on Pudgy Penguin 4271",
+      "expect": "recorded"
+    },
+    {
+      "operation": "release",
+      "tx": "0xf6605120155b6b3e6edb8b97b6a6c70a9f3e6b0044dd126e4827627983172a33",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "its auction failed and the lender seized it, which also ends the lien",
+      "expect": "recorded"
     }
   ]
 }

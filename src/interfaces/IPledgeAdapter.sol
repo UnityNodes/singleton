@@ -16,13 +16,18 @@ import {EvmV1Decoder} from "../vendor/EvmV1Decoder.sol";
  * sitting for exactly that reason.
  */
 interface IPledgeAdapter {
-    /// Topic zero of the protocol's own pledge, settlement and release events.
-    /// A zero signature means the protocol has no such event and the
-    /// corresponding transition cannot be proven for it.
-    function eventSignatures()
-        external
-        view
-        returns (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig);
+    /**
+     * Topic zeroes the protocol emits for one transition: 0 for a pledge, 1 for
+     * a settlement, 2 for a release.
+     *
+     * A transition can have more than one event, because protocols end a lien in
+     * more than one way. Blend closes a lien with `Repay` when the borrower pays
+     * and with `Seize` when an auction fails, and both are releases.
+     *
+     * An empty list means the protocol has no such transition, and the registry
+     * refuses to prove one for it rather than mapping some other event onto it.
+     */
+    function signaturesFor(uint8 kind) external view returns (bytes32[] memory);
 
     /**
      * Reads one native log into the registry's tuple. Must not depend on state.

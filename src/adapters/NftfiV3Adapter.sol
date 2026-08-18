@@ -63,12 +63,20 @@ contract NftfiV3Adapter is IPledgeAdapter {
     error UnsupportedKind(uint8 kind);
     error UnexpectedTopics(uint256 count);
 
-    function eventSignatures()
-        external
-        pure
-        returns (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig)
-    {
-        return (LOAN_STARTED_SIG, bytes32(0), LOAN_REPAID_SIG);
+    function signaturesFor(uint8 kind) external pure returns (bytes32[] memory signatures) {
+        if (kind == KIND_PLEDGE) {
+            signatures = new bytes32[](1);
+            signatures[0] = LOAN_STARTED_SIG;
+            return signatures;
+        }
+        if (kind == KIND_RELEASE) {
+            signatures = new bytes32[](1);
+            signatures[0] = LOAN_REPAID_SIG;
+            return signatures;
+        }
+        // No settlement step: repayment returns the token in the same
+        // transaction, so there is nothing between started and closed.
+        return new bytes32[](0);
     }
 
     function translate(uint8 kind, EvmV1Decoder.LogEntry calldata log)
