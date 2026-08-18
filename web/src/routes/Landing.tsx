@@ -248,73 +248,91 @@ export default function Landing() {
           rings={20}
         />
         <div className="relative mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
-          <Rule label="what happened, on public networks" />
-
-          <h2 className="display reveal mt-8 max-w-[18ch] text-[clamp(30px,4.4vw,50px)]">
+          <h2 className="display max-w-[18ch] text-[clamp(30px,4.4vw,50px)]">
             one asset. two lenders. a refusal you can open yourself.
           </h2>
 
-          <ol className="mt-12">
+          <div className="mt-11">
+            <Rule label="what happened, on public networks" />
+          </div>
+
+          <ol>
             {ACTS.map((act, i) => (
               <li
                 key={act.tx}
                 className={cn(
-                  "reveal group relative grid gap-x-8 gap-y-3 border-t border-line py-7 transition-colors md:grid-cols-[64px_minmax(0,1.1fr)_minmax(0,1fr)_auto]",
-                  i === ACTS.length - 1 && "border-b",
-                  act.refused ? "hover:bg-refused-dim/15" : "hover:bg-surface/60",
+                  "reveal group relative grid gap-x-8 gap-y-4 border-b border-line transition-colors md:grid-cols-[minmax(76px,104px)_minmax(0,1.15fr)_minmax(0,1fr)]",
+                  act.refused ? "py-10 lg:py-14" : "py-8 lg:py-10",
+                  act.refused ? "hover:bg-refused-dim/12" : "hover:bg-surface/50",
                 )}
               >
-                <span
-                  className={cn(
-                    "absolute inset-y-0 left-0 w-px transition-colors",
-                    act.refused ? "bg-refused shadow-[0_0_18px_2px_var(--color-refused)]" : "bg-transparent group-hover:bg-line-2",
-                  )}
-                />
-                {act.refused && (
+                {act.refused ? (
+                  <>
+                    <span
+                      aria-hidden
+                      className="verdict absolute inset-y-0 left-0 w-px bg-refused shadow-[0_0_18px_2px_var(--color-refused)]"
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -left-24 top-1/2 h-64 w-[560px] -translate-y-1/2 rounded-full bg-refused/12 blur-3xl"
+                    />
+                  </>
+                ) : (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute -left-24 top-1/2 h-56 w-[520px] -translate-y-1/2 rounded-full bg-refused/12 blur-3xl"
+                    className="absolute inset-y-0 left-0 w-px bg-transparent transition-colors group-hover:bg-line-2"
                   />
                 )}
-                <span className={cn("label pt-1 tabular", act.refused && "text-refused")}>
+
+                <span
+                  className={cn(
+                    "display tabular self-start text-[clamp(36px,4.8vw,64px)] leading-[0.85]",
+                    act.refused ? "text-refused" : "text-paper-3",
+                  )}
+                >
                   {String(i + 1).padStart(2, "0")}
                 </span>
 
                 <div>
                   <div
                     className={cn(
-                      "text-[19px] font-semibold tracking-tight",
-                      act.refused && "text-refused",
+                      "display",
+                      act.refused
+                        ? "text-refused text-[clamp(26px,3vw,38px)]"
+                        : "text-[clamp(22px,2.4vw,30px)]",
                     )}
                   >
                     {act.party}
                   </div>
                   <div
                     className={cn(
-                      "mt-0.5 text-[19px] tracking-tight text-paper-2",
-                      act.refused && "text-refused/90",
+                      "mt-1.5 tracking-tight",
+                      act.refused
+                        ? "text-refused/85 text-[clamp(19px,2vw,24px)]"
+                        : "text-paper-2 text-[clamp(17px,1.6vw,20px)]",
                     )}
                   >
                     {act.line}
                   </div>
                 </div>
 
-                <p className="max-w-[46ch] self-center text-[13.5px] leading-relaxed text-paper-2">
-                  {act.note}
-                </p>
-
-                <a
-                  className="self-center font-mono text-[12px] text-paper-3 transition-colors hover:text-paper"
-                  href={
-                    act.on === "sepolia"
-                      ? `https://sepolia.etherscan.io/tx/${act.tx}`
-                      : txUrl(act.tx)
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {act.tx.slice(0, 10)}…{act.tx.slice(-6)}
-                </a>
+                <div className="self-center">
+                  <p className="max-w-[46ch] text-[13.5px] leading-relaxed text-paper-2">
+                    {act.note}
+                  </p>
+                  <a
+                    className="mt-3 inline-block font-mono text-[12px] text-paper-3 transition-colors hover:text-paper"
+                    href={
+                      act.on === "sepolia"
+                        ? `https://sepolia.etherscan.io/tx/${act.tx}`
+                        : txUrl(act.tx)
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {act.tx.slice(0, 10)}…{act.tx.slice(-6)}
+                  </a>
+                </div>
               </li>
             ))}
           </ol>
@@ -324,11 +342,13 @@ export default function Landing() {
       {/* ------------------------------------------------------- mechanism */}
       <section className="border-b border-line">
         <div className="mx-auto grid max-w-[1240px] gap-14 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20 lg:py-24">
-          <div className="reveal">
-            <Rule label="why it exists only here" />
-            <h2 className="display mt-8 max-w-[16ch] text-[clamp(28px,3.6vw,44px)]">
+          <div>
+            <h2 className="display max-w-[16ch] text-[clamp(28px,3.6vw,44px)]">
               a contract cannot read a log. not even its own.
             </h2>
+            <div className="mt-8">
+              <Rule label="why it exists only here" />
+            </div>
             <p className="mt-7 max-w-[52ch] text-[15px] leading-relaxed text-paper-2">
               <span className="font-mono text-[13.5px] text-paper">LOG0</span> through{" "}
               <span className="font-mono text-[13.5px] text-paper">LOG4</span> are write only,
@@ -361,7 +381,7 @@ export default function Landing() {
               <li
                 key={step.k}
                 className={cn(
-                  "reveal group grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-line py-6 transition-colors hover:bg-surface/60",
+                  "group grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-line py-6 transition-colors hover:bg-surface/60",
                   i === 2 && "border-b",
                 )}
               >
@@ -382,11 +402,13 @@ export default function Landing() {
       <section>
         <div className="mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
           <div className="grid gap-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-20">
-            <div className="reveal">
-              <Rule label="said before anybody has to ask" />
-              <h2 className="display mt-8 max-w-[20ch] text-[clamp(26px,3.2vw,40px)]">
+            <div>
+              <h2 className="display max-w-[20ch] text-[clamp(26px,3.2vw,40px)]">
                 a positive record and a priority rule, not proof of absence.
               </h2>
+              <div className="mt-8">
+                <Rule label="said before anybody has to ask" />
+              </div>
               <p className="mt-7 max-w-[56ch] text-[15px] leading-relaxed text-paper-2">
                 An asset the register calls free is one nobody has registered here, which is not the
                 same as one nobody has pledged. Attestcoin proves that a transaction happened; it
@@ -396,7 +418,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="reveal relative flex flex-col justify-center overflow-hidden border border-line bg-surface/70 p-9 backdrop-blur-sm">
+            <div className="relative flex flex-col justify-center overflow-hidden border border-line bg-surface/70 p-9 backdrop-blur-sm">
               <Coil
                 pulse
                 className="absolute -right-32 -top-32 h-96 w-96 text-open/55"

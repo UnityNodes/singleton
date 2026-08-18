@@ -327,7 +327,7 @@ export default function Register() {
             >
               <span
                 className={cn(
-                  "absolute inset-y-0 left-0 w-[2px] transition-colors",
+                  "absolute inset-y-0 left-0 w-px transition-colors",
                   record?.assetKey !== a.assetKey
                     ? "bg-transparent"
                     : a.state === "free"

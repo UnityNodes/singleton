@@ -56,6 +56,20 @@
 
 html, body, #root { height: 100%; }
 
+/*
+  The surfaces nobody draws still belong to the design: a browser blue caret and
+  a default scrollbar are the fastest way to tell a page was assembled.
+*/
+:root {
+  color-scheme: dark;
+  accent-color: var(--color-paper);
+  caret-color: var(--color-live);
+  scrollbar-color: var(--color-line-2) transparent;
+  scrollbar-width: thin;
+}
+
+a { text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -257,19 +271,37 @@ body::after {
 .lit-live {
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--color-live) 34%, transparent),
-    0 0 46px -14px color-mix(in oklch, var(--color-live) 70%, transparent);
+    0 14px 42px -20px color-mix(in oklch, var(--color-live) 85%, transparent);
 }
 .lit-open {
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--color-open) 32%, transparent),
-    0 0 46px -14px color-mix(in oklch, var(--color-open) 65%, transparent);
+    0 14px 42px -20px color-mix(in oklch, var(--color-open) 80%, transparent);
 }
 .lit-refused {
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--color-refused) 38%, transparent),
-    0 0 52px -14px color-mix(in oklch, var(--color-refused) 70%, transparent);
+    0 16px 48px -20px color-mix(in oklch, var(--color-refused) 85%, transparent);
 }
-.lit-paper { box-shadow: 0 0 34px -10px color-mix(in oklch, var(--color-paper) 45%, transparent); }
+
+/*
+  The one authored moment of the scroll: the register's answer draws itself down
+  the edge of the band that carries it. Decoration only, so it may start from
+  nothing where the reading text may not.
+*/
+@keyframes verdict {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.verdict { transform-origin: top; animation: verdict 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@supports (animation-timeline: view()) {
+  .verdict {
+    animation-timeline: view();
+    animation-range: entry 14% entry 72%;
+  }
+}
 
 @keyframes breathe {
   0%, 100% { opacity: 0.55; }
@@ -279,5 +311,6 @@ body::after {
 
 @media (prefers-reduced-motion: reduce) {
   body::before, .spin-slow, .ping::after, .breathe, .skeleton { animation: none !important; }
+  .verdict { animation: none; }
   .scan::after { display: none; }
 }
