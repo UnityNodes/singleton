@@ -83,8 +83,8 @@ export default function Landing() {
     <div className="min-h-full bg-ink">
       {/* ----------------------------------------------------------- header */}
       <header className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur">
-        <div className="mx-auto flex h-[68px] max-w-[1240px] items-center gap-8 px-6">
-          <Link to="/" className="h-6 shrink-0" aria-label="Singleton, home">
+        <div className="mx-auto flex h-[76px] max-w-[1240px] items-center gap-8 px-6">
+          <Link to="/" className="h-8 shrink-0" aria-label="Singleton, home">
             <img src="/brand/singleton-wordmark-white.svg" alt="Singleton" className="wordmark" />
           </Link>
 
@@ -355,8 +355,12 @@ export default function Landing() {
             </div>
           </div>
 
-          <footer className="mt-20 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">
-            <img src="/brand/singleton-icon-white.svg" alt="" aria-hidden className="h-4 w-4 opacity-60" />
+          <footer className="mt-20 flex flex-wrap items-center gap-x-10 gap-y-5 border-t border-line pt-9">
+            <img
+              src="/brand/singleton-wordmark-white.svg"
+              alt="Singleton"
+              className="h-9 w-auto opacity-90"
+            />
             <span className="label">buidl ctc 2026, on the attestcoin protocol</span>
             <a
               className="label transition-colors hover:text-paper"

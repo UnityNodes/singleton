@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Coil } from "@/components/Coil";
 import { ArrowRight, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -65,22 +66,19 @@ function StateChip({ state }: { state: AssetState }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 whitespace-nowrap border px-3 py-1 font-mono text-[12px]",
-        state === "pledged" && "border-paper bg-raised text-paper",
-        state === "settled" && "border-settled/45 bg-settled/10 text-settled",
-        state === "free" && "border-line-2 bg-raised text-paper-2",
+        "inline-flex items-center gap-2.5 whitespace-nowrap border px-4 py-2 font-mono text-[13px]",
+        state === "pledged" && "border-live/50 bg-live-dim/25 text-live",
+        state === "settled" && "border-live/40 bg-live-dim/15 text-live",
+        state === "free" && "border-open/50 bg-open-dim/25 text-open",
       )}
     >
       <span
         className={cn(
-          "size-2 rounded-[2px]",
-          state === "pledged" && "bg-paper",
-          state === "settled" && "bg-settled",
-          state === "free" && "bg-line-2",
+          "size-2 rounded-full",
+          state === "free" ? "bg-open" : "bg-live",
         )}
       />
-      {state}
-      {state === "pledged" && ", first to file"}
+      {state === "free" ? "free to lend against" : state === "pledged" ? "claimed, first to file" : "settled, still on file"}
     </span>
   );
 }
@@ -206,8 +204,8 @@ export default function Register() {
   return (
     <div className="grid h-full grid-rows-[auto_auto_1fr] md:grid-cols-[340px_1fr] md:grid-rows-[auto_1fr] md:overflow-hidden">
       {/* -------------------------------------------------------- top bar */}
-      <header className="flex h-14 items-center gap-4 border-b border-line bg-surface px-4 md:col-span-2">
-        <Link to="/" className="flex h-4 items-center gap-3" aria-label="Singleton, home">
+      <header className="flex h-[68px] items-center gap-5 border-b border-line bg-surface px-4 md:col-span-2">
+        <Link to="/" className="flex h-7 items-center gap-3.5" aria-label="Singleton, home">
           <img src="/brand/singleton-wordmark-white.svg" alt="Singleton" className="wordmark" />
           <span className="hidden text-[13px] font-normal text-paper-2 sm:inline">
             register of liens
@@ -329,10 +327,8 @@ export default function Register() {
             >
               <span
                 className={cn(
-                  "size-2 rounded-[2px]",
-                  a.state === "pledged" && "bg-paper",
-                  a.state === "settled" && "bg-settled",
-                  a.state === "free" && "bg-line-2",
+                  "size-2 rounded-full",
+                  a.state === "free" ? "bg-open" : "bg-live",
                 )}
               />
               <span>
@@ -344,9 +340,11 @@ export default function Register() {
                 >
                   {label(a.token, a.tokenId)}
                 </span>
-                <span className="block text-[12px] text-paper-2">
-                  {a.holder ?? "no lien on file"}
-                  {a.collisions > 0 && ` · ${a.collisions} refused`}
+                <span className="block font-mono text-[11.5px]">
+                  <span className={a.state === "free" ? "text-open" : "text-live"}>
+                    {a.state === "free" ? "free" : (a.holder ?? "claimed")}
+                  </span>
+                  {a.collisions > 0 && <span className="text-refused"> · {a.collisions} refused</span>}
                 </span>
               </span>
               <span className="text-right text-[11.5px] text-paper-2">{a.when}</span>
@@ -357,6 +355,28 @@ export default function Register() {
 
       {/* ---------------------------------------------------------- record */}
       <main className={cn("min-h-0 overflow-auto", pane === "register" && "hidden md:block")}>
+        {rail && (
+          <div className="grid grid-cols-3 border-b border-line">
+            {[
+              { k: "assets on file", v: String(rail.length), tone: "" },
+              {
+                k: "liens live now",
+                v: String(rail.filter((a) => a.state !== "free").length),
+                tone: "text-live",
+              },
+              {
+                k: "pledges refused",
+                v: String(rail.reduce((n, a) => n + a.collisions, 0)),
+                tone: "text-refused",
+              },
+            ].map((cell) => (
+              <div key={cell.k} className="border-r border-line px-6 py-3 last:border-r-0">
+                <div className="label">{cell.k}</div>
+                <div className={cn("mt-0.5 font-mono text-[17px] tabular", cell.tone)}>{cell.v}</div>
+              </div>
+            ))}
+          </div>
+        )}
         {error && (
           <div className="max-w-[60ch] p-10 text-paper-2">
             <h2 className="mb-2 text-[15px] font-medium text-paper">The register did not answer</h2>
@@ -380,10 +400,14 @@ export default function Register() {
         )}
 
         {!error && !loading && record && chain && source && (
-          <div className="max-w-[1100px] px-6 pb-10 pt-5">
+          <div className="relative max-w-[1100px] px-6 pb-10 pt-6">
+            <Coil
+              className="pointer-events-none absolute -right-40 -top-24 hidden h-[460px] w-[460px] text-line/70 xl:block"
+              rings={18}
+            />
             <div className="flex flex-wrap items-start gap-4">
               <div className="flex-1 basis-80">
-                <h1 className="text-xl font-semibold tracking-tight">
+                <h1 className="display text-[clamp(26px,3vw,34px)]">
                   {label(record.token, record.tokenId)}
                 </h1>
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-paper-2">
@@ -410,7 +434,7 @@ export default function Register() {
               {record.state === "free" ? (
                 <>
                   <Fact term="standing">
-                    {logs.length ? "Registered before, released since" : "Never registered here"}
+                    {logs.length ? "registered before, released since" : "never registered here"}
                   </Fact>
                   <Fact term="source chain">
                     {source.name}, chain key {chain.chainKey}
@@ -499,6 +523,20 @@ export default function Register() {
                     </span>
                   )}
                 </div>
+              </div>
+            )}
+
+            {record.state === "free" && (
+              <div className="mt-6 border border-open/35 bg-open-dim/15 p-5">
+                <div className="font-mono text-[13px] text-open">nothing on file against this asset</div>
+                <p className="mt-2 max-w-[76ch] text-[13.5px] leading-relaxed text-paper-2">
+                  No allowlisted protocol has a lien recorded here.{" "}
+                  {logs.length > 0
+                    ? "It carried one before and the lender released it, which is the history below."
+                    : "It has never been registered here at all."}{" "}
+                  That is a positive record and a priority rule, not proof of absence: Attestcoin
+                  proves that a transaction happened, never that one did not.
+                </p>
               </div>
             )}
 

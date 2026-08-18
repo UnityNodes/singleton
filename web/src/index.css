@@ -21,6 +21,10 @@
   --color-paper-2: oklch(0.79 0.005 286);     /* 9.4:1 on ink, 6.1:1 on raised */
   --color-paper-3: oklch(0.66 0.006 286);     /* 5.9:1 on ink, never on raised */
 
+  --color-live: oklch(0.8 0.14 82);
+  --color-live-dim: oklch(0.44 0.09 82);
+  --color-open: oklch(0.78 0.14 158);
+  --color-open-dim: oklch(0.4 0.08 158);
   --color-refused: oklch(0.665 0.175 25);
   --color-refused-dim: oklch(0.42 0.11 25);
   --color-settled: oklch(0.76 0.12 162);
