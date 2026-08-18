@@ -10,3 +10,7 @@ broadcast/
 
 # playwright artefacts
 .playwright-mcp/
+
+# web app
+web/node_modules/
+web/dist/

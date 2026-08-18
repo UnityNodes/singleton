@@ -53,7 +53,7 @@ auction rather than a repayment. Twelve proofs, every hash in
 
 | | |
 |---|---|
-| The register, live | **https://singleton.unitynodes.com** |
+| The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
 | Registry, CC3 testnet | `0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
@@ -148,7 +148,7 @@ src/            registry and interfaces
   adapters/     reference adapter for a foreign event schema
   vendor/       EvmV1Decoder, vendored from @gluwa/usc-contracts
 worker/         off-chain relay: proofs, lifecycle, admin
-ui/             the register as a page, one file, no dependencies
+web/            the site: landing page and the register, React and Vite
 gates/          the probes that cleared the technical unknowns
   src/          probe contracts, run inside a constructor via eth_call
   run/          scripts that execute them against live CC3
