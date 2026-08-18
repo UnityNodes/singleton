@@ -1,7 +1,7 @@
 # Verification log
 
-Everything here was measured against live CC3 testnet on 2026-08-17, not read
-from documentation. Where a documented claim and a measurement disagree, the
+Everything here was measured against live CC3 testnet on 2026-08-17 and
+2026-08-18, not read from documentation. Where a documented claim and a measurement disagree, the
 measurement is recorded and the disagreement is named.
 
 Network: CC3 testnet, chainId 102031, RPC `https://rpc.cc3-testnet.creditcoin.network`.
@@ -200,12 +200,16 @@ After both, `ownerOf(42)` on Sepolia is still the borrower. The two liens exist
 because neither lender took custody, which is what makes the collision possible
 at all.
 
-**Finding to settle in W2.** `registerPledge` emits `DoublePledge` and then
-reverts in the same branch, so the event never survives: a revert discards logs.
-The refusal is visible only as a failed transaction and an error selector. Either
-drop the unreachable emit, or record the attempt through a path that does not
-revert, which would also give lenders a queryable history of attempted double
-pledges. That is a product decision, not a patch.
+**Finding, settled in W2.** `registerPledge` emitted `DoublePledge` and then
+reverted in the same branch, so the event never survived: a revert discards its
+own logs. The refusal was visible only as a failed transaction and an error
+selector.
+
+Resolved by splitting the two powers. `registerPledge` still reverts, because an
+integrating protocol needs the transaction to fail. The evidence is kept by
+`reportCollision`, which proves the same losing pledge, records it against the
+asset, and leaves the incumbent alone. Different consumers, two entry points,
+rather than one compromise.
 
 ---
 
