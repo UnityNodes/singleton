@@ -45,18 +45,18 @@ the reason the product has no equivalent anywhere else.
 The registry is live on CC3 testnet and has taken one asset through its whole
 life against two unrelated lenders on Sepolia: pledged, a second pledge refused
 live, the refusal kept on file, settled, released, and re-pledged by the lender
-that lost the first race. Six proofs, every hash in
+that lost the first race. Four more proofs read two real protocols on Ethereum
+mainnet, which have never heard of it. Ten proofs, every hash in
 [docs/VERIFICATION.md](docs/VERIFICATION.md), replayable with
 `node worker/demo.mjs`.
 
 | | |
 |---|---|
-| Registry, CC3 testnet | `0x24089da935030bDB09Fb7a47adF68c51661cbeF0` |
+| Registry, CC3 testnet | `0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
-| NFTfi adapter, CC3 testnet | `0x6232F2f452ebaC37d0265C4D88A40238D45C37Fe` |
-| Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D`, unmodified |
+| Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
 
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
@@ -120,12 +120,19 @@ instanceId)`. See [src/adapters](src/adapters) and caveat 9: the allowlist
 decides which logs are read, an adapter decides what they mean, and those are
 different powers.
 
-This is not hypothetical. A real NFTfi loan on Ethereum mainnet, taken in block
-25,506,517 and repaid in block 25,717,460, is registered and released in the
-Creditcoin registry through
-[`NftfiV3Adapter`](src/adapters/NftfiV3Adapter.sol). Nothing was deployed on
-mainnet and nothing was asked of NFTfi. Creditcoin attests Ethereum, so an
-existing loan can simply be read.
+This is not hypothetical. Two real protocols on Ethereum mainnet are read this
+way, and the two could hardly be less alike.
+
+[NFTfi v3](src/adapters/NftfiV3Adapter.sol) keeps the collateral inside a struct
+in the log data and has no settlement step, so repayment maps to release and a
+settlement proof is refused rather than approximated.
+[Blur's Blend](src/adapters/BlendAdapter.sol) indexes nothing at all, and its
+`Repay` names no token id, so the adapter returns a zero token and the registry
+resolves the lien through the instance id it recorded when the loan was opened,
+under that emitter and no other.
+
+Nothing was deployed on mainnet and nothing was asked of either protocol.
+Creditcoin attests Ethereum, so an existing loan can simply be read.
 
 ---
 

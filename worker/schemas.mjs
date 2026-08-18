@@ -23,6 +23,11 @@ const NFTFI_V3_ABI = [
   "event LoanRepaid(uint32 indexed loanId,address indexed borrower,address indexed lender,uint256 loanPrincipalAmount,uint256 nftCollateralId,uint256 amountPaidToLender,uint256 adminFee,address nftCollateralContract,address loanERC20Denomination)",
 ];
 
+const BLEND_ABI = [
+  "event LoanOfferTaken(bytes32 offerHash,uint256 lienId,address collection,address lender,address borrower,uint256 loanAmount,uint256 rate,uint256 tokenId,uint256 auctionDuration)",
+  "event Repay(uint256 lienId,address collection)",
+];
+
 export const SCHEMAS = [
   {
     name: "singleton",
@@ -59,6 +64,31 @@ export const SCHEMAS = [
         borrower: parsed.args.borrower,
         amount: parsed.args.loanPrincipalAmount,
         instanceId: ethers.zeroPadValue(ethers.toBeHex(parsed.args.loanId), 32),
+      };
+    },
+  },
+  {
+    name: "blend",
+    abi: BLEND_ABI,
+    // Blend indexes nothing, and its repayment names no token id, so a release
+    // carries only the lien: the registry resolves it through its own index.
+    events: { pledge: "LoanOfferTaken", collision: "LoanOfferTaken", release: "Repay" },
+    read: (parsed) => {
+      if (parsed.name === "LoanOfferTaken") {
+        return {
+          token: parsed.args.collection,
+          tokenId: parsed.args.tokenId,
+          borrower: parsed.args.borrower,
+          amount: parsed.args.loanAmount,
+          instanceId: ethers.zeroPadValue(ethers.toBeHex(parsed.args.lienId), 32),
+        };
+      }
+      return {
+        token: ethers.ZeroAddress,
+        tokenId: 0n,
+        borrower: ethers.ZeroAddress,
+        amount: 0n,
+        instanceId: ethers.zeroPadValue(ethers.toBeHex(parsed.args.lienId), 32),
       };
     },
   },

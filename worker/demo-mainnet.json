@@ -1,0 +1,37 @@
+{
+  "asset": "the two mainnet protocols",
+  "steps": [
+    {
+      "operation": "pledge",
+      "tx": "0xa089fd2817f18f845ce04b550edab846badc6ecacfa7db8808b09f4be89b6c36",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "a real NFTfi loan on Ethereum mainnet, read through an adapter",
+      "expect": "recorded"
+    },
+    {
+      "operation": "release",
+      "tx": "0x34632ee55588a9968385a0c8646700ed31cfc6d7e40430752db29b77e0ab4960",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "and its real repayment, two hundred thousand blocks later",
+      "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0xb1de5da8a64d1f0791799712c2fd9378a483e68a5c83ccaa71801692cb7acb14",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "a real Blend lien on mainnet, a schema that indexes nothing",
+      "expect": "recorded"
+    },
+    {
+      "operation": "release",
+      "tx": "0x568aae92f2a4052fc516d0e2260cc0d157f35fcf22646a7e1de3c2906dfe21e4",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "its repayment names no token id and closes the lien anyway",
+      "expect": "recorded"
+    }
+  ]
+}

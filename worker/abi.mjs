@@ -6,6 +6,7 @@ export const REGISTRY_ABI = [
   "function collisionCount(bytes32 assetKey) view returns (uint256)",
   "function collisionAt(bytes32 assetKey,uint256 index) view returns ((address emitter,address borrower,uint256 amount,bytes32 instanceId,uint64 chainKey,uint64 sourceHeight,uint64 reportedAt))",
   "function certificateOf(bytes32 assetKey) view returns (address)",
+  "function assetOfInstance(uint64 chainKey,address emitter,bytes32 instanceId) view returns (bytes32)",
   "function ownerOf(uint256 tokenId) view returns (address)",
   "function setAdapter(uint64 chainKey,address emitter,address adapter)",
   "function adapterOf(uint64,address) view returns (address)",

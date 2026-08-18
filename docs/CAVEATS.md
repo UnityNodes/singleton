@@ -107,12 +107,23 @@ It stays thin, it is pure, and it is named for what it is.
 
 Two limits are worth naming with it.
 
-An adapter can only carry what the protocol actually emits. Blur's Blend, for
-example, publishes the token id when a loan is taken and omits it when the loan
-is repaid, so a release cannot be derived from that event at all. The interface
-allows an adapter to declare a transition unsupported, and the registry then
-refuses it with `TransitionUnsupported` rather than guessing. A refused
-transition is a smaller harm than a wrong one.
+An adapter can only carry what the protocol actually emits, and protocols emit
+less than one would like. Blur's Blend publishes the token id when a loan is
+taken and omits it when the loan is repaid; NFTfi has no settlement step at all.
+
+Two answers, depending on which is missing. Where a transition does not exist,
+the adapter declares it unsupported and the registry refuses it with
+`TransitionUnsupported` rather than mapping some other event onto it. Where the
+transition exists but does not name the collateral, the adapter returns a zero
+token and the registry resolves the lien through the instance id it recorded
+when the loan was opened, keyed by that emitter and no other. An opening pledge
+never gets that fallback: a lien has to name what it claims.
+
+Seizure is the remaining gap. When a Blend auction fails, the lender takes the
+token through `Seize`, which ends the lien as surely as repayment does, but an
+adapter may declare only one release event. A seized lien stays on file until
+somebody proves otherwise. For a registry whose job is to be slow to release a
+claim that is the conservative direction, and it is still a gap.
 
 An adapter is also a per protocol integration written by us, not by the
 protocol. It is the one place where being wrong looks like being right, which is

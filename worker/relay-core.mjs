@@ -50,9 +50,24 @@ export async function waitForFinality({ cc3, chainKey, height, depth, pollSecond
   }
 }
 
-export async function fetchProof(chainKey, txHash) {
-  const builder = new proofProvider.service.ProofBuilder(chainKey, PROVER_URL);
-  const result = await builder.getProof(txHash);
+/**
+ * The SDK defaults to a ten second timeout, which is fine for a small Sepolia
+ * transaction and not fine for a mainnet one: an old, twelve kilobyte payload
+ * with eighty continuity roots takes the prover longer than that to assemble.
+ * A short timeout there looks like a refusal and is not one, so this waits
+ * properly and retries a couple of times before believing the answer.
+ */
+export async function fetchProof(chainKey, txHash, { attempts = 3, log } = {}) {
+  const timeout = Number(process.env.PROOF_TIMEOUT_MS ?? 120_000);
+  const builder = new proofProvider.service.ProofBuilder(chainKey, PROVER_URL, timeout);
+
+  let result;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    result = await builder.getProof(txHash);
+    if (result.success && result.data) break;
+    log?.(`  prover attempt ${attempt} failed: ${result.error ?? "unknown error"}`);
+    if (attempt < attempts) await sleep(5000);
+  }
   if (!result.success || !result.data) {
     throw new Error(`prover refused: ${result.error ?? "unknown error"}`);
   }
@@ -122,7 +137,7 @@ export async function relay({
 
   await waitForFinality({ cc3, chainKey, height: receipt.blockNumber, depth, log });
 
-  const { raw, proof } = await fetchProof(chainKey, txHash);
+  const { raw, proof } = await fetchProof(chainKey, txHash, { log });
   log("\nproof");
   log(`  headerNumber      ${raw.headerNumber}`);
   log(`  txIndex           ${raw.txIndex}`);
@@ -130,7 +145,19 @@ export async function relay({
   log(`  merkle siblings   ${raw.merkleProof.siblings.length}`);
   log(`  continuity roots  ${raw.continuityProof.roots.length}`);
 
-  const assetKey = await registry.assetKeyOf(chainKey, fields.token, fields.tokenId);
+  /**
+   * A lifecycle event that does not name the collateral is resolved the same way
+   * the registry resolves it: through the lien this emitter has open under that
+   * instance id.
+   */
+  const assetKey =
+    fields.token === ethers.ZeroAddress
+      ? await registry.assetOfInstance(chainKey, sourceLog.address, fields.instanceId)
+      : await registry.assetKeyOf(chainKey, fields.token, fields.tokenId);
+
+  if (assetKey === ethers.ZeroHash) {
+    throw new Error(`no open lien for ${sourceLog.address} instance ${fields.instanceId}`);
+  }
   log(`\nassetKey  ${assetKey}`);
 
   let refusal = null;

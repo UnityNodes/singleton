@@ -121,6 +121,18 @@ contract SingletonRegistry {
     mapping(bytes32 => Record) private _records;
     mapping(bytes32 => Collision[]) private _collisions;
 
+    /**
+     * Which asset an emitter's open lien refers to, keyed by chain, emitter and
+     * instance id.
+     *
+     * Some protocols name the collateral when a loan is taken and stop naming it
+     * afterwards: Blur's Blend publishes `Repay(lienId, collection)` and no token
+     * id at all. Without this index the registry could open such a lien and never
+     * close it. With it, a release that carries only the instance resolves to the
+     * asset the same emitter opened under that instance, and nothing else.
+     */
+    mapping(bytes32 => bytes32) private _assetByInstance;
+
     /// One proof, one use, per operation. Keyed by chain, block, transaction
     /// index and the operation itself, so reporting a collision does not spend
     /// the proof that would later register the same pledge legitimately.
@@ -179,6 +191,9 @@ contract SingletonRegistry {
     error WrongInstance(bytes32 expected, bytes32 offered);
     error NoCollisionToReport(bytes32 assetKey);
     error TransitionUnsupported(address emitter, uint8 kind);
+    error CollateralNotIdentified();
+    error InstanceAlreadyOpen(address emitter, bytes32 instanceId);
+    error UnknownInstance(address emitter, bytes32 instanceId);
     error Soulbound();
     error NoCertificate(uint256 tokenId);
 
@@ -221,10 +236,17 @@ contract SingletonRegistry {
         _burnNullifier(p, KIND_PLEDGE);
         SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
 
+        if (pledge.token == address(0)) revert CollateralNotIdentified();
         assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
         Record storage r = _records[assetKey];
         if (r.state != AssetState.FREE) revert AssetNotFree(assetKey, r.emitter);
+
+        bytes32 instanceKey = _instanceKey(p.chainKey, pledge.emitter, pledge.instanceId);
+        if (_assetByInstance[instanceKey] != bytes32(0)) {
+            revert InstanceAlreadyOpen(pledge.emitter, pledge.instanceId);
+        }
+        _assetByInstance[instanceKey] = assetKey;
 
         _records[assetKey] = Record({
             state: AssetState.PLEDGED,
@@ -290,7 +312,7 @@ contract SingletonRegistry {
         _burnNullifier(p, KIND_SETTLE);
         SourceEvent memory ev = _readSourceEvent(p, KIND_SETTLE);
 
-        assetKey = _assetKey(p.chainKey, ev.token, ev.tokenId);
+        assetKey = _resolveAsset(p.chainKey, ev);
         Record storage r = _records[assetKey];
 
         if (r.state != AssetState.PLEDGED) revert AssetNotPledged(assetKey);
@@ -313,7 +335,7 @@ contract SingletonRegistry {
         _burnNullifier(p, KIND_RELEASE);
         SourceEvent memory ev = _readSourceEvent(p, KIND_RELEASE);
 
-        assetKey = _assetKey(p.chainKey, ev.token, ev.tokenId);
+        assetKey = _resolveAsset(p.chainKey, ev);
         Record storage r = _records[assetKey];
 
         if (r.state == AssetState.FREE) revert AssetNotPledged(assetKey);
@@ -321,6 +343,7 @@ contract SingletonRegistry {
         if (r.instanceId != ev.instanceId) revert WrongInstance(r.instanceId, ev.instanceId);
 
         _revokeCertificate(uint256(assetKey));
+        delete _assetByInstance[_instanceKey(p.chainKey, ev.emitter, ev.instanceId)];
         delete _records[assetKey];
 
         emit LienReleased(assetKey, ev.emitter, ev.instanceId);
@@ -338,6 +361,15 @@ contract SingletonRegistry {
 
     function collisionAt(bytes32 assetKey, uint256 index) external view returns (Collision memory) {
         return _collisions[assetKey][index];
+    }
+
+    /// The asset an emitter's open lien refers to, or zero if it has none.
+    function assetOfInstance(uint64 chainKey, address emitter, bytes32 instanceId)
+        external
+        view
+        returns (bytes32)
+    {
+        return _assetByInstance[_instanceKey(chainKey, emitter, instanceId)];
     }
 
     function assetKeyOf(uint64 chainKey, address token, uint256 tokenId)
@@ -514,6 +546,34 @@ contract SingletonRegistry {
         bytes32 nullifier = keccak256(abi.encode(domain, p.chainKey, p.height, txIndex));
         if (consumed[nullifier]) revert ProofAlreadyConsumed(nullifier);
         consumed[nullifier] = true;
+    }
+
+    /**
+     * Finds the asset a lifecycle event refers to.
+     *
+     * An adapter that cannot name the collateral in a later event returns a zero
+     * token, and the lien is then found through the instance index. The lookup is
+     * keyed by the emitter as well as the instance, so one protocol can never
+     * resolve into another protocol's lien.
+     */
+    function _resolveAsset(uint64 chainKey, SourceEvent memory ev)
+        private
+        view
+        returns (bytes32)
+    {
+        if (ev.token != address(0)) return _assetKey(chainKey, ev.token, ev.tokenId);
+
+        bytes32 assetKey = _assetByInstance[_instanceKey(chainKey, ev.emitter, ev.instanceId)];
+        if (assetKey == bytes32(0)) revert UnknownInstance(ev.emitter, ev.instanceId);
+        return assetKey;
+    }
+
+    function _instanceKey(uint64 chainKey, address emitter, bytes32 instanceId)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(chainKey, emitter, instanceId));
     }
 
     function _assetKey(uint64 chainKey, address token, uint256 tokenId)

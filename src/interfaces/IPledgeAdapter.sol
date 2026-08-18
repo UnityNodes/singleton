@@ -24,7 +24,16 @@ interface IPledgeAdapter {
         view
         returns (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig);
 
-    /// Reads one native log into the registry's tuple. Must not depend on state.
+    /**
+     * Reads one native log into the registry's tuple. Must not depend on state.
+     *
+     * A protocol that names its collateral when the loan is taken and stops
+     * naming it afterwards is common: Blur's Blend publishes
+     * `Repay(lienId, collection)` with no token id. For such an event the
+     * adapter returns a zero `collateralToken`, which tells the registry to find
+     * the lien through the instance id it already recorded for this emitter. A
+     * pledge may never do that: an opening lien has to name what it claims.
+     */
     function translate(uint8 kind, EvmV1Decoder.LogEntry calldata log)
         external
         view
