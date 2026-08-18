@@ -473,9 +473,8 @@ contract SingletonRegistry {
         } else {
             (bytes32 pledgeSig, bytes32 settleSig, bytes32 releaseSig) =
                 IPledgeAdapter(adapter).eventSignatures();
-            signature = kind == KIND_PLEDGE
-                ? pledgeSig
-                : (kind == KIND_SETTLE ? settleSig : releaseSig);
+            signature =
+                kind == KIND_PLEDGE ? pledgeSig : (kind == KIND_SETTLE ? settleSig : releaseSig);
             if (signature == bytes32(0)) revert TransitionUnsupported(emitter, kind);
         }
     }

@@ -18,3 +18,9 @@ libraries = ["src/vendor/EvmV1Decoder.sol:EvmV1Decoder:0x731c345d79Fb8BbDC541f9D
 [profile.gates]
 src = "gates/src"
 libraries = ["src/vendor/EvmV1Decoder.sol:EvmV1Decoder:0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f"]
+
+# Matches the style the sources are written in. Vendored code is excluded: it is
+# kept byte for byte as published so it can be diffed against upstream.
+[fmt]
+line_length = 100
+ignore = ["src/vendor/EvmV1Decoder.sol"]

@@ -61,8 +61,13 @@ contract AtlasVault {
 
         locks += 1;
         positionId = keccak256(abi.encodePacked("atlas", address(this), locks));
-        positionOf[positionId] =
-            Position({nftContract: nftContract, nftId: nftId, owner: msg.sender, principal: principal, open: true});
+        positionOf[positionId] = Position({
+            nftContract: nftContract,
+            nftId: nftId,
+            owner: msg.sender,
+            principal: principal,
+            open: true
+        });
 
         emit CollateralLocked(positionId, nftContract, msg.sender, nftId, principal);
     }

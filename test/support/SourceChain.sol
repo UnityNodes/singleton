@@ -68,8 +68,9 @@ abstract contract SourceChain is Test {
         );
 
         EvmV1Decoder.LogEntryTuple[] memory logs = new EvmV1Decoder.LogEntryTuple[](1);
-        logs[0] =
-            EvmV1Decoder.LogEntryTuple({address_: entry.emitter, topics: entry.topics, data: entry.data});
+        logs[0] = EvmV1Decoder.LogEntryTuple({
+            address_: entry.emitter, topics: entry.topics, data: entry.data
+        });
 
         bytes memory receipt = abi.encode(receiptStatus, uint64(90000), logs, new bytes(256));
 
@@ -104,8 +105,7 @@ abstract contract SourceChain is Test {
             encodedTransaction: encoded,
             merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),
             continuityProof: IBlockProver.ContinuityProof({
-                lowerEndpointDigest: bytes32(0),
-                roots: new bytes32[](0)
+                lowerEndpointDigest: bytes32(0), roots: new bytes32[](0)
             })
         });
     }

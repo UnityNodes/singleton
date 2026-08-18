@@ -55,8 +55,9 @@ contract SingletonRegistryTest is Test {
         bytes32 instanceId,
         uint8 receiptStatus
     ) internal pure returns (bytes memory) {
-        bytes memory common =
-            abi.encode(uint64(1), uint64(200000), borrower, false, emitter, uint256(0), bytes(""));
+        bytes memory common = abi.encode(
+            uint64(1), uint64(200000), borrower, false, emitter, uint256(0), bytes("")
+        );
 
         EvmV1Decoder.AccessListEntryBytes32[] memory accessList =
             new EvmV1Decoder.AccessListEntryBytes32[](0);
@@ -72,9 +73,7 @@ contract SingletonRegistryTest is Test {
 
         EvmV1Decoder.LogEntryTuple[] memory logs = new EvmV1Decoder.LogEntryTuple[](1);
         logs[0] = EvmV1Decoder.LogEntryTuple({
-            address_: emitter,
-            topics: topics,
-            data: abi.encode(amount, instanceId)
+            address_: emitter, topics: topics, data: abi.encode(amount, instanceId)
         });
 
         bytes memory receipt = abi.encode(receiptStatus, uint64(90000), logs, new bytes(256));
@@ -104,8 +103,7 @@ contract SingletonRegistryTest is Test {
             encodedTransaction: encodedTx,
             merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),
             continuityProof: IBlockProver.ContinuityProof({
-                lowerEndpointDigest: bytes32(0),
-                roots: new bytes32[](0)
+                lowerEndpointDigest: bytes32(0), roots: new bytes32[](0)
             })
         });
     }
@@ -157,7 +155,8 @@ contract SingletonRegistryTest is Test {
      * is refused.
      */
     function test_secondPledgeFromAnUnrelatedLenderIsRefused() public {
-        bytes memory first = _encodePledgeTx(LENDER_A, COLLATERAL, TOKEN_ID, BORROWER, 5e18, "i1", 1);
+        bytes memory first =
+            _encodePledgeTx(LENDER_A, COLLATERAL, TOKEN_ID, BORROWER, 5e18, "i1", 1);
         prover.attest(ETH, _final(), first);
         bytes32 key = registry.registerPledge(_proof(ETH, _final(), first, bytes32(uint256(0xA))));
 

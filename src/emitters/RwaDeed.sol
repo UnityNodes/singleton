@@ -76,7 +76,9 @@ contract RwaDeed {
         address owner = ownerOf(tokenId);
         if (owner != from) revert WrongFrom();
         if (to == address(0)) revert ZeroRecipient();
-        if (msg.sender != owner && msg.sender != _approved[tokenId] && !_operator[owner][msg.sender]) {
+        if (
+            msg.sender != owner && msg.sender != _approved[tokenId] && !_operator[owner][msg.sender]
+        ) {
             revert NotAuthorised();
         }
         delete _approved[tokenId];

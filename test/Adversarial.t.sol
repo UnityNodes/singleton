@@ -131,7 +131,9 @@ contract AdversarialTest is SourceChain {
         );
         registry.registerPledge(p);
 
-        assertEq(uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE));
+        assertEq(
+            uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE)
+        );
     }
 
     function test_onlyTheAdminMovesTheAllowlist() public {

@@ -52,10 +52,7 @@ contract ChainInfoModel {
     {
         uint64 tip = chainKey == 3 ? ETH_TIP : SEPOLIA_TIP;
         return IChainInfo.HeightHashResult({
-            height: tip,
-            hash: bytes32(uint256(1)),
-            isAttestation: true,
-            exists: true
+            height: tip, hash: bytes32(uint256(1)), isAttestation: true, exists: true
         });
     }
 }
