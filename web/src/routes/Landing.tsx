@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatedBeam } from "@/components/magicui/animated-beam";
+import { Coil } from "@/components/Coil";
 import { cn } from "@/lib/utils";
 import {
   CFG,
@@ -8,7 +8,6 @@ import {
   KNOWN_ASSETS,
   PROTOCOLS,
   SOURCES,
-  ether,
   nameOf,
   num,
   readAsset,
@@ -19,262 +18,245 @@ import {
   type Record_,
 } from "@/lib/registry";
 
-/** The three transactions the collision is actually made of. */
-const SEQUENCE = [
+/** The collision, as it actually happened, with the hashes to prove it. */
+const ACTS = [
   {
-    lead: "Harbor Credit lends first",
-    body: "1,000 against deed 42 on Sepolia. The lien is proven to Creditcoin and the asset is claimed.",
+    party: "Harbor Credit",
+    line: "lends 1,000 against deed 42",
+    note: "Sepolia block 11,510,076. The proof lands and the asset is claimed.",
     tx: "0xc10d2adecd8f6c55b64cc7eab7d7ac0c567ea78ed6b80713157d6ad61fabbd6e",
-    where: "cc3" as const,
+    on: "cc3" as const,
   },
   {
-    lead: "Meridian Credit lends against the same deed",
-    body: "A different contract, no shared code, no shared storage, no knowledge of Harbor. On chain this transaction succeeds.",
+    party: "Meridian Credit",
+    line: "lends 750 against the same deed",
+    note: "A different contract. No shared code, no shared storage, no knowledge of Harbor.",
     tx: "0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b",
-    where: "sepolia" as const,
+    on: "sepolia" as const,
   },
   {
-    lead: "The register refuses the second claim",
-    body: "The proof is good, the asset is not free, and the attempt is kept on file for the next lender to see.",
+    party: "Singleton",
+    line: "refuses the second claim",
+    note: "The proof is good. The asset is not free. The attempt stays on file for the next lender.",
     tx: "0xa9331fe3beb0633ddd69be208f35b65156574b142aff6cdd32f5067ae6dce908",
-    where: "cc3" as const,
+    on: "cc3" as const,
     refused: true,
   },
 ];
 
-function LiveRecord({ record, chains }: { record: Record_ | null; chains: Record<number, ChainFacts> }) {
-  if (!record) {
-    return (
-      <div className="rounded-lg border border-line bg-surface p-6">
-        <div className="h-3 w-28 animate-pulse rounded bg-raised" />
-        <div className="mt-4 h-6 w-52 animate-pulse rounded bg-raised" />
-        <div className="mt-6 space-y-3">
-          <div className="h-3 w-full animate-pulse rounded bg-raised" />
-          <div className="h-3 w-4/5 animate-pulse rounded bg-raised" />
-        </div>
-      </div>
-    );
-  }
-
-  const source = SOURCES[record.chainId];
-  const holder = nameOf(PROTOCOLS, record.emitter);
-  const claimed = record.state !== "free";
-
+function Rule({ label }: { label?: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-surface">
-      <div className="flex items-center justify-between border-b border-line px-5 py-3">
-        <span className="text-[12px] text-paper-2">Live from the register</span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11.5px] font-medium",
-            claimed ? "bg-paper text-ink" : "bg-raised text-paper-2",
-          )}
-        >
-          <span className={cn("size-1.5 rounded-full", claimed ? "bg-ink" : "bg-free")} />
-          {claimed ? "claimed" : "free"}
-        </span>
-      </div>
-
-      <div className="px-5 py-5">
-        <div className="text-[19px] font-medium tracking-tight">
-          {nameOf(COLLATERAL, record.token) ?? short(record.token, 6, 4)} #{record.tokenId}
-        </div>
-        <div className="mt-1 font-mono text-[12px] text-paper-3">
-          key {short(record.assetKey, 10, 8)}
-        </div>
-
-        <dl className="mt-5 space-y-2.5 text-[13px]">
-          {claimed && (
-            <>
-              <div className="flex justify-between gap-4">
-                <dt className="text-paper-2">Lien held by</dt>
-                <dd>{holder ?? short(record.emitter, 6, 4)}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-paper-2">Principal</dt>
-                <dd className="tabular">{ether(record.amount)}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-paper-2">Proven from</dt>
-                <dd className="tabular">
-                  {source.name} block {num(record.sourceHeight)}
-                </dd>
-              </div>
-            </>
-          )}
-          <div className="flex justify-between gap-4">
-            <dt className="text-paper-2">Pledges refused</dt>
-            <dd className={cn("tabular", record.collisions.length && "text-refused")}>
-              {record.collisions.length}
-            </dd>
-          </div>
-        </dl>
-      </div>
-
-      <Link
-        to="/register"
-        className="flex items-center justify-between border-t border-line px-5 py-3 text-[13px] text-paper-2 transition-colors hover:bg-raised hover:text-paper"
-      >
-        Open the full record
-        <span aria-hidden>&rarr;</span>
-      </Link>
-
-      {chains[record.chainId] && (
-        <div className="border-t border-line px-5 py-2.5 text-[11.5px] text-paper-3">
-          {SOURCES[record.chainId].name} attested to{" "}
-          <span className="tabular">{num(chains[record.chainId].tip)}</span>, accepted at{" "}
-          {chains[record.chainId].depth} blocks deep
-        </div>
-      )}
+    <div className="flex items-center gap-4">
+      <div className="h-px flex-1 bg-line" />
+      {label && <span className="label shrink-0">{label}</span>}
+      <div className="h-px w-10 bg-line" />
     </div>
   );
 }
 
 export default function Landing() {
-  const container = useRef<HTMLDivElement>(null);
-  const one = useRef<HTMLDivElement>(null);
-  const two = useRef<HTMLDivElement>(null);
-  const three = useRef<HTMLDivElement>(null);
-
   const [chains, setChains] = useState<Record<number, ChainFacts>>({});
   const [record, setRecord] = useState<Record_ | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let dead = false;
     (async () => {
       try {
         const facts = await readChains();
-        if (cancelled) return;
+        if (dead) return;
         setChains(facts);
-        const demo = KNOWN_ASSETS[0];
-        const next = await readAsset(facts[demo.chainId], demo.chainId, demo.token, demo.tokenId);
-        if (!cancelled) setRecord(next);
+        const a = KNOWN_ASSETS[0];
+        const r = await readAsset(facts[a.chainId], a.chainId, a.token, a.tokenId);
+        if (!dead) setRecord(r);
       } catch {
-        /* the page still reads without live data */
+        /* the page reads fine without live data */
       }
     })();
     return () => {
-      cancelled = true;
+      dead = true;
     };
   }, []);
 
+  const claimed = record && record.state !== "free";
+
   return (
     <div className="min-h-full bg-ink">
-      <header className="sticky top-0 z-30 border-b border-line/70 bg-ink/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-5">
-          <Link to="/" className="h-5 shrink-0" aria-label="Singleton, home">
+      {/* ----------------------------------------------------------- header */}
+      <header className="sticky top-0 z-30 border-b border-line bg-ink/90 backdrop-blur">
+        <div className="mx-auto flex h-[68px] max-w-[1240px] items-center gap-8 px-6">
+          <Link to="/" className="h-6 shrink-0" aria-label="Singleton, home">
             <img src="/brand/singleton-wordmark-white.svg" alt="Singleton" className="wordmark" />
           </Link>
-          <nav className="ml-auto flex items-center gap-1 text-[13px]">
+
+          <span className="label hidden md:block">a register of liens on creditcoin</span>
+
+          <nav className="ml-auto flex items-center gap-6">
             <a
-              className="hidden rounded-md px-3 py-2 text-paper-2 transition-colors hover:text-paper sm:block"
+              className="label hidden transition-colors hover:text-paper sm:block"
               href="https://github.com/UnityNodes/singleton"
               target="_blank"
               rel="noreferrer"
             >
-              Code
+              source
             </a>
             <a
-              className="hidden rounded-md px-3 py-2 text-paper-2 transition-colors hover:text-paper sm:block"
+              className="label hidden transition-colors hover:text-paper sm:block"
               href={`${CFG.explorer}/address/${CFG.registry}`}
               target="_blank"
               rel="noreferrer"
             >
-              On chain
+              on chain
             </a>
             <Link
               to="/register"
-              className="rounded-md bg-paper px-4 py-2 font-medium text-ink transition-opacity hover:opacity-90"
+              className="rounded-sm bg-paper px-4 py-2 text-[13px] font-semibold text-ink transition-opacity hover:opacity-90"
             >
-              Open the register
+              open the register
             </Link>
           </nav>
         </div>
       </header>
 
       {/* ------------------------------------------------------------- hero */}
-      <section className="border-b border-line/70">
-        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-20 lg:py-24">
-          <div>
-            <h1 className="text-balance text-4xl font-semibold leading-[1.06] tracking-tight sm:text-[56px]">
-              An asset can be financed once.
-            </h1>
-            <p className="mt-6 max-w-xl text-pretty text-[15.5px] leading-relaxed text-paper-2">
-              Two lending protocols that have never heard of each other will each lend against the
-              same collateral, because neither can see what the other recorded. Singleton witnesses
-              their pledges from the outside, without asking them for anything, and refuses the
-              second claim.
-            </p>
+      <section className="relative overflow-hidden border-b border-line">
+        <Coil className="absolute -right-[14%] top-1/2 hidden h-[820px] w-[820px] -translate-y-1/2 text-line-2/90 lg:block xl:-right-[8%]" />
 
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link
-                to="/register"
-                className="rounded-md bg-paper px-5 py-2.5 text-[14px] font-medium text-ink transition-opacity hover:opacity-90"
-              >
-                Check an asset
-              </Link>
-              <a
-                href="https://github.com/UnityNodes/singleton"
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-md border border-line px-5 py-2.5 text-[14px] text-paper transition-colors hover:border-line-2 hover:bg-surface"
-              >
-                Read the contracts
-              </a>
-            </div>
+        <div className="relative mx-auto max-w-[1240px] px-6 pb-12 pt-20 lg:pb-16 lg:pt-24">
+          <h1 className="display max-w-[13ch] text-[clamp(46px,8.4vw,92px)]">
+            one asset,
+            <br />
+            one lien.
+          </h1>
 
-            <p className="mt-8 text-[13px] text-paper-3">
-              Live on Creditcoin testnet, reading Ethereum and Sepolia. Four lending protocols are
-              read unmodified, two of them real ones on mainnet.
-            </p>
+          <p className="mt-7 max-w-[54ch] text-[16px] leading-relaxed text-paper-2">
+            Two lending protocols that never heard of each other will each lend against the same
+            collateral, because neither can see what the other recorded. Singleton witnesses their
+            pledges from the outside, asks them for nothing, and refuses the second claim.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <Link
+              to="/register"
+              className="rounded-sm bg-paper px-6 py-3 text-[14px] font-semibold text-ink transition-opacity hover:opacity-90"
+            >
+              check an asset
+            </Link>
+            <a
+              href="https://github.com/UnityNodes/singleton"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-sm border border-line-2 px-6 py-3 text-[14px] font-medium transition-colors hover:bg-surface"
+            >
+              read the contracts
+            </a>
           </div>
 
-          <LiveRecord record={record} chains={chains} />
+          {/* the live record, sitting at the centre of the coil */}
+          <div className="mt-14 grid gap-px border border-line bg-line lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+            {[
+              {
+                k: "asset on file",
+                v: record ? `${nameOf(COLLATERAL, record.token) ?? "asset"} #${record.tokenId}` : null,
+              },
+              {
+                k: "lien held by",
+                v: claimed ? (nameOf(PROTOCOLS, record!.emitter) ?? short(record!.emitter, 6, 4)) : "none",
+              },
+              { k: "pledges refused", v: record ? String(record.collisions.length) : null, red: !!record?.collisions.length },
+              {
+                k: "proven from",
+                v: claimed
+                  ? `${SOURCES[record!.chainId].name} block ${num(record!.sourceHeight)}`
+                  : "nothing on file",
+              },
+            ].map((cell) => (
+              <div key={cell.k} className="bg-ink px-5 py-4">
+                <div className="label">{cell.k}</div>
+                <div
+                  className={cn(
+                    "mt-1.5 font-mono text-[15px]",
+                    cell.red && "text-refused",
+                    !cell.v && "text-paper-3",
+                  )}
+                >
+                  {cell.v ?? "reading the chain"}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-2">
+            {Object.entries(chains).map(([id, f]) => (
+              <span key={id} className="label">
+                {SOURCES[Number(id)].name.toLowerCase()} attested to{" "}
+                <span className="tabular text-paper-2">{num(f.tip)}</span>, accepted {f.depth} deep
+              </span>
+            ))}
+            {record && (
+              <Link to="/register" className="label ml-auto transition-colors hover:text-paper">
+                open the full record &rarr;
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 
-      {/* ------------------------------------------------------- the moment */}
-      <section className="border-b border-line/70">
-        <div className="mx-auto max-w-6xl px-5 py-16 lg:py-20">
-          <h2 className="max-w-2xl text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-            One asset, two lenders, and a refusal anybody can check
-          </h2>
-          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-paper-2">
-            Every hash below is a real transaction on a public network. Nothing is staged and nothing
-            is integrated: the lenders share no code, and neither knows this register exists.
-          </p>
+      {/* -------------------------------------------------------- collision */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
+          <Rule label="what happened, on public networks" />
 
-          <ol className="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3">
-            {SEQUENCE.map((step, i) => (
-              <li key={step.tx} className="flex flex-col bg-ink p-6">
-                <div
-                  className={cn(
-                    "flex size-7 items-center justify-center rounded-full text-[12px] font-medium",
-                    step.refused ? "bg-refused-dim/30 text-refused" : "bg-raised text-paper",
-                  )}
-                >
-                  {i + 1}
+          <h2 className="display mt-8 max-w-[18ch] text-[clamp(30px,4.4vw,50px)]">
+            one asset. two lenders. a refusal you can open yourself.
+          </h2>
+
+          <ol className="mt-12">
+            {ACTS.map((act, i) => (
+              <li
+                key={act.tx}
+                className={cn(
+                  "grid gap-x-8 gap-y-3 border-t border-line py-7 md:grid-cols-[64px_minmax(0,1.1fr)_minmax(0,1fr)_auto]",
+                  i === ACTS.length - 1 && "border-b",
+                )}
+              >
+                <span className={cn("label pt-1 tabular", act.refused && "text-refused")}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+
+                <div>
+                  <div
+                    className={cn(
+                      "text-[19px] font-semibold tracking-tight",
+                      act.refused && "text-refused",
+                    )}
+                  >
+                    {act.party}
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-0.5 text-[19px] tracking-tight text-paper-2",
+                      act.refused && "text-refused/90",
+                    )}
+                  >
+                    {act.line}
+                  </div>
                 </div>
-                <h3
-                  className={cn(
-                    "mt-4 text-[15px] font-medium",
-                    step.refused ? "text-refused" : "text-paper",
-                  )}
-                >
-                  {step.lead}
-                </h3>
-                <p className="mt-2 flex-1 text-[13.5px] leading-relaxed text-paper-2">{step.body}</p>
+
+                <p className="max-w-[46ch] self-center text-[13.5px] leading-relaxed text-paper-2">
+                  {act.note}
+                </p>
+
                 <a
-                  className="mt-5 font-mono text-[12px] text-paper-3 transition-colors hover:text-paper"
+                  className="self-center font-mono text-[12px] text-paper-3 transition-colors hover:text-paper"
                   href={
-                    step.where === "sepolia"
-                      ? `https://sepolia.etherscan.io/tx/${step.tx}`
-                      : txUrl(step.tx)
+                    act.on === "sepolia"
+                      ? `https://sepolia.etherscan.io/tx/${act.tx}`
+                      : txUrl(act.tx)
                   }
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {step.tx.slice(0, 14)}…{step.tx.slice(-8)}
+                  {act.tx.slice(0, 10)}…{act.tx.slice(-6)}
                 </a>
               </li>
             ))}
@@ -282,155 +264,111 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------------------------------------------- the mechanism */}
-      <section className="border-b border-line/70">
-        <div className="mx-auto max-w-6xl px-5 py-16 lg:py-20">
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-20">
-            <div>
-              <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-                Why this exists only on Creditcoin
-              </h2>
-              <p className="mt-5 text-[15px] leading-relaxed text-paper-2">
-                An EVM contract cannot read event logs. Not another contract's, and not its own.
-                <code className="mx-1.5 rounded bg-surface px-1.5 py-0.5 font-mono text-[13px] text-paper">
-                  LOG0
-                </code>
-                through
-                <code className="mx-1.5 rounded bg-surface px-1.5 py-0.5 font-mono text-[13px] text-paper">
-                  LOG4
-                </code>
-                are write only, receipts live in a trie execution never touches, and
-                <code className="mx-1.5 rounded bg-surface px-1.5 py-0.5 font-mono text-[13px] text-paper">
-                  BLOCKHASH
-                </code>
-                reaches back 256 blocks.
-              </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-paper-2">
-                So a neutral witness of somebody else's lending is either an off-chain indexer, which
-                is a trusted party and therefore not neutral, or a contract that consumes an
-                inclusion proof of that log. The second exists here, through the BlockProver
-                precompile at <span className="font-mono text-[13.5px] text-paper">{CFG.prover}</span>.
-              </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-paper-2">
-                That is a property of the machine, not a claim about positioning.
-              </p>
-            </div>
-
-            <div ref={container} className="relative flex flex-col justify-center gap-8">
-              {[
-                {
-                  ref: one,
-                  title: "A lender emits its own log",
-                  sub: "NFTfi or Blur Blend on Ethereum. Unmodified, uncooperating, unaware.",
-                },
-                {
-                  ref: two,
-                  title: `BlockProver ${CFG.prover} re-checks the inclusion proof`,
-                  sub: "Inside the transaction that accepts the pledge, and only past the confirmation depth.",
-                },
-                {
-                  ref: three,
-                  title: "Singleton records the lien, or refuses it",
-                  sub: "First to file wins. The second claim reverts and the attempt is kept.",
-                  accent: true,
-                },
-              ].map((node) => (
-                <div
-                  key={node.title}
-                  ref={node.ref}
-                  className={cn(
-                    "z-10 rounded-lg border px-5 py-4",
-                    node.accent ? "border-paper/35 bg-raised" : "border-line bg-surface",
-                  )}
-                >
-                  <div className="text-[13.5px] font-medium">{node.title}</div>
-                  <div className="mt-1 text-[12.5px] leading-snug text-paper-2">{node.sub}</div>
-                </div>
-              ))}
-
-              <AnimatedBeam
-                containerRef={container}
-                fromRef={one}
-                toRef={two}
-                curvature={-26}
-                duration={3}
-                pathColor="#5a5a5e"
-                pathOpacity={0.5}
-                gradientStartColor="#fafafb"
-                gradientStopColor="#86868a"
-              />
-              <AnimatedBeam
-                containerRef={container}
-                fromRef={two}
-                toRef={three}
-                curvature={26}
-                duration={3}
-                delay={0.7}
-                pathColor="#5a5a5e"
-                pathOpacity={0.5}
-                gradientStartColor="#fafafb"
-                gradientStopColor="#86868a"
-              />
-            </div>
+      {/* ------------------------------------------------------- mechanism */}
+      <section className="border-b border-line">
+        <div className="mx-auto grid max-w-[1240px] gap-14 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-20 lg:py-24">
+          <div>
+            <Rule label="why it exists only here" />
+            <h2 className="display mt-8 max-w-[16ch] text-[clamp(28px,3.6vw,44px)]">
+              a contract cannot read a log. not even its own.
+            </h2>
+            <p className="mt-7 max-w-[52ch] text-[15px] leading-relaxed text-paper-2">
+              <span className="font-mono text-[13.5px] text-paper">LOG0</span> through{" "}
+              <span className="font-mono text-[13.5px] text-paper">LOG4</span> are write only,
+              receipts live in a trie execution never touches, and{" "}
+              <span className="font-mono text-[13.5px] text-paper">BLOCKHASH</span> reaches back 256
+              blocks.
+            </p>
+            <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-paper-2">
+              So a neutral witness of somebody else's lending is either an off-chain indexer, which
+              is a trusted party and therefore not neutral, or a contract that consumes an inclusion
+              proof of that log. The second exists here, and nowhere else.
+            </p>
           </div>
+
+          <ol className="self-center">
+            {[
+              {
+                k: "the log",
+                v: "A lender emits its own event. NFTfi and Blur Blend are read on mainnet, unmodified and unaware.",
+              },
+              {
+                k: `blockprover ${CFG.prover}`,
+                v: "The precompile re-checks the inclusion proof inside the transaction that accepts the pledge, past the confirmation depth.",
+              },
+              {
+                k: "the register",
+                v: "First to file is recorded and given a soulbound certificate. Anything second reverts.",
+              },
+            ].map((step, i) => (
+              <li
+                key={step.k}
+                className={cn(
+                  "grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-line py-6",
+                  i === 2 && "border-b",
+                )}
+              >
+                <span className="label tabular pt-1">{String(i + 1).padStart(2, "0")}</span>
+                <div>
+                  <div className="font-mono text-[13px] text-paper">{step.k}</div>
+                  <p className="mt-2 text-[14px] leading-relaxed text-paper-2">{step.v}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      {/* --------------------------------------------------------- the limit */}
+      {/* ----------------------------------------------------------- limits */}
       <section>
-        <div className="mx-auto max-w-6xl px-5 py-16 lg:py-20">
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-20">
+        <div className="mx-auto max-w-[1240px] px-6 py-16 lg:py-24">
+          <div className="grid gap-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-20">
             <div>
-              <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-                What this is not
+              <Rule label="said before anybody has to ask" />
+              <h2 className="display mt-8 max-w-[20ch] text-[clamp(26px,3.2vw,40px)]">
+                a positive record and a priority rule, not proof of absence.
               </h2>
-              <p className="mt-5 text-[15px] leading-relaxed text-paper-2">
-                A positive record and a priority rule, not proof of absence. An asset the register
-                calls free is one nobody has registered here, which is not the same as one nobody has
-                pledged. Attestcoin proves that a transaction happened; it cannot prove that one did
-                not.
-              </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-paper-2">
-                That is exactly how UCC-9 has governed a trillion dollar lien market for fifty years.
-                Prevention comes from priority and from the habit of checking before lending, not
-                from omniscience.
+              <p className="mt-7 max-w-[56ch] text-[15px] leading-relaxed text-paper-2">
+                An asset the register calls free is one nobody has registered here, which is not the
+                same as one nobody has pledged. Attestcoin proves that a transaction happened; it
+                cannot prove that one did not. That is exactly how UCC-9 has governed a trillion
+                dollar lien market for fifty years: prevention comes from priority and from the habit
+                of checking before lending, not from omniscience.
               </p>
             </div>
 
-            <div className="flex flex-col justify-center gap-4 rounded-lg border border-line bg-surface p-8">
-              <img
-                src="/brand/singleton-icon-white.svg"
-                alt=""
-                aria-hidden
-                className="h-9 w-9 opacity-90"
-              />
-              <div className="text-[16px] font-medium">Check before you lend</div>
-              <p className="text-[13.5px] leading-relaxed text-paper-2">
-                The register is read only and needs no wallet. Every number in it is an{" "}
-                <span className="font-mono text-[13px] text-paper">eth_call</span> you can repeat
-                yourself.
-              </p>
-              <Link
-                to="/register"
-                className="mt-1 self-start rounded-md bg-paper px-5 py-2.5 text-[14px] font-medium text-ink transition-opacity hover:opacity-90"
-              >
-                Open the register
-              </Link>
+            <div className="relative flex flex-col justify-center overflow-hidden border border-line bg-surface p-9">
+              <Coil className="absolute -right-24 -top-24 h-72 w-72 text-line-2" rings={16} />
+              <div className="relative">
+                <div className="text-[20px] font-semibold tracking-tight">check before you lend</div>
+                <p className="mt-3 max-w-[38ch] text-[14px] leading-relaxed text-paper-2">
+                  Read only, no wallet, no backend. Every number is an{" "}
+                  <span className="font-mono text-[13px] text-paper">eth_call</span> you can repeat.
+                </p>
+                <Link
+                  to="/register"
+                  className="mt-7 inline-block rounded-sm bg-paper px-6 py-3 text-[14px] font-semibold text-ink transition-opacity hover:opacity-90"
+                >
+                  open the register
+                </Link>
+              </div>
             </div>
           </div>
 
-          <footer className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line/70 pt-7 text-[12.5px] text-paper-3">
-            <img src="/brand/singleton-icon-white.svg" alt="" aria-hidden className="h-4 w-4 opacity-70" />
-            <span>Built for BUIDL CTC 2026 on the Attestcoin protocol</span>
+          <footer className="mt-20 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line pt-7">
+            <img src="/brand/singleton-icon-white.svg" alt="" aria-hidden className="h-4 w-4 opacity-60" />
+            <span className="label">buidl ctc 2026, on the attestcoin protocol</span>
             <a
-              className="font-mono transition-colors hover:text-paper"
+              className="label transition-colors hover:text-paper"
               href={`${CFG.explorer}/address/${CFG.registry}`}
               target="_blank"
               rel="noreferrer"
             >
               {short(CFG.registry, 8, 6)}
             </a>
-            {chains[1] && <span className="tabular">Ethereum attested to {num(chains[1].tip)}</span>}
+            {chains[1] && (
+              <span className="label ml-auto tabular">ethereum attested to {num(chains[1].tip)}</span>
+            )}
           </footer>
         </div>
       </section>

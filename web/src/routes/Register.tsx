@@ -65,7 +65,7 @@ function StateChip({ state }: { state: AssetState }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1 text-[12.5px] font-medium",
+        "inline-flex items-center gap-2 whitespace-nowrap border px-3 py-1 font-mono text-[12px]",
         state === "pledged" && "border-paper bg-raised text-paper",
         state === "settled" && "border-settled/45 bg-settled/10 text-settled",
         state === "free" && "border-line-2 bg-raised text-paper-2",
@@ -87,8 +87,8 @@ function StateChip({ state }: { state: AssetState }) {
 
 function Fact({ term, children }: { term: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[2px] p-3.5 shadow-[0_0_0_1px_var(--color-line)]">
-      <dt className="text-[12px] text-paper-2">{term}</dt>
+    <div className="bg-ink p-4 shadow-[0_0_0_1px_var(--color-line)]">
+      <dt className="label">{term}</dt>
       <dd className="mt-0.5 text-[13.5px] break-words">{children}</dd>
     </div>
   );
@@ -96,8 +96,8 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
 
 function Step({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-line p-3.5">
-      <div className="text-[12px] text-paper-2">{title}</div>
+    <div className="border border-line p-4">
+      <div className="label">{title}</div>
       <div className="mt-1 text-[13px]">{children}</div>
     </div>
   );
@@ -262,8 +262,8 @@ export default function Register() {
         )}
       >
         <form onSubmit={submit} className="grid gap-2 border-b border-line p-3.5" autoComplete="off">
-          <label className="text-[12px] text-paper-2" htmlFor="token">
-            Look up an asset
+          <label className="label" htmlFor="token">
+            look up an asset
           </label>
           <input
             id="token"
@@ -271,14 +271,14 @@ export default function Register() {
             onChange={(e) => setForm({ ...form, token: e.target.value })}
             placeholder="collateral contract 0x..."
             spellCheck={false}
-            className="w-full rounded-md border border-line-2 bg-ink px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-paper-2 hover:border-line-2 focus:border-paper focus:outline-none focus:ring-3 focus:ring-line-2"
+            className="w-full rounded-none border border-line-2 bg-ink px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-paper-2 hover:border-line-2 focus:border-paper focus:outline-none focus:ring-3 focus:ring-line-2"
           />
           <div className="grid grid-cols-[1fr_92px] gap-2">
             <select
               aria-label="Source chain"
               value={form.chainId}
               onChange={(e) => setForm({ ...form, chainId: e.target.value })}
-              className="w-full rounded-md border border-line-2 bg-ink px-2.5 py-1.5 text-[13px] transition-colors hover:border-line-2 focus:border-paper focus:outline-none"
+              className="w-full rounded-none border border-line-2 bg-ink px-2.5 py-1.5 text-[13px] transition-colors hover:border-line-2 focus:border-paper focus:outline-none"
             >
               {Object.keys(chains).map((id) => (
                 <option key={id} value={id}>
@@ -292,21 +292,21 @@ export default function Register() {
               onChange={(e) => setForm({ ...form, tokenId: e.target.value })}
               placeholder="token id"
               spellCheck={false}
-              className="w-full rounded-md border border-line-2 bg-ink px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-paper-2 hover:border-line-2 focus:border-paper focus:outline-none focus:ring-3 focus:ring-line-2"
+              className="w-full rounded-none border border-line-2 bg-ink px-2.5 py-1.5 font-mono text-[12.5px] transition-colors placeholder:text-paper-2 hover:border-line-2 focus:border-paper focus:outline-none focus:ring-3 focus:ring-line-2"
             />
           </div>
           <button
             type="submit"
-            className="rounded-md bg-paper px-3.5 py-1.5 text-[13px] font-medium text-ink transition-opacity hover:opacity-90"
+            className="rounded-none bg-paper px-3.5 py-1.5 text-[13px] font-medium text-ink transition-opacity hover:opacity-90"
           >
-            Check the register
+            check the register
           </button>
           {formError && <p className="text-[12.5px] text-refused">{formError}</p>}
         </form>
 
-        <div className="flex items-baseline justify-between px-3.5 pb-2 pt-3 text-[12.5px] text-paper-2">
-          <span>On file</span>
-          <span>{rail ? `${rail.length} assets` : ""}</span>
+        <div className="flex items-baseline justify-between border-b border-line px-3.5 pb-2.5 pt-3">
+          <span className="label">on file</span>
+          <span className="label">{rail ? `${rail.length} assets` : ""}</span>
         </div>
 
         <div className="min-h-0 overflow-auto px-2 pb-3">
@@ -323,7 +323,7 @@ export default function Register() {
               onClick={() => select(a.chainId, a.token, a.tokenId)}
               aria-current={record?.assetKey === a.assetKey}
               className={cn(
-                "grid w-full grid-cols-[8px_1fr_auto] items-center gap-2.5 rounded-md px-2.5 py-2.5 text-left transition-colors",
+                "grid w-full grid-cols-[8px_1fr_auto] items-center gap-2.5 px-2.5 py-2.5 text-left transition-colors",
                 record?.assetKey === a.assetKey ? "bg-raised" : "hover:bg-raised",
               )}
             >
@@ -406,16 +406,16 @@ export default function Register() {
               <StateChip state={record.state} />
             </div>
 
-            <dl className="mt-5 grid gap-px [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
+            <dl className="mt-6 grid gap-px [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
               {record.state === "free" ? (
                 <>
-                  <Fact term="Standing">
+                  <Fact term="standing">
                     {logs.length ? "Registered before, released since" : "Never registered here"}
                   </Fact>
-                  <Fact term="Source chain">
+                  <Fact term="source chain">
                     {source.name}, chain key {chain.chainKey}
                   </Fact>
-                  <Fact term="Collateral">
+                  <Fact term="collateral">
                     <a
                       className="font-mono text-paper hover:underline"
                       href={srcUrl(record.chainId, `token/${record.token}`)}
@@ -428,7 +428,7 @@ export default function Register() {
                 </>
               ) : (
                 <>
-                  <Fact term="Lien held by">
+                  <Fact term="lien held by">
                     {nameOf(PROTOCOLS, record.emitter) ?? ""}{" "}
                     <a
                       className="font-mono text-paper hover:underline"
@@ -439,7 +439,7 @@ export default function Register() {
                       {short(record.emitter, 8, 6)}
                     </a>
                   </Fact>
-                  <Fact term="Borrower">
+                  <Fact term="borrower">
                     <a
                       className="font-mono text-paper hover:underline"
                       href={srcUrl(record.chainId, `address/${record.borrower}`)}
@@ -449,17 +449,17 @@ export default function Register() {
                       {short(record.borrower, 8, 6)}
                     </a>
                   </Fact>
-                  <Fact term="Principal">
+                  <Fact term="principal">
                     <span className="tabular">{ether(record.amount)}</span>{" "}
                     <span className="text-paper-2">in the protocol's own unit</span>
                   </Fact>
-                  <Fact term="Lien instance">
+                  <Fact term="lien instance">
                     <span className="font-mono">{short(record.instanceId, 10, 6)}</span>
                   </Fact>
-                  <Fact term="Certificate">
+                  <Fact term="certificate">
                     {record.certificate === ZERO ? "none" : "soulbound, held by the lender"}
                   </Fact>
-                  <Fact term="Recorded">
+                  <Fact term="recorded">
                     {new Date(record.recordedAt * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC
                   </Fact>
                 </>
@@ -467,9 +467,9 @@ export default function Register() {
             </dl>
 
             {record.collisions.length > 0 && (
-              <div className="mt-5 rounded-md border border-refused/40 bg-refused-dim/25 p-4">
-                <h2 className="text-[13.5px] font-semibold text-refused">
-                  A second protocol tried to lend against this asset
+              <div className="mt-6 border border-refused/40 bg-refused-dim/25 p-4">
+                <h2 className="font-mono text-[13px] text-refused">
+                  a second protocol tried to lend against this asset
                 </h2>
                 <p className="mt-1 max-w-[70ch] text-[13px]">
                   The first filing holds. The second was refused on chain and kept on file, because a
@@ -477,7 +477,7 @@ export default function Register() {
                   asset is taken.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2.5 text-[13px]">
-                  <span className="rounded-md border border-line bg-ink px-2.5 py-1.5">
+                  <span className="border border-line bg-ink px-2.5 py-1.5">
                     <b className="font-medium">
                       {nameOf(PROTOCOLS, record.collisions.at(-1)!.emitter) ??
                         short(record.collisions.at(-1)!.emitter, 8, 6)}
@@ -502,14 +502,13 @@ export default function Register() {
               </div>
             )}
 
-            <h2 className="mt-7 flex items-baseline gap-2.5 text-[13px] font-semibold">
-              How this is known
-              <span className="font-normal text-[12.5px] text-paper-2">
-                nobody was trusted for any step
-              </span>
-            </h2>
-            <div className="mt-2.5 grid items-stretch gap-2.5 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:gap-0">
-              <Step title="The protocol's own log">
+            <div className="mt-8 flex items-center gap-4">
+              <span className="label shrink-0">how this is known</span>
+              <div className="h-px flex-1 bg-line" />
+              <span className="label shrink-0">nobody was trusted for any step</span>
+            </div>
+            <div className="mt-3 grid items-stretch gap-2.5 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:gap-0">
+              <Step title="the protocol's own log">
                 {record.state !== "free" ? (
                   <>
                     {source.name} block{" "}
@@ -531,14 +530,14 @@ export default function Register() {
               <div className="hidden place-items-center px-3 text-line-2 lg:grid">
                 <ArrowRight size={16} />
               </div>
-              <Step title="Inclusion proof">
+              <Step title="inclusion proof">
                 re-checked on chain by BlockProver <span className="font-mono">{CFG.prover}</span>,
                 accepted at {chain.depth} blocks deep
               </Step>
               <div className="hidden place-items-center px-3 text-line-2 lg:grid">
                 <ArrowRight size={16} />
               </div>
-              <Step title="The register">
+              <Step title="the register">
                 {opening ? (
                   <>
                     written in{" "}
@@ -570,21 +569,22 @@ export default function Register() {
               </Step>
             </div>
 
-            <h2 className="mt-7 flex items-baseline gap-2.5 text-[13px] font-semibold">
-              History
-              <span className="font-normal text-[12.5px] text-paper-2">
+            <div className="mt-8 flex items-center gap-4">
+              <span className="label shrink-0">history</span>
+              <div className="h-px flex-1 bg-line" />
+              <span className="label shrink-0">
                 {logs.length} {logs.length === 1 ? "entry" : "entries"}
               </span>
-            </h2>
+            </div>
 
             {logs.length ? (
-              <table className="mt-2 w-full border-collapse text-[13px]">
+              <table className="mt-3 w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
-                    {["Entry", "What happened", "Protocol", "On Creditcoin"].map((h) => (
+                    {["entry", "what happened", "protocol", "on creditcoin"].map((h) => (
                       <th
                         key={h}
-                        className="border-b border-line pb-1.5 pr-3 text-left text-[12px] font-medium text-paper-2"
+                        className="label border-b border-line pb-2 pr-3 text-left"
                       >
                         {h}
                       </th>
@@ -600,7 +600,7 @@ export default function Register() {
                         <td className="border-b border-surface py-2 pr-3">
                           <span
                             className={cn(
-                              "inline-block rounded-full px-2 py-0.5 text-[11.5px] font-medium",
+                              "inline-block px-2 py-0.5 font-mono text-[11px]",
                               kind === "pledge" && "bg-raised text-paper",
                               kind === "refused" && "bg-refused-dim/30 text-refused",
                               kind === "settled" && "bg-settled/10 text-settled",
