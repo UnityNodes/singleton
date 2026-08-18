@@ -61,12 +61,13 @@ export const SOURCE_EVENTS_ABI = [
   "event Released(address indexed collateralToken,uint256 indexed tokenId,address indexed borrower,uint256 amount,bytes32 pledgeInstanceId)",
 ];
 
-/// What each relay operation reads on the source chain and calls on the registry.
+/// Which registry entry point each relay operation calls. Which log it reads is
+/// a property of the emitter's schema, not of the operation: see schemas.mjs.
 export const OPERATIONS = {
-  pledge: { event: "Pledged", method: "registerPledge" },
-  collision: { event: "Pledged", method: "reportCollision" },
-  settle: { event: "Settled", method: "registerSettlement" },
-  release: { event: "Released", method: "registerRelease" },
+  pledge: { method: "registerPledge" },
+  collision: { method: "reportCollision" },
+  settle: { method: "registerSettlement" },
+  release: { method: "registerRelease" },
 };
 
 export const STATE_NAMES = ["FREE", "PLEDGED", "SETTLED"];

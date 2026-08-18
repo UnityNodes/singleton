@@ -37,6 +37,22 @@
       "tx": "0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b",
       "note": "Meridian's once refused lien now registers legitimately",
       "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0xa089fd2817f18f845ce04b550edab846badc6ecacfa7db8808b09f4be89b6c36",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "a real NFTfi loan on Ethereum mainnet, read through an adapter",
+      "expect": "recorded"
+    },
+    {
+      "operation": "release",
+      "tx": "0x34632ee55588a9968385a0c8646700ed31cfc6d7e40430752db29b77e0ab4960",
+      "sourceChainId": 1,
+      "sourceRpc": "https://ethereum-rpc.publicnode.com",
+      "note": "and its real repayment, two hundred thousand blocks later",
+      "expect": "recorded"
     }
   ]
 }

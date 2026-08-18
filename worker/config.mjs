@@ -10,6 +10,13 @@ export const PROVER_URL =
 export const SEPOLIA_RPC =
   process.env.SEPOLIA_RPC ?? "https://ethereum-sepolia-rpc.publicnode.com";
 
+/**
+ * The chain the pledges are read from. Sepolia by default, because that is
+ * where the demo lenders live, but the registry reads any chain Creditcoin
+ * attests, and NFTfi on Ethereum mainnet is read through the same path.
+ */
+export const SOURCE_RPC = process.env.SOURCE_RPC ?? SEPOLIA_RPC;
+
 /** Pin the chain id, never the chain key. The key differs per Creditcoin network. */
 export const SOURCE_CHAIN_ID = Number(process.env.SOURCE_CHAIN_ID ?? 11155111);
 

@@ -20,10 +20,16 @@ import { CC3_RPC, EXPLORER, SOURCE_CHAIN_ID, addresses, requireAddress } from ".
  *   node worker/demo.mjs --list     prints the steps without touching a chain
  */
 const here = path.dirname(fileURLToPath(import.meta.url));
-const steps = JSON.parse(fs.readFileSync(path.join(here, "demo.json"), "utf8")).steps;
+const scriptFile = process.argv.find((a) => a.endsWith(".json")) ?? "demo.json";
+const steps = JSON.parse(fs.readFileSync(path.join(here, scriptFile), "utf8")).steps;
 
 if (process.argv.includes("--list")) {
-  steps.forEach((s, i) => console.log(`${i + 1}. ${s.operation.padEnd(9)} ${s.tx}  ${s.note}`));
+  steps.forEach((s, i) =>
+    console.log(
+      `${i + 1}. ${s.operation.padEnd(9)} chain ${String(s.sourceChainId ?? SOURCE_CHAIN_ID).padEnd(9)}` +
+        ` ${s.note}\n     ${s.tx}`,
+    ),
+  );
   process.exit(0);
 }
 
@@ -43,6 +49,8 @@ for (const [index, step] of steps.entries()) {
     txHash: step.tx,
     operation: step.operation,
     force: step.force === true,
+    sourceChainId: step.sourceChainId ?? SOURCE_CHAIN_ID,
+    sourceRpc: step.sourceRpc,
     log: (line) => console.log(line),
   });
 
@@ -53,12 +61,18 @@ for (const [index, step] of steps.entries()) {
   console.log("");
 }
 
-const record = await registry.getStatus(assetKey);
 console.log("=".repeat(72));
 console.log("final state");
-console.log(`  ${STATE_NAMES[Number(record.state)]}` + (record.emitter === ethers.ZeroAddress ? "" : ` held by ${record.emitter}`));
-console.log(`  refused pledges on file: ${await registry.collisionCount(assetKey)}`);
-console.log(`  certificate: ${await registry.certificateOf(assetKey)}`);
+for (const key of new Set(results.map((r) => r.assetKey))) {
+  const record = await registry.getStatus(key);
+  const held = record.emitter === ethers.ZeroAddress ? "" : ` held by ${record.emitter}`;
+  console.log(`  ${key}`);
+  console.log(
+    `    ${STATE_NAMES[Number(record.state)]}${held}, ` +
+      `refused pledges on file: ${await registry.collisionCount(key)}, ` +
+      `certificate: ${await registry.certificateOf(key)}`,
+  );
+}
 console.log("\nsteps");
 for (const r of results) {
   const tail = r.outcome === "recorded"

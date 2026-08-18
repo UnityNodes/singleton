@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { proofProvider } from "@gluwa/usc-sdk";
 import { attestedTip, resolveChainKey } from "./chainkey.mjs";
-import { CC3_RPC, PROVER_URL, SEPOLIA_RPC, SOURCE_CHAIN_ID } from "./config.mjs";
+import { CC3_RPC, PROVER_URL, SOURCE_CHAIN_ID, SOURCE_RPC } from "./config.mjs";
 
 /**
  * Proves the whole read path for a source chain without spending anything on
@@ -28,7 +28,7 @@ const DECODER_ABI = [
   "function decodeReceiptFields(bytes encodedTransaction) pure returns ((uint8 receiptStatus,uint64 receiptGasUsed,(address address_,bytes32[] topics,bytes data)[] receiptLogs,bytes receiptLogsBloom) fields)",
 ];
 
-const source = new ethers.JsonRpcProvider(SEPOLIA_RPC);
+const source = new ethers.JsonRpcProvider(SOURCE_RPC);
 const cc3 = new ethers.JsonRpcProvider(CC3_RPC);
 
 const chainKey = await resolveChainKey(cc3, SOURCE_CHAIN_ID);

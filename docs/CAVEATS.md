@@ -103,4 +103,18 @@ can exclude, but cannot fabricate.
 
 The ABI adapter is weaker than that. It maps a protocol's native event onto
 `(token, tokenId, instanceId)`, so it touches derived truth, not just selection.
-It stays thin and it is named for what it is.
+It stays thin, it is pure, and it is named for what it is.
+
+Two limits are worth naming with it.
+
+An adapter can only carry what the protocol actually emits. Blur's Blend, for
+example, publishes the token id when a loan is taken and omits it when the loan
+is repaid, so a release cannot be derived from that event at all. The interface
+allows an adapter to declare a transition unsupported, and the registry then
+refuses it with `TransitionUnsupported` rather than guessing. A refused
+transition is a smaller harm than a wrong one.
+
+An adapter is also a per protocol integration written by us, not by the
+protocol. It is the one place where being wrong looks like being right, which is
+why each one stays short enough to read in a sitting and is tested against real
+logs captured from the chain it claims to read.

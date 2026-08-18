@@ -21,7 +21,15 @@ Addresses come from `worker/deployed.json`, overridable by environment
 | `relay.mjs <sourceTxHash> [pledge\|collision\|settle\|release]` | Waits for the finality window, fetches the inclusion proof, submits the matching entry point on Creditcoin, prints the record. A refused pledge stops at the static call and names the incumbent; `collision` then records the attempt without touching it. |
 | `allow.mjs <emitter> [on\|off]` | Registry admin: allowlist an emitter, or `--min-conf <blocks>`. |
 | `status.mjs [token] [tokenId]` | What a lender calls before lending: state, incumbent, certificate and every refused pledge on file. Read only, no key needed. |
-| `demo.mjs [--list]` | Replays the whole life of the demo asset from `demo.json` into whichever registry is configured. The source transactions already exist and are already final, so the sequence runs in minutes rather than hours. |
+| `demo.mjs [file.json] [--list]` | Replays the whole story from `demo.json` into whichever registry is configured: the Sepolia collision and lifecycle, then a real NFTfi loan on Ethereum mainnet. The source transactions already exist and are already final, so the sequence runs in minutes rather than hours. Each step may name its own `sourceChainId` and `sourceRpc`. |
+
+Each proof can be spent once per operation, so a demo script runs once against a
+given registry. Deploy a fresh one with `script/deploy-cc3.sh` before recording.
+
+Which log the relay looks for is a property of the emitter's schema, not of the
+operation: `schemas.mjs` is the off-chain mirror of the on-chain adapters, and it
+carries NFTfi v3 alongside the native shape. If the two halves ever disagree, the
+registry refuses the proof, which is the safe direction.
 
 `relay-core.mjs` holds the logic; `relay.mjs` and `demo.mjs` are two front ends
 onto it.

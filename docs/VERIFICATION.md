@@ -248,6 +248,54 @@ lifecycle costs what the pledge costs.
 
 ---
 
+## A real protocol, unmodified and unaware
+
+The demo lenders are ours, which is a fair objection. So the same registry was
+pointed at NFTfi v3 on Ethereum mainnet, `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D`,
+through `src/adapters/NftfiV3Adapter.sol`. Nothing was deployed on mainnet,
+nothing was asked of NFTfi, and no funds were needed there: Creditcoin attests
+Ethereum, so an existing loan can simply be read.
+
+Loan 16928, a real borrower against a real NFT:
+
+| | |
+|---|---|
+| Taken | `LoanStarted`, mainnet block 25,506,517, tx `0xa089fd28...` |
+| Repaid | `LoanRepaid`, mainnet block 25,717,460, tx `0x34632ee5...` |
+| Collateral | `0xd774557b647330C91Bf44cfEAB205095f7E6c367` token 7819 |
+| Principal | 0.07 WETH |
+| Registered on CC3 | `0xb2b2fb2f13360c004a054501cc3736b469664720624cdc889fd4f2a626b513f9`, 689,510 gas |
+| Released on CC3 | `0x8dbff9a99ae8ecae86c9a0ec0778a9950a4e2f576d24e34dbebefa7f73f62d6a`, 502,824 gas |
+
+The adapter reads `LoanTerms` out of the log data, where NFTfi keeps the
+collateral contract, the token id, the borrower and the principal, and takes the
+loan id from the leading topic so both events resolve to one lien. Field names
+and layout come from the verified ABI; the two signatures were checked against
+live logs, not derived from prose.
+
+Three things worth stating plainly about this integration.
+
+**NFTfi is custodial.** `LoanTerms.escrow` names the contract that holds the
+token for the duration, `0x2ae3e46290AdE43593eabd15642eBD67157f5351`. A borrower
+who deposited the NFT cannot pledge it elsewhere, so no collision can originate
+here. That is caveat 6, and it is why the collision demonstration runs against
+non-custodial lenders instead.
+
+**NFTfi has no settlement step.** Repayment returns the token in the same
+transaction, so `LoanRepaid` maps to release and the settlement signature is
+zero. A settlement proof against this emitter is refused with
+`TransitionUnsupported` rather than approximated.
+
+**The obligation changed hands mid-loan.** The address in `LoanRepaid` is not the
+borrower who took the loan out. The registry binds a release to the emitter and
+the loan id, never to the borrower, so the lien closes correctly anyway. There is
+a test on exactly this, against these bytes.
+
+Gas is higher than a Sepolia proof, 690k against 443k, because a mainnet
+transaction of that age carries 84 continuity roots and a 12,032 byte payload.
+
+---
+
 ## Deployment, forge on Creditcoin
 
 `forge script` cannot run against CC3. Its fork backend fetches the current block

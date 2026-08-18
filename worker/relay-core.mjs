@@ -1,13 +1,14 @@
 import { ethers } from "ethers";
 import { proofProvider } from "@gluwa/usc-sdk";
-import { OPERATIONS, REGISTRY_ABI, SOURCE_EVENTS_ABI, STATE_NAMES } from "./abi.mjs";
+import { OPERATIONS, REGISTRY_ABI, STATE_NAMES } from "./abi.mjs";
+import { findSourceEvent } from "./schemas.mjs";
 import { attestedTip, resolveChainKey } from "./chainkey.mjs";
 import {
   CC3_RPC,
   EXPLORER,
   PROVER_URL,
-  SEPOLIA_RPC,
   SOURCE_CHAIN_ID,
+  SOURCE_RPC,
   loadPrivateKey,
   requireAddress,
 } from "./config.mjs";
@@ -24,30 +25,12 @@ import {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export function connect() {
-  const source = new ethers.JsonRpcProvider(SEPOLIA_RPC);
+export function connect(sourceRpc = SOURCE_RPC) {
+  const source = new ethers.JsonRpcProvider(sourceRpc);
   const cc3 = new ethers.JsonRpcProvider(CC3_RPC);
   const wallet = new ethers.Wallet(loadPrivateKey(), cc3);
   const registry = new ethers.Contract(requireAddress("registry"), REGISTRY_ABI, wallet);
   return { source, cc3, wallet, registry };
-}
-
-export function readSourceEvent(receipt, eventName) {
-  const iface = new ethers.Interface(SOURCE_EVENTS_ABI);
-  const matched = receipt.logs
-    .map((log) => {
-      try {
-        return { log, parsed: iface.parseLog(log) };
-      } catch {
-        return null;
-      }
-    })
-    .filter((entry) => entry?.parsed?.name === eventName);
-
-  if (matched.length !== 1) {
-    throw new Error(`expected exactly one ${eventName} log, found ${matched.length}`);
-  }
-  return matched[0];
 }
 
 /**
@@ -99,33 +82,40 @@ export async function fetchProof(chainKey, txHash) {
  * `{ outcome: "refused" }` carrying the decoded registry error. A refusal is an
  * answer, not a failure: it is the registry doing its job.
  */
-export async function relay({ txHash, operation = "pledge", force = false, log = () => {} }) {
+export async function relay({
+  txHash,
+  operation = "pledge",
+  force = false,
+  sourceChainId = SOURCE_CHAIN_ID,
+  sourceRpc = SOURCE_RPC,
+  log = () => {},
+}) {
   const op = OPERATIONS[operation];
   if (!op) throw new Error(`unknown operation ${operation}`);
 
-  const { source, cc3, registry } = connect();
+  const { source, cc3, registry } = connect(sourceRpc);
 
   const receipt = await source.getTransactionReceipt(txHash);
   if (!receipt) throw new Error(`no receipt on the source chain for ${txHash}`);
 
-  const { log: sourceLog, parsed } = readSourceEvent(receipt, op.event);
+  const { schema, log: sourceLog, parsed, fields } = findSourceEvent(receipt, operation);
   log(`operation  ${operation}  ->  registry.${op.method}`);
   log("source");
   log(`  tx         ${txHash}`);
   log(`  block      ${receipt.blockNumber}, status ${receipt.status}`);
-  log(`  event      ${op.event} from ${sourceLog.address}`);
-  log(`  token      ${parsed.args.collateralToken} #${parsed.args.tokenId}`);
-  log(`  borrower   ${parsed.args.borrower}`);
-  log(`  amount     ${ethers.formatEther(parsed.args.amount)}`);
-  log(`  instanceId ${parsed.args.pledgeInstanceId}`);
+  log(`  schema     ${schema.name}, event ${parsed.name} from ${sourceLog.address}`);
+  log(`  token      ${fields.token} #${fields.tokenId}`);
+  log(`  borrower   ${fields.borrower}`);
+  log(`  amount     ${ethers.formatEther(fields.amount)}`);
+  log(`  instanceId ${fields.instanceId}`);
 
-  const chainKey = await resolveChainKey(cc3, SOURCE_CHAIN_ID);
+  const chainKey = await resolveChainKey(cc3, sourceChainId);
   const depth = Number(await registry.minConfirmations(chainKey));
   const allowed = await registry.allowedEmitter(chainKey, sourceLog.address);
 
   log("\ncreditcoin");
   log(`  registry   ${await registry.getAddress()}`);
-  log(`  chainId ${SOURCE_CHAIN_ID} -> chainKey ${chainKey}`);
+  log(`  chainId ${sourceChainId} -> chainKey ${chainKey}`);
   log(`  minConf    ${depth}`);
   log(`  emitter allowlisted ${allowed}`);
   if (!allowed) throw new Error("emitter is not on the allowlist; run setEmitter first");
@@ -140,11 +130,7 @@ export async function relay({ txHash, operation = "pledge", force = false, log =
   log(`  merkle siblings   ${raw.merkleProof.siblings.length}`);
   log(`  continuity roots  ${raw.continuityProof.roots.length}`);
 
-  const assetKey = await registry.assetKeyOf(
-    chainKey,
-    parsed.args.collateralToken,
-    parsed.args.tokenId,
-  );
+  const assetKey = await registry.assetKeyOf(chainKey, fields.token, fields.tokenId);
   log(`\nassetKey  ${assetKey}`);
 
   let refusal = null;

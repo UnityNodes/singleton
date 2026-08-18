@@ -25,6 +25,7 @@ abstract contract SourceChain is Test {
     address internal constant CHAININFO_ADDR = 0x0000000000000000000000000000000000000fD3;
 
     uint64 internal constant SEPOLIA = 1;
+    uint64 internal constant ETHEREUM = 3;
     uint64 internal constant MIN_CONF = 64;
     uint64 internal constant TIP = 11_509_380;
 
@@ -88,19 +89,34 @@ abstract contract SourceChain is Test {
 
     function _relay(Vm.Log memory entry, uint8 receiptStatus)
         internal
+        returns (SingletonRegistry.Proof memory)
+    {
+        return _relayFrom(SEPOLIA, _nextHeight++, entry, receiptStatus);
+    }
+
+    /// The same, for a proof taken from a named chain at a named height, which
+    /// is what a fixture captured from a live chain needs.
+    function _relayFrom(uint64 chainKey, uint64 height, Vm.Log memory entry)
+        internal
+        returns (SingletonRegistry.Proof memory)
+    {
+        return _relayFrom(chainKey, height, entry, 1);
+    }
+
+    function _relayFrom(uint64 chainKey, uint64 height, Vm.Log memory entry, uint8 receiptStatus)
+        internal
         returns (SingletonRegistry.Proof memory p)
     {
         bytes memory encoded = _encode(entry, receiptStatus);
-        uint64 height = _nextHeight++;
         bytes32 root = bytes32(_nextRoot++);
 
-        prover.attest(SEPOLIA, height, encoded);
+        prover.attest(chainKey, height, encoded);
 
         IBlockProver.MerkleProofEntry[] memory siblings = new IBlockProver.MerkleProofEntry[](1);
         siblings[0] = IBlockProver.MerkleProofEntry({hash: root, isLeft: true});
 
         p = SingletonRegistry.Proof({
-            chainKey: SEPOLIA,
+            chainKey: chainKey,
             height: height,
             encodedTransaction: encoded,
             merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),

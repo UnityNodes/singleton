@@ -55,6 +55,8 @@ that lost the first race. Six proofs, every hash in
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
+| NFTfi adapter, CC3 testnet | `0x6232F2f452ebaC37d0265C4D88A40238D45C37Fe` |
+| Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D`, unmodified |
 
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
@@ -117,6 +119,13 @@ protocol, maps their native log onto `(token, tokenId, borrower, amount,
 instanceId)`. See [src/adapters](src/adapters) and caveat 9: the allowlist
 decides which logs are read, an adapter decides what they mean, and those are
 different powers.
+
+This is not hypothetical. A real NFTfi loan on Ethereum mainnet, taken in block
+25,506,517 and repaid in block 25,717,460, is registered and released in the
+Creditcoin registry through
+[`NftfiV3Adapter`](src/adapters/NftfiV3Adapter.sol). Nothing was deployed on
+mainnet and nothing was asked of NFTfi. Creditcoin attests Ethereum, so an
+existing loan can simply be read.
 
 ---
 
