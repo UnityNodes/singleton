@@ -53,6 +53,7 @@ auction rather than a repayment. Twelve proofs, every hash in
 
 | | |
 |---|---|
+| The register, live | **https://singleton.unitynodes.com** |
 | Registry, CC3 testnet | `0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |

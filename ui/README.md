@@ -1,5 +1,7 @@
 # The register, as a page
 
+Live at **https://singleton.unitynodes.com**
+
 One file, no build, no dependencies, no wallet. Open `index.html` in a browser,
 or serve the directory if you prefer:
 
@@ -32,3 +34,15 @@ index.html?rpc=https://your-node
 ABI encoding is done by hand, in about forty lines. That is deliberate: a public
 register should be readable from a single file, and a page that pulls in a
 library to read four static words is not.
+
+## Publishing
+
+```bash
+./script/publish-ui.sh
+```
+
+It copies the file to `/var/www/singleton`, which Caddy serves for
+`singleton.unitynodes.com` behind a Cloudflare origin certificate. The content
+policy there allows no external scripts, no external styles and exactly one
+connection target, the Creditcoin RPC. Everything else on the page leaves in a
+new tab rather than over a connection the page opens.
