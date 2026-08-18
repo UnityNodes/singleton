@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { HARBOR_ABI, MERIDIAN_ABI, PLEDGED_ABI } from "./abi.mjs";
+import { HARBOR_ABI, MERIDIAN_ABI, SOURCE_EVENTS_ABI } from "./abi.mjs";
 import { SEPOLIA_RPC, addresses, loadPrivateKey, requireAddress } from "./config.mjs";
 
 /**
@@ -45,7 +45,7 @@ console.log(`\nsent      ${tx.hash}`);
 const receipt = await tx.wait();
 console.log(`mined     block ${receipt.blockNumber}, status ${receipt.status}`);
 
-const iface = new ethers.Interface(PLEDGED_ABI);
+const iface = new ethers.Interface(SOURCE_EVENTS_ABI);
 for (const log of receipt.logs) {
   let parsed;
   try {

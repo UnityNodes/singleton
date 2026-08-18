@@ -42,41 +42,78 @@ the reason the product has no equivalent anywhere else.
 
 ## Status
 
-Pre-build. Both technical gates have passed against live CC3 testnet.
-See [docs/VERIFICATION.md](docs/VERIFICATION.md) for the raw results.
+The registry is live on CC3 testnet and has taken one asset through its whole
+life against two unrelated lenders on Sepolia. Raw results, with every
+transaction hash, are in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
-| Gate | Question | Result |
-|---|---|---|
-| Custom event decode | Does `getLogsByEventSignature` pull a custom multi-field event, not just the toy `Transfer` the official example decodes? | PASS |
-| Finality window | Can a contract read the latest attested height on-chain, in the same transaction that accepts a pledge? | PASS |
+| | |
+|---|---|
+| Registry, CC3 testnet | `0x63198729827F0eb9ED1A5eBC8FCDe58CBE7Fc2F2` |
+| Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
+| Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
+| Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
 
-No unknowns remain between here and a working registry.
+Three technical gates were cleared against the live chain before any of it was
+built: a custom multi-field event decodes byte for byte, the attested tip is
+readable on-chain inside the accepting transaction, and the whole Sepolia read
+path verifies through `eth_call` alone.
 
 ---
 
 ## How it works
 
-A protocol on Ethereum accepts collateral and emits its own pledge event. Nobody
-modifies that protocol and nobody asks its permission.
+A protocol on the source chain accepts collateral and emits its own event.
+Nobody modifies that protocol and nobody asks its permission.
 
-An off-chain worker builds an inclusion proof of that transaction with
-`@gluwa/usc-sdk` and submits it to the registry on Creditcoin. The registry then,
-in one transaction:
+An off-chain relay builds an inclusion proof of that transaction with
+`@gluwa/usc-sdk` and submits it to the registry on Creditcoin. The relay is
+trusted with nothing: it carries bytes, and the registry re-checks every claim in
+them inside its own transaction.
 
 1. Verifies the proof through `BlockProver.verify` at `0x0FD2`.
 2. Rejects anything inside the reorg window, using the attested height read from
    `ChainInfo.get_latest_attestation_height_and_hash` at `0x0FD3`.
 3. Requires `receiptStatus == 1`, because inclusion is not success.
-4. Decodes the pledge log, and requires its emitter to be allowlisted for that
-   chain.
+4. Finds the log, requires its emitter to be allowlisted for that chain, and
+   reads it either natively or through that emitter's adapter.
 5. Derives `assetKey = keccak256(chainKey, tokenAddress, tokenId)`.
-6. Burns a per-transaction nullifier so the same proof cannot be replayed.
-7. Records the pledge if the asset is free, and reverts with `DoublePledge` if it
-   is not.
+6. Burns a per-operation nullifier so the same proof cannot be replayed.
+7. Records the pledge if the asset is free and issues a soulbound certificate to
+   the emitter. If it is not free, the transaction reverts with `AssetNotFree`.
 
 The asset key deliberately excludes the emitter. If it did not, the same asset
 pledged in two different protocols would produce two different keys and never
 collide, which is the entire point.
+
+### One asset, four proofs
+
+Each transition is its own inclusion proof of its own real log, so the source
+chain carries the whole life of the lien rather than only its first moment.
+
+| Proof | Entry point | Effect |
+|---|---|---|
+| Pledge | `registerPledge` | FREE to PLEDGED, certificate issued |
+| Refused second pledge | `reportCollision` | recorded against the asset, incumbent untouched |
+| Settlement | `registerSettlement` | PLEDGED to SETTLED |
+| Release | `registerRelease` | back to FREE, certificate burned, re-pledging allowed |
+
+Settlement and release are bound to the emitter on file and to the instance id of
+the lien currently recorded, so a proof of last year's lien cannot move this
+year's.
+
+`registerPledge` reverts on a collision, because that is what an integrating
+protocol needs and a revert discards its own logs. The evidence is kept by the
+separate, non-reverting `reportCollision`, and `collisionCount(assetKey)` tells a
+lender how many times somebody already tried.
+
+### Protocols that speak their own schema
+
+Most real lenders will not emit Singleton's event shape, and asking them to is
+the integration this product exists to avoid. An adapter, one pure contract per
+protocol, maps their native log onto `(token, tokenId, borrower, amount,
+instanceId)`. See [src/adapters](src/adapters) and caveat 9: the allowlist
+decides which logs are read, an adapter decides what they mean, and those are
+different powers.
 
 ---
 
@@ -84,8 +121,11 @@ collide, which is the entire point.
 
 ```
 src/            registry and interfaces
+  emitters/     the two Sepolia lenders and the demo RWA deed
+  adapters/     reference adapter for a foreign event schema
   vendor/       EvmV1Decoder, vendored from @gluwa/usc-contracts
-gates/          the two probes that cleared the technical unknowns
+worker/         off-chain relay: proofs, lifecycle, admin
+gates/          the probes that cleared the technical unknowns
   src/          probe contracts, run inside a constructor via eth_call
   run/          scripts that execute them against live CC3
 test/           Foundry tests
@@ -96,7 +136,7 @@ docs/           brief, verification log, caveats
 ## Honest limits
 
 Read [docs/CAVEATS.md](docs/CAVEATS.md) before reading anything else. The design
-has five real limitations and none of them are hidden. The most important one:
+has nine real limitations and none of them are hidden. The most important one:
 this is a positive record and a priority rule, not prevention. Attestcoin proves
 that something happened. It cannot prove that something did not.
 

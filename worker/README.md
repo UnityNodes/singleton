@@ -17,8 +17,13 @@ Addresses come from `worker/deployed.json`, overridable by environment
 | `chainkey.mjs [chainId]` | Resolves a chain id to this Creditcoin network's chain key and prints the attested tip. Pin the id, never the key. |
 | `probe-source.mjs [txHash]` | Proves the whole read path for a source chain through `eth_call` only: prover service, `verify`, `calculateTxIndex`, decoder. Costs nothing on either chain. |
 | `pledge.mjs <harbor\|meridian> [amount]` | Emits a real pledge on Sepolia from one of the two lenders. Prints the transaction hash to relay. |
-| `relay.mjs <sourceTxHash>` | Waits for the finality window, fetches the inclusion proof, submits `registerPledge` on Creditcoin, prints the record. A second pledge of the same asset stops at the static call and reports the incumbent. |
+| `lifecycle.mjs <harbor\|meridian> <settle\|release>` | Moves that lien forward on Sepolia: repayment, then discharge. Each call emits one real log and so becomes one more proof. |
+| `relay.mjs <sourceTxHash> [pledge\|collision\|settle\|release]` | Waits for the finality window, fetches the inclusion proof, submits the matching entry point on Creditcoin, prints the record. A refused pledge stops at the static call and names the incumbent; `collision` then records the attempt without touching it. |
 | `allow.mjs <emitter> [on\|off]` | Registry admin: allowlist an emitter, or `--min-conf <blocks>`. |
+
+`FORCE_SUBMIT=1` sends a refused pledge anyway, producing a failed transaction on
+Creditcoin on purpose: a revert in the explorer is checkable by anybody, a
+console line is not.
 
 The wait in `relay.mjs` is the same condition the registry enforces,
 `height + minConfirmations <= attestedTip`. Sepolia attestation runs about forty

@@ -36,13 +36,13 @@ registry=$(FOUNDRY_PROFILE=cc3 forge create src/SingletonRegistry.sol:SingletonR
 echo "registry $registry"
 
 cast send "$registry" "setMinConfirmations(uint64,uint64)" "$chain_key" "$MIN_CONFIRMATIONS" \
-  --private-key "$PRIVATE_KEY" --rpc-url "$CC3_RPC" --legacy >/dev/null
+  --private-key "$PRIVATE_KEY" --rpc-url "$CC3_RPC" --legacy >/dev/null 2>&1
 echo "minConfirmations[$chain_key] = $MIN_CONFIRMATIONS"
 
 for emitter in "${HARBOR:-}" "${MERIDIAN:-}"; do
   [ -z "$emitter" ] && continue
   cast send "$registry" "setEmitter(uint64,address,bool)" "$chain_key" "$emitter" true \
-    --private-key "$PRIVATE_KEY" --rpc-url "$CC3_RPC" --legacy >/dev/null
+    --private-key "$PRIVATE_KEY" --rpc-url "$CC3_RPC" --legacy >/dev/null 2>&1
   echo "allowed $emitter"
 done
 

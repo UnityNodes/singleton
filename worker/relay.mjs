@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { proofProvider } from "@gluwa/usc-sdk";
-import { PLEDGED_ABI, REGISTRY_ABI, STATE_NAMES } from "./abi.mjs";
+import { OPERATIONS, REGISTRY_ABI, SOURCE_EVENTS_ABI, STATE_NAMES } from "./abi.mjs";
 import { attestedTip, resolveChainKey } from "./chainkey.mjs";
 import {
   CC3_RPC,
@@ -13,7 +13,7 @@ import {
 } from "./config.mjs";
 
 /**
- * Relays one source-chain pledge into the registry on Creditcoin.
+ * Relays one source-chain lifecycle event into the registry on Creditcoin.
  *
  * The relay is not trusted with anything. It carries bytes: the transaction, a
  * merkle proof of its place in a block, and a continuity proof back to an
@@ -21,10 +21,15 @@ import {
  * BlockProver precompile inside the registry's own transaction, so a lying
  * relay produces a reverted transaction and nothing else.
  *
- *   node worker/relay.mjs 0x<sepolia tx hash>
+ *   node worker/relay.mjs <sourceTxHash> [pledge|collision|settle|release]
  */
 const txHash = process.argv[2];
-if (!txHash) throw new Error("usage: node worker/relay.mjs <sourceTxHash>");
+const operation = (process.argv[3] ?? "pledge").toLowerCase();
+if (!txHash) {
+  throw new Error("usage: node worker/relay.mjs <sourceTxHash> [pledge|collision|settle|release]");
+}
+const op = OPERATIONS[operation];
+if (!op) throw new Error(`unknown operation ${operation}`);
 
 const POLL_SECONDS = Number(process.env.POLL_SECONDS ?? 30);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -39,26 +44,27 @@ const registry = new ethers.Contract(requireAddress("registry"), REGISTRY_ABI, w
 const receipt = await source.getTransactionReceipt(txHash);
 if (!receipt) throw new Error(`no receipt on the source chain for ${txHash}`);
 
-const pledgedIface = new ethers.Interface(PLEDGED_ABI);
-const pledged = receipt.logs
+const sourceIface = new ethers.Interface(SOURCE_EVENTS_ABI);
+const matched = receipt.logs
   .map((log) => {
     try {
-      return { log, parsed: pledgedIface.parseLog(log) };
+      return { log, parsed: sourceIface.parseLog(log) };
     } catch {
       return null;
     }
   })
-  .filter((entry) => entry?.parsed?.name === "Pledged");
+  .filter((entry) => entry?.parsed?.name === op.event);
 
-if (pledged.length !== 1) {
-  throw new Error(`expected exactly one Pledged log, found ${pledged.length}`);
+if (matched.length !== 1) {
+  throw new Error(`expected exactly one ${op.event} log, found ${matched.length}`);
 }
 
-const { log, parsed } = pledged[0];
+const { log, parsed } = matched[0];
+console.log(`operation  ${operation}  ->  registry.${op.method}`);
 console.log("source");
 console.log(`  tx         ${txHash}`);
 console.log(`  block      ${receipt.blockNumber}, status ${receipt.status}`);
-console.log(`  emitter    ${log.address}`);
+console.log(`  event      ${op.event} from ${log.address}`);
 console.log(`  token      ${parsed.args.collateralToken} #${parsed.args.tokenId}`);
 console.log(`  borrower   ${parsed.args.borrower}`);
 console.log(`  amount     ${ethers.formatEther(parsed.args.amount)}`);
@@ -125,11 +131,15 @@ const proof = {
 
 // ------------------------------------------------------------------ submit
 
-const assetKey = await registry.assetKeyOf(chainKey, parsed.args.collateralToken, parsed.args.tokenId);
+const assetKey = await registry.assetKeyOf(
+  chainKey,
+  parsed.args.collateralToken,
+  parsed.args.tokenId,
+);
 console.log(`\nassetKey  ${assetKey}`);
 
 try {
-  await registry.registerPledge.staticCall(proof);
+  await registry[op.method].staticCall(proof);
 } catch (error) {
   const decoded = registry.interface.parseError(error.data ?? error.error?.data ?? "0x");
   if (decoded?.name === "AssetNotFree") {
@@ -137,6 +147,7 @@ try {
     console.log(`  assetKey  ${decoded.args.assetKey}`);
     console.log(`  incumbent ${decoded.args.incumbent}`);
     console.log(`  this asset is already pledged; the registry will not record a second lien`);
+    console.log(`  keep the evidence: node worker/relay.mjs ${txHash} collision`);
 
     /**
      * The refusal is already conclusive off-chain, so submitting it costs gas
@@ -145,7 +156,7 @@ try {
      * console line is not.
      */
     if (process.env.FORCE_SUBMIT === "1") {
-      const rejected = await registry.registerPledge(proof, { gasLimit: 1_000_000 });
+      const rejected = await registry[op.method](proof, { gasLimit: 1_000_000 });
       console.log(`\n  submitted anyway ${rejected.hash}`);
       const outcome = await cc3.waitForTransaction(rejected.hash);
       console.log(`  mined    block ${outcome.blockNumber}, status ${outcome.status} (0 is the refusal)`);
@@ -153,16 +164,21 @@ try {
     }
     process.exit(2);
   }
+  if (decoded) {
+    console.log(`\nREFUSED: ${decoded.name}(${decoded.args.map(String).join(", ")})`);
+    process.exit(2);
+  }
   throw error;
 }
 
-const tx = await registry.registerPledge(proof);
+const tx = await registry[op.method](proof);
 console.log(`\nsubmitted ${tx.hash}`);
 const mined = await tx.wait();
 console.log(`mined     block ${mined.blockNumber}, gas ${mined.gasUsed}`);
 console.log(`explorer  ${EXPLORER}/tx/${tx.hash}`);
 
 const record = await registry.getStatus(assetKey);
+const collisions = await registry.collisionCount(assetKey);
 console.log("\nregistry record");
 console.log(`  state       ${STATE_NAMES[Number(record.state)]}`);
 console.log(`  emitter     ${record.emitter}`);
@@ -171,3 +187,5 @@ console.log(`  amount      ${ethers.formatEther(record.amount)}`);
 console.log(`  instanceId  ${record.instanceId}`);
 console.log(`  chainKey    ${record.chainKey}`);
 console.log(`  height      ${record.sourceHeight}`);
+console.log(`  certificate ${await registry.certificateOf(assetKey)}`);
+console.log(`  collisions  ${collisions}`);
