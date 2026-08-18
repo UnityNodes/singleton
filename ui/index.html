@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Singleton, register of liens</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0b'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' fill='%23d98d3a' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E" />
+<style>
+  :root {
+    --ink: #0a0a0b;
+    --ink-2: #121214;
+    --rule: #2a2a2d;
+    --paper: #e9e3d5;
+    --paper-dim: #9a958a;
+    --stamp: #d98d3a;
+    --refuse: #c4432c;
+    --settle: #7d9a63;
+    --free: #5f7f8f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo, monospace;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; background: var(--ink); color: var(--paper); }
+
+  body {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+    letter-spacing: 0.01em;
+    padding: 0 0 80px;
+    position: relative;
+  }
+
+  /* paper grain, so the black is a surface and not a void */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    z-index: 100;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------------------------------------------------------- masthead */
+
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding: 34px 0 18px;
+    margin-bottom: 0;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 1;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  h1 em { font-style: italic; color: var(--stamp); }
+
+  .masthead-rule {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--paper-dim);
+  }
+
+  .chains {
+    display: flex;
+    gap: 26px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule);
+    padding: 12px 0;
+    font-size: 11px;
+    color: var(--paper-dim);
+  }
+
+  .chains b { color: var(--paper); font-weight: 400; }
+
+  /* ------------------------------------------------------------- query */
+
+  form {
+    display: grid;
+    grid-template-columns: 150px 1fr 130px auto;
+    gap: 12px;
+    align-items: end;
+    padding: 26px 0 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--paper-dim);
+    margin-bottom: 6px;
+  }
+
+  input, select, button {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--paper);
+    background: var(--ink-2);
+    border: 1px solid var(--rule);
+    padding: 9px 11px;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  input:focus, select:focus { outline: none; border-color: var(--stamp); }
+
+  button {
+    cursor: pointer;
+    background: var(--paper);
+    color: var(--ink);
+    border-color: var(--paper);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 11px;
+    padding: 11px 22px;
+    white-space: nowrap;
+    transition: background 120ms linear, color 120ms linear;
+  }
+
+  button:hover { background: var(--stamp); border-color: var(--stamp); }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 26px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .presets button {
+    background: transparent;
+    color: var(--paper-dim);
+    border: 1px dashed var(--rule);
+    width: auto;
+    padding: 6px 12px;
+    letter-spacing: 0.1em;
+    text-transform: none;
+    font-size: 11px;
+  }
+
+  .presets button:hover { color: var(--ink); background: var(--paper-dim); border-style: solid; }
+
+  /* ------------------------------------------------------------ record */
+
+  .record {
+    display: grid;
+    grid-template-columns: 1fr 210px;
+    gap: 40px;
+    padding: 34px 0 28px;
+    border-bottom: 1px solid var(--rule);
+    min-height: 220px;
+  }
+
+  .fields { display: grid; grid-template-columns: 150px 1fr; row-gap: 11px; column-gap: 18px; }
+
+  .fields dt {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--paper-dim);
+    padding-top: 2px;
+  }
+
+  .fields dd { margin: 0; word-break: break-all; }
+
+  .fields dd.big { font-family: var(--serif); font-size: 19px; line-height: 1.2; }
+
+  a { color: var(--stamp); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--stamp); }
+
+  .copy { cursor: pointer; border-bottom: 1px dotted var(--rule); }
+  .copy:hover { border-bottom-color: var(--stamp); }
+
+  /* the stamp: the one thing anybody remembers */
+  .stamp {
+    align-self: start;
+    justify-self: end;
+    border: 3px solid currentColor;
+    padding: 14px 18px 12px;
+    transform: rotate(-6deg);
+    text-align: center;
+    opacity: 0.92;
+    animation: press 380ms cubic-bezier(.2,1.4,.5,1) both;
+  }
+
+  @keyframes press {
+    from { transform: rotate(-14deg) scale(1.7); opacity: 0; }
+    to { transform: rotate(-6deg) scale(1); opacity: 0.92; }
+  }
+
+  .stamp .word {
+    font-family: var(--serif);
+    font-size: 30px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    display: block;
+  }
+
+  .stamp .sub {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-top: 7px;
+    display: block;
+  }
+
+  .stamp.free { color: var(--free); }
+  .stamp.pledged { color: var(--stamp); }
+  .stamp.settled { color: var(--settle); }
+  .stamp.unknown { color: var(--rule); }
+
+  /* ---------------------------------------------------------- sections */
+
+  section h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    margin: 30px 0 12px;
+    color: var(--paper);
+  }
+
+  section h2 span { color: var(--paper-dim); font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+  th {
+    text-align: left;
+    font-weight: 400;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--paper-dim);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 12px 7px 0;
+  }
+
+  td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--ink-2); vertical-align: top; }
+
+  tr:hover td { background: var(--ink-2); }
+
+  .tag {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+
+  .tag.pledge { color: var(--stamp); }
+  .tag.refused { color: var(--refuse); }
+  .tag.settled { color: var(--settle); }
+  .tag.released { color: var(--free); }
+
+  .unit { color: var(--paper-dim); font-size: 11px; margin-left: 8px; }
+
+  .empty { color: var(--paper-dim); font-style: italic; font-family: var(--serif); padding: 14px 0; }
+
+  .note {
+    color: var(--paper-dim);
+    font-size: 11px;
+    border-left: 2px solid var(--rule);
+    padding-left: 14px;
+    margin: 34px 0 0;
+    max-width: 620px;
+  }
+
+  .err { color: var(--refuse); padding: 14px 0; }
+
+  .pulse { animation: pulse 900ms ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0.35 } 50% { opacity: 1 } }
+
+  @media (max-width: 760px) {
+    form { grid-template-columns: 1fr; }
+    .record { grid-template-columns: 1fr; }
+    .stamp { justify-self: start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Singleton, <em>register of liens</em></h1>
+    <div class="masthead-rule">
+      <span>First to file, on Creditcoin</span>
+      <span>Registry <a id="registryLink" target="_blank" rel="noreferrer"></a></span>
+    </div>
+  </header>
+
+  <div class="chains" id="chains"><span class="pulse">reading attested chains</span></div>
+
+  <form id="query" autocomplete="off">
+    <div>
+      <label for="chain">Source chain</label>
+      <select id="chain"></select>
+    </div>
+    <div>
+      <label for="token">Collateral contract</label>
+      <input id="token" placeholder="0x..." spellcheck="false" />
+    </div>
+    <div>
+      <label for="tokenId">Token id</label>
+      <input id="tokenId" placeholder="42" spellcheck="false" />
+    </div>
+    <div><button type="submit">Search the register</button></div>
+  </form>
+
+  <div class="presets" id="presets"></div>
+
+  <div class="record" id="record">
+    <dl class="fields" id="fields"></dl>
+    <div class="stamp unknown" id="stamp"><span class="word">&mdash;</span><span class="sub">no query</span></div>
+  </div>
+
+  <section>
+    <h2>Refused pledges on this asset <span id="collisionCount"></span></h2>
+    <div id="collisions"><div class="empty">Nothing queried yet.</div></div>
+  </section>
+
+  <section>
+    <h2>What this asset has been through <span id="historyNote"></span></h2>
+    <div id="history"><div class="empty">Nothing queried yet.</div></div>
+  </section>
+
+  <section>
+    <h2>The register, most recent first <span id="ledgerRange"></span></h2>
+    <div id="ledger"><div class="empty pulse">reading the register</div></div>
+  </section>
+
+  <p class="note">
+    This is a positive record and a priority rule, not proof of absence. An asset
+    shown as free is an asset nobody has registered, which is not the same as an
+    asset nobody has pledged. That distinction is how UCC-9 has governed liens for
+    fifty years, and it is stated here rather than discovered later.
+  </p>
+
+</div>
+
+<script>
+/* -------------------------------------------------------------- config */
+
+/* A redeployed registry is one query string away, so a demo never needs the
+   page edited: index.html?registry=0x... */
+const QUERY = new URLSearchParams(location.search);
+
+const CFG = {
+  rpc: QUERY.get("rpc") ?? "https://rpc.cc3-testnet.creditcoin.network",
+  registry: QUERY.get("registry") ?? "0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4",
+  explorer: "https://creditcoin-testnet.blockscout.com",
+  chainInfo: "0x0000000000000000000000000000000000000fD3",
+  sources: {
+    11155111: { name: "Sepolia", explorer: "https://sepolia.etherscan.io" },
+    1: { name: "Ethereum", explorer: "https://etherscan.io" },
+  },
+  presets: [
+    { label: "Demo deed 42 (Sepolia)", chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", id: "42" },
+    { label: "NFTfi collateral 7819", chainId: 1, token: "0xd774557b647330C91Bf44cfEAB205095f7E6c367", id: "7819" },
+    { label: "Blend, Pudgy 8189", chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", id: "8189" },
+    { label: "Blend, Pudgy 4271 (seized)", chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", id: "4271" },
+  ],
+};
+
+const SELECTOR = {
+  assetKeyOf: "0xa5fa9d70",
+  getStatus: "0x5de28ae0",
+  collisionCount: "0x1cf4e706",
+  collisionAt: "0x6f81b28f",
+  certificateOf: "0x27027589",
+  minConfirmations: "0xfd166d65",
+  supportedChains: "0x69e18c3c",
+  attestedTip: "0x809112da",
+};
+
+const TOPIC = {
+  "0xb4de7f620eb5d8eaab350bc099399f71c08c2fde907ce2b8d68f9651b0535eb8": "pledge",
+  "0x78bf8702fc87c1887744d1d92e9af8673bc6da890a1da46b549888e34f4a2400": "refused",
+  "0x181a581803236c268c5f5e8ad0f668e8a3032c00311e3954bcf84a3ec8d90a09": "settled",
+  "0x99b0f20d6946893f54e3836d815265d601b32da1ef5a840d17fe8295e68a9bf6": "released",
+};
+
+const STATE = ["free", "pledged", "settled"];
+const ZERO = "0x0000000000000000000000000000000000000000";
+
+/* ------------------------------------------------- abi, by hand and small */
+
+const pad = (hex) => hex.replace(/^0x/, "").padStart(64, "0");
+const word = (data, i) => data.slice(2 + i * 64, 2 + (i + 1) * 64);
+const toBig = (w) => BigInt("0x" + w);
+const toAddr = (w) => "0x" + w.slice(24);
+const toHex32 = (w) => "0x" + w;
+
+function encUint(value) { return pad(BigInt(value).toString(16)); }
+function encAddr(value) { return pad(value.toLowerCase()); }
+
+let rpcId = 0;
+
+async function rpc(method, params) {
+  const res = await fetch(CFG.rpc, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }),
+  });
+  const body = await res.json();
+  if (body.error) throw new Error(body.error.message || "rpc error");
+  return body.result;
+}
+
+const call = (to, data) => rpc("eth_call", [{ to, data }, "latest"]);
+
+/**
+ * Reads the register in windows.
+ *
+ * The public node refuses a log query that takes it more than ten seconds, and
+ * a wide window is exactly that. Several narrow windows answer instantly and
+ * a failed one costs only its own slice, so the page degrades to fewer entries
+ * rather than to an error.
+ */
+async function logWindows(topics, { windows = 8, size = 4000 } = {}) {
+  const head = Number(toBig((await rpc("eth_blockNumber", [])).slice(2).padStart(64, "0")));
+
+  const slices = Array.from({ length: windows }, (_, i) => {
+    const to = head - i * size;
+    return { from: Math.max(0, to - size + 1), to };
+  }).filter((w) => w.to >= 0);
+
+  const answers = await Promise.all(
+    slices.map(({ from, to }) =>
+      rpc("eth_getLogs", [
+        {
+          address: CFG.registry,
+          topics,
+          fromBlock: "0x" + from.toString(16),
+          toBlock: "0x" + to.toString(16),
+        },
+      ]).catch(() => []), // one blind window beats one blank page
+    ),
+  );
+
+  const collected = answers.flat().filter((l) => TOPIC[l.topics[0]]);
+  collected.sort((a, b) => Number(BigInt(a.blockNumber) - BigInt(b.blockNumber)));
+  return { head, logs: collected };
+}
+
+/* Supported chains: a dynamic array of structs carrying a dynamic bytes name.
+   Decoded by hand because this page ships no dependencies, on purpose: it is a
+   public register and it should be readable from a single file. */
+function decodeSupportedChains(hex) {
+  const base = Number(toBig(word(hex, 0))) / 32;
+  const count = Number(toBig(word(hex, base)));
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const off = base + 1 + Number(toBig(word(hex, base + 1 + i))) / 32;
+    out.push({
+      chainKey: Number(toBig(word(hex, off))),
+      chainId: Number(toBig(word(hex, off + 1))),
+    });
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------- rendering */
+
+const $ = (id) => document.getElementById(id);
+const short = (hex, head = 6, tail = 4) => hex.slice(0, 2 + head) + "…" + hex.slice(-tail);
+const ether = (wei) => {
+  const whole = wei / 10n ** 18n;
+  const frac = (wei % 10n ** 18n).toString().padStart(18, "0").slice(0, 4).replace(/0+$/, "");
+  return frac ? `${whole}.${frac}` : `${whole}`;
+};
+const stamp = (state, sub) => {
+  const el = $("stamp");
+  el.className = "stamp " + state;
+  el.innerHTML = `<span class="word">${state}</span><span class="sub">${sub}</span>`;
+};
+
+function sourceLink(chainId, path, text) {
+  const src = CFG.sources[chainId];
+  if (!src) return text;
+  return `<a href="${src.explorer}/${path}" target="_blank" rel="noreferrer">${text}</a>`;
+}
+
+function row(term, value) {
+  return `<dt>${term}</dt><dd>${value}</dd>`;
+}
+
+/* ------------------------------------------------------------ the query */
+
+let CHAIN_KEYS = {};
+
+async function loadChains() {
+  const chains = decodeSupportedChains(await call(CFG.chainInfo, SELECTOR.supportedChains));
+  const select = $("chain");
+  const strip = [];
+  select.innerHTML = "";
+
+  for (const { chainKey, chainId } of chains) {
+    const known = CFG.sources[chainId];
+    if (!known) continue;
+    CHAIN_KEYS[chainId] = chainKey;
+
+    const option = document.createElement("option");
+    option.value = String(chainId);
+    option.textContent = known.name;
+    select.appendChild(option);
+
+    const tip = await call(CFG.chainInfo, SELECTOR.attestedTip + encUint(chainKey));
+    const depth = await call(CFG.registry, SELECTOR.minConfirmations + encUint(chainKey));
+    strip.push(
+      `<span>${known.name} &middot; chain id <b>${chainId}</b> resolves to key <b>${chainKey}</b>` +
+        ` &middot; attested to block <b>${toBig(word(tip, 0))}</b>` +
+        ` &middot; depth <b>${toBig(word(depth, 0))}</b></span>`,
+    );
+  }
+
+  $("chains").innerHTML = strip.join("");
+}
+
+async function lookup(chainId, token, tokenId) {
+  const chainKey = CHAIN_KEYS[chainId];
+  if (chainKey === undefined) throw new Error(`chain id ${chainId} is not attested here`);
+
+  const assetKey = await call(
+    CFG.registry,
+    SELECTOR.assetKeyOf + encUint(chainKey) + encAddr(token) + encUint(tokenId),
+  );
+
+  const status = await call(CFG.registry, SELECTOR.getStatus + pad(assetKey));
+  const certificate = toAddr(word(await call(CFG.registry, SELECTOR.certificateOf + pad(assetKey)), 0));
+  const count = Number(toBig(word(await call(CFG.registry, SELECTOR.collisionCount + pad(assetKey)), 0)));
+
+  const record = {
+    assetKey,
+    state: Number(toBig(word(status, 0))),
+    emitter: toAddr(word(status, 1)),
+    borrower: toAddr(word(status, 2)),
+    amount: toBig(word(status, 3)),
+    instanceId: toHex32(word(status, 4)),
+    chainKey: Number(toBig(word(status, 5))),
+    sourceHeight: Number(toBig(word(status, 6))),
+    recordedAt: Number(toBig(word(status, 7))),
+    certificate,
+    collisions: [],
+  };
+
+  for (let i = 0; i < count; i++) {
+    const c = await call(CFG.registry, SELECTOR.collisionAt + pad(assetKey) + encUint(i));
+    record.collisions.push({
+      emitter: toAddr(word(c, 0)),
+      borrower: toAddr(word(c, 1)),
+      amount: toBig(word(c, 2)),
+      instanceId: toHex32(word(c, 3)),
+      sourceHeight: Number(toBig(word(c, 5))),
+      reportedAt: Number(toBig(word(c, 6))),
+    });
+  }
+
+  return record;
+}
+
+function renderRecord(chainId, token, tokenId, r) {
+  const src = CFG.sources[chainId];
+  const fields = [
+    row("Asset", `<span class="big">${sourceLink(chainId, `token/${token}`, short(token, 10, 6))} &middot; #${tokenId}</span>`),
+    row("Asset key", `<span class="copy" title="click to copy" data-copy="${r.assetKey}">${short(r.assetKey, 12, 8)}</span>`),
+    row("Source", `${src.name}, chain key ${CHAIN_KEYS[chainId]}`),
+  ];
+
+  if (r.state === 0) {
+    fields.push(row("Standing", "No lien on file. Nobody has registered this asset."));
+    stamp("free", "no lien on file");
+  } else {
+    fields.push(
+      row("Lien held by", sourceLink(chainId, `address/${r.emitter}`, short(r.emitter, 10, 8))),
+      row("Borrower", sourceLink(chainId, `address/${r.borrower}`, short(r.borrower, 10, 8))),
+      row("Principal", `${ether(r.amount)} <span class="unit">in the protocol's own denomination</span>`),
+      row("Instance", short(r.instanceId, 10, 6)),
+      row("Proven from", sourceLink(chainId, `block/${r.sourceHeight}`, `${src.name} block ${r.sourceHeight.toLocaleString("en-US")}`)),
+      row("Recorded", new Date(r.recordedAt * 1000).toISOString().replace("T", " ").slice(0, 19) + " UTC"),
+      row("Certificate", r.certificate === ZERO ? "none" : sourceLink(chainId, `address/${r.certificate}`, short(r.certificate, 8, 6))),
+    );
+    stamp(STATE[r.state], r.state === 1 ? "first to file" : "debt discharged");
+  }
+
+  $("fields").innerHTML = fields.join("");
+  $("fields").querySelectorAll("[data-copy]").forEach((el) => {
+    el.addEventListener("click", () => {
+      navigator.clipboard?.writeText(el.dataset.copy);
+      const was = el.textContent;
+      el.textContent = "copied";
+      setTimeout(() => (el.textContent = was), 900);
+    });
+  });
+
+  $("collisionCount").textContent = r.collisions.length ? `(${r.collisions.length})` : "";
+  $("collisions").innerHTML = r.collisions.length
+    ? `<table><thead><tr><th>Protocol</th><th>Borrower</th><th>Amount</th><th>Proven from</th></tr></thead><tbody>` +
+      r.collisions
+        .map(
+          (c) =>
+            `<tr><td><span class="tag refused">refused</span> ${sourceLink(chainId, `address/${c.emitter}`, short(c.emitter, 8, 6))}</td>` +
+            `<td>${short(c.borrower, 8, 6)}</td><td>${ether(c.amount)}</td>` +
+            `<td>${sourceLink(chainId, `block/${c.sourceHeight}`, `block ${c.sourceHeight.toLocaleString("en-US")}`)}</td></tr>`,
+        )
+        .join("") +
+      `</tbody></table>`
+    : `<div class="empty">Nobody has tried to pledge this asset twice.</div>`;
+}
+
+/* ------------------------------------------------- the life of one asset */
+
+const ENTRY_WORDS = {
+  pledge: "recorded, first to file",
+  refused: "a second pledge refused and kept on file",
+  settled: "debt settled",
+  released: "lien released, asset free again",
+};
+
+/**
+ * A free asset and an asset that was never pledged look identical in the
+ * current state and are not the same thing at all. The register keeps both, so
+ * the page shows both.
+ */
+async function loadHistory(assetKey) {
+  $("history").innerHTML = `<div class="empty pulse">reading this asset</div>`;
+  const { logs } = await logWindows([null, assetKey]);
+
+  const rows = logs
+    .reverse()
+    .map((l) => {
+      const kind = TOPIC[l.topics[0]];
+      const party = "0x" + (kind === "refused" ? l.topics[3] : l.topics[2]).slice(26);
+      return (
+        `<tr><td><span class="tag ${kind}">${kind}</span></td>` +
+        `<td>${ENTRY_WORDS[kind]}</td><td>${short(party, 8, 6)}</td>` +
+        `<td><a href="${CFG.explorer}/tx/${l.transactionHash}" target="_blank" rel="noreferrer">${short(l.transactionHash, 10, 6)}</a></td></tr>`
+      );
+    });
+
+  $("historyNote").textContent = rows.length ? `${rows.length} entries` : "";
+  $("history").innerHTML = rows.length
+    ? `<table><thead><tr><th>Entry</th><th>Meaning</th><th>Party</th><th>On Creditcoin</th></tr></thead><tbody>${rows.join("")}</tbody></table>`
+    : `<div class="empty">This asset has never been registered here. That is not the same as never pledged.</div>`;
+}
+
+/* --------------------------------------------------------- the register */
+
+async function loadLedger() {
+  const { logs } = await logWindows([]);
+
+  const rows = logs
+    .reverse()
+    .slice(0, 24)
+    .map((l) => {
+      const kind = TOPIC[l.topics[0]];
+      const assetKey = l.topics[1];
+      // On a refusal the third topic is the incumbent and the fourth is the
+      // protocol that was turned away. The one worth naming is the loser.
+      const party = "0x" + (kind === "refused" ? l.topics[3] : l.topics[2]).slice(26);
+      return (
+        `<tr><td><span class="tag ${kind}">${kind}</span></td>` +
+        `<td>${short(assetKey, 10, 6)}</td>` +
+        `<td>${short(party, 8, 6)}</td>` +
+        `<td><a href="${CFG.explorer}/tx/${l.transactionHash}" target="_blank" rel="noreferrer">${short(l.transactionHash, 10, 6)}</a></td></tr>`
+      );
+    });
+
+  $("ledgerRange").textContent = `${logs.length} entries in the last 32000 blocks`;
+  $("ledger").innerHTML = rows.length
+    ? `<table><thead><tr><th>Entry</th><th>Asset key</th><th>Party</th><th>On Creditcoin</th></tr></thead><tbody>${rows.join("")}</tbody></table>`
+    : `<div class="empty">The register is empty in this window.</div>`;
+}
+
+/* -------------------------------------------------------------- wiring */
+
+async function run(chainId, token, tokenId) {
+  $("fields").innerHTML = `<dt>status</dt><dd class="pulse">reading the register</dd>`;
+  stamp("unknown", "reading");
+  try {
+    const record = await lookup(chainId, token, tokenId);
+    renderRecord(chainId, token, tokenId, record);
+    loadHistory(record.assetKey).catch((error) => {
+      $("history").innerHTML = `<div class="err">${error.message}</div>`;
+    });
+  } catch (error) {
+    $("fields").innerHTML = `<dt>refused</dt><dd class="err">${error.message}</dd>`;
+    stamp("unknown", "no answer");
+  }
+}
+
+$("query").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const chainId = Number($("chain").value);
+  const token = $("token").value.trim();
+  const tokenId = $("tokenId").value.trim() || "0";
+  if (!/^0x[0-9a-fA-F]{40}$/.test(token)) {
+    $("fields").innerHTML = `<dt>refused</dt><dd class="err">that is not a contract address</dd>`;
+    stamp("unknown", "no answer");
+    return;
+  }
+  run(chainId, token, tokenId);
+});
+
+$("presets").innerHTML = CFG.presets
+  .map((p, i) => `<button type="button" data-preset="${i}">${p.label}</button>`)
+  .join("");
+
+$("presets").addEventListener("click", (event) => {
+  const index = event.target.dataset?.preset;
+  if (index === undefined) return;
+  const p = CFG.presets[Number(index)];
+  $("chain").value = String(p.chainId);
+  $("token").value = p.token;
+  $("tokenId").value = p.id;
+  run(p.chainId, p.token, p.id);
+});
+
+$("registryLink").textContent = short(CFG.registry, 10, 8);
+$("registryLink").href = `${CFG.explorer}/address/${CFG.registry}`;
+
+(async () => {
+  try {
+    await loadChains();
+    const first = CFG.presets[0];
+    $("chain").value = String(first.chainId);
+    $("token").value = first.token;
+    $("tokenId").value = first.id;
+    await run(first.chainId, first.token, first.id);
+  } catch (error) {
+    $("chains").innerHTML = `<span class="err">${error.message}</span>`;
+  }
+  loadLedger().catch((error) => {
+    $("ledger").innerHTML = `<div class="err">${error.message}</div>`;
+  });
+})();
+</script>
+</body>
+</html>

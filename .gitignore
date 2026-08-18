@@ -7,3 +7,6 @@ broadcast/
 *.key
 .deployer.key
 .DS_Store
+
+# playwright artefacts
+.playwright-mcp/

@@ -147,6 +147,7 @@ src/            registry and interfaces
   adapters/     reference adapter for a foreign event schema
   vendor/       EvmV1Decoder, vendored from @gluwa/usc-contracts
 worker/         off-chain relay: proofs, lifecycle, admin
+ui/             the register as a page, one file, no dependencies
 gates/          the probes that cleared the technical unknowns
   src/          probe contracts, run inside a constructor via eth_call
   run/          scripts that execute them against live CC3
