@@ -20,6 +20,11 @@ Addresses come from `worker/deployed.json`, overridable by environment
 | `lifecycle.mjs <harbor\|meridian> <settle\|release>` | Moves that lien forward on Sepolia: repayment, then discharge. Each call emits one real log and so becomes one more proof. |
 | `relay.mjs <sourceTxHash> [pledge\|collision\|settle\|release]` | Waits for the finality window, fetches the inclusion proof, submits the matching entry point on Creditcoin, prints the record. A refused pledge stops at the static call and names the incumbent; `collision` then records the attempt without touching it. |
 | `allow.mjs <emitter> [on\|off]` | Registry admin: allowlist an emitter, or `--min-conf <blocks>`. |
+| `status.mjs [token] [tokenId]` | What a lender calls before lending: state, incumbent, certificate and every refused pledge on file. Read only, no key needed. |
+| `demo.mjs [--list]` | Replays the whole life of the demo asset from `demo.json` into whichever registry is configured. The source transactions already exist and are already final, so the sequence runs in minutes rather than hours. |
+
+`relay-core.mjs` holds the logic; `relay.mjs` and `demo.mjs` are two front ends
+onto it.
 
 `FORCE_SUBMIT=1` sends a refused pledge anyway, producing a failed transaction on
 Creditcoin on purpose: a revert in the explorer is checkable by anybody, a

@@ -1,0 +1,42 @@
+{
+  "asset": "RwaDeed token 42 on Sepolia",
+  "steps": [
+    {
+      "operation": "pledge",
+      "tx": "0x00df961cd3753ccb3f1d06a251128a48103b0f54b177a2e52b8e8050e45bdc0b",
+      "note": "Harbor lends against deed 42, first to file",
+      "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b",
+      "note": "Meridian lends against the same deed, refused live",
+      "expect": "refused",
+      "force": true
+    },
+    {
+      "operation": "collision",
+      "tx": "0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b",
+      "note": "the refusal is kept on file against the asset",
+      "expect": "recorded"
+    },
+    {
+      "operation": "settle",
+      "tx": "0x556caffca2f8842d2fc249528c56a2ad274f147e45082fc72914db179d2452ba",
+      "note": "Harbor is repaid, proven by its own log",
+      "expect": "recorded"
+    },
+    {
+      "operation": "release",
+      "tx": "0x4638fa524a3a510b4e4ebabd02562498c81e83d4917528483779dc9310879c9e",
+      "note": "Harbor discharges the lien, the asset is free again",
+      "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b",
+      "note": "Meridian's once refused lien now registers legitimately",
+      "expect": "recorded"
+    }
+  ]
+}
