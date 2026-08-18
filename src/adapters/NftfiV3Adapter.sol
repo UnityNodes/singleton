@@ -116,7 +116,13 @@ contract NftfiV3Adapter is IPledgeAdapter {
              */
             (uint256 principal, uint256 collateralId,,, address collateral,) =
                 abi.decode(log.data, (uint256, uint256, uint256, uint256, address, address));
-            return (collateral, collateralId, address(uint160(uint256(log.topics[2]))), principal, instanceId);
+            return (
+                collateral,
+                collateralId,
+                address(uint160(uint256(log.topics[2]))),
+                principal,
+                instanceId
+            );
         }
 
         revert UnsupportedKind(kind);

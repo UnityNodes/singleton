@@ -80,8 +80,14 @@ contract BlendAdapter is IPledgeAdapter {
         )
     {
         if (kind == KIND_PLEDGE) {
-            (, uint256 lienId, address collection,, address obligor, uint256 loanAmount,, uint256 id,)
-            = abi.decode(
+            (
+                ,
+                uint256 lienId,
+                address collection,,
+                address obligor,
+                uint256 loanAmount,,
+                uint256 id,
+            ) = abi.decode(
                 log.data,
                 (bytes32, uint256, address, address, address, uint256, uint256, uint256, uint256)
             );

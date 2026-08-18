@@ -61,8 +61,7 @@ contract NftfiAdapterTest is SourceChain {
 
         entry.emitter = NFTFI;
         entry.topics = topics;
-        entry.data =
-            hex"00000000000000000000000000000000000000000000000000f8b0a10e470000"
+        entry.data = hex"00000000000000000000000000000000000000000000000000f8b0a10e470000"
             hex"0000000000000000000000000000000000000000000000000100a962bf212862"
             hex"0000000000000000000000000000000000000000000000000000000000001e8b"
             hex"000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
@@ -89,8 +88,7 @@ contract NftfiAdapterTest is SourceChain {
 
         entry.emitter = NFTFI;
         entry.topics = topics;
-        entry.data =
-            hex"00000000000000000000000000000000000000000000000000f8b0a10e470000"
+        entry.data = hex"00000000000000000000000000000000000000000000000000f8b0a10e470000"
             hex"0000000000000000000000000000000000000000000000000000000000001e8b"
             hex"0000000000000000000000000000000000000000000000000100a962bf212862"
             hex"0000000000000000000000000000000000000000000000000000000000000000"
@@ -120,7 +118,9 @@ contract NftfiAdapterTest is SourceChain {
         registry.registerPledge(_relayFrom(ETHEREUM, STARTED_AT, _loanStarted()));
         registry.registerRelease(_relayFrom(ETHEREUM, REPAID_AT, _loanRepaid()));
 
-        assertEq(uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE));
+        assertEq(
+            uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE)
+        );
         assertEq(registry.certificateOf(assetKey), address(0), "certificate burned with the lien");
     }
 
@@ -132,7 +132,9 @@ contract NftfiAdapterTest is SourceChain {
         SingletonRegistry.Proof memory repaid = _relayFrom(ETHEREUM, REPAID_AT, _loanRepaid());
 
         vm.expectRevert(
-            abi.encodeWithSelector(SingletonRegistry.TransitionUnsupported.selector, NFTFI, uint8(1))
+            abi.encodeWithSelector(
+                SingletonRegistry.TransitionUnsupported.selector, NFTFI, uint8(1)
+            )
         );
         registry.registerSettlement(repaid);
     }
@@ -147,7 +149,9 @@ contract NftfiAdapterTest is SourceChain {
             OBLIGATION_HOLDER_AT_REPAYMENT != BORROWER_ONCHAIN, "the fixture really does differ"
         );
         registry.registerRelease(_relayFrom(ETHEREUM, REPAID_AT, _loanRepaid()));
-        assertEq(uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE));
+        assertEq(
+            uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE)
+        );
     }
 
     /// Reading NFTfi never touches Sepolia's key space, so a mainnet lien

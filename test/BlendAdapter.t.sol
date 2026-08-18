@@ -60,8 +60,7 @@ contract BlendAdapterTest is SourceChain {
 
         entry.emitter = BLEND;
         entry.topics = topics;
-        entry.data =
-            hex"9b5777a1633dd5d60d5b40cbf8ba5f4b907ad259aa4aefb13ac702a38db1f6f0"
+        entry.data = hex"9b5777a1633dd5d60d5b40cbf8ba5f4b907ad259aa4aefb13ac702a38db1f6f0"
             hex"000000000000000000000000000000000000000000000000000000000006a675"
             hex"000000000000000000000000bd3531da5cf5857e7cfaa92426877b022e612cf8"
             hex"000000000000000000000000d22be1c0ae3e0e87a69f149cb1948309846d2332"
@@ -79,8 +78,7 @@ contract BlendAdapterTest is SourceChain {
 
         entry.emitter = BLEND;
         entry.topics = topics;
-        entry.data =
-            hex"000000000000000000000000000000000000000000000000000000000006a675"
+        entry.data = hex"000000000000000000000000000000000000000000000000000000000006a675"
             hex"000000000000000000000000bd3531da5cf5857e7cfaa92426877b022e612cf8";
     }
 
@@ -104,7 +102,9 @@ contract BlendAdapterTest is SourceChain {
         registry.registerPledge(_relayFrom(ETHEREUM, TAKEN_AT, _loanOfferTaken()));
         registry.registerRelease(_relayFrom(ETHEREUM, REPAID_AT, _repay()));
 
-        assertEq(uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE));
+        assertEq(
+            uint8(registry.getStatus(assetKey).state), uint8(SingletonRegistry.AssetState.FREE)
+        );
         assertEq(registry.certificateOf(assetKey), address(0));
         assertEq(registry.assetOfInstance(ETHEREUM, BLEND, LIEN_ID), bytes32(0), "index cleared");
     }
@@ -147,8 +147,7 @@ contract BlendAdapterTest is SourceChain {
     function test_theSameOpenInstanceCannotBeOpenedTwice() public {
         registry.registerPledge(_relayFrom(ETHEREUM, TAKEN_AT, _loanOfferTaken()));
 
-        SingletonRegistry.Proof memory again =
-            _relayFrom(ETHEREUM, TAKEN_AT + 1, _loanOfferTaken());
+        SingletonRegistry.Proof memory again = _relayFrom(ETHEREUM, TAKEN_AT + 1, _loanOfferTaken());
 
         vm.expectRevert(
             abi.encodeWithSelector(SingletonRegistry.AssetNotFree.selector, assetKey, BLEND)
@@ -169,7 +168,9 @@ contract BlendAdapterTest is SourceChain {
 
         registry.registerRelease(_relayFrom(ETHEREUM, SEIZED_AT, _seize()));
 
-        assertEq(uint8(registry.getStatus(seizedKey).state), uint8(SingletonRegistry.AssetState.FREE));
+        assertEq(
+            uint8(registry.getStatus(seizedKey).state), uint8(SingletonRegistry.AssetState.FREE)
+        );
         assertEq(registry.assetOfInstance(ETHEREUM, BLEND, SEIZED_LIEN_ID), bytes32(0));
     }
 
@@ -180,8 +181,7 @@ contract BlendAdapterTest is SourceChain {
 
         entry.emitter = BLEND;
         entry.topics = topics;
-        entry.data =
-            hex"c0d37f3496d3a1eee34b7a04a3fbb2e258fcb4c8e633978a42473a9455855d7d"
+        entry.data = hex"c0d37f3496d3a1eee34b7a04a3fbb2e258fcb4c8e633978a42473a9455855d7d"
             hex"000000000000000000000000000000000000000000000000000000000006b2ac"
             hex"000000000000000000000000bd3531da5cf5857e7cfaa92426877b022e612cf8"
             hex"000000000000000000000000223ee0c3dc4be9fadb623c12e8be9443130e8377"
@@ -199,8 +199,7 @@ contract BlendAdapterTest is SourceChain {
 
         entry.emitter = BLEND;
         entry.topics = topics;
-        entry.data =
-            hex"000000000000000000000000000000000000000000000000000000000006b2ac"
+        entry.data = hex"000000000000000000000000000000000000000000000000000000000006b2ac"
             hex"000000000000000000000000bd3531da5cf5857e7cfaa92426877b022e612cf8";
     }
 

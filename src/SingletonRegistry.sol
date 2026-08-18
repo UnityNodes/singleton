@@ -575,11 +575,7 @@ contract SingletonRegistry {
      * keyed by the emitter as well as the instance, so one protocol can never
      * resolve into another protocol's lien.
      */
-    function _resolveAsset(uint64 chainKey, SourceEvent memory ev)
-        private
-        view
-        returns (bytes32)
-    {
+    function _resolveAsset(uint64 chainKey, SourceEvent memory ev) private view returns (bytes32) {
         if (ev.token != address(0)) return _assetKey(chainKey, ev.token, ev.tokenId);
 
         bytes32 assetKey = _assetByInstance[_instanceKey(chainKey, ev.emitter, ev.instanceId)];
