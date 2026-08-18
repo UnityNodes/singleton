@@ -209,6 +209,41 @@ pledges. That is a product decision, not a patch.
 
 ---
 
+## W2 live run: the whole life of one asset
+
+Six proofs against one deed, on the registry at
+`0x24089da935030bDB09Fb7a47adF68c51661cbeF0`, on 2026-08-18. Each source
+transaction is a real log mined on Sepolia; the sequence is replayable with
+`node worker/demo.mjs`.
+
+| Step | Source event | Result on CC3 | Gas |
+|---|---|---|---|
+| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | recorded, PLEDGED, certificate to Harbor, `0xf5d36a27...` | 443,352 |
+| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0xd22f090a...` | reverted |
+| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0x80772e08...` | 444,528 |
+| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0xd37cea53...` | 424,032 |
+| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0xbd18647e...` | 433,048 |
+| 6. Meridian re-files the same lien | the step 2 log again | recorded, PLEDGED by Meridian, `0xf285b075...` | 442,904 |
+
+Three things this run settles that the tests alone cannot.
+
+**The refusal and the record are separate powers.** Step 2 reverts and step 3
+records, from the same source log, and step 3 leaves the incumbent untouched.
+
+**Reporting a collision does not spend the proof.** Step 6 registers the very
+lien that was refused in step 2 and reported in step 3, because the nullifier is
+domained per operation. A lien that lost a race is still a real lien once the
+asset is free.
+
+**The certificate follows the lien, not the lender.** It was issued to Harbor in
+step 1, burned in step 5, and issued to Meridian in step 6.
+
+Gas sits between 424k and 445k per proof, the bulk of it the precompile
+verifying continuity. The spread across operations is under five percent, so the
+lifecycle costs what the pledge costs.
+
+---
+
 ## Deployment, forge on Creditcoin
 
 `forge script` cannot run against CC3. Its fork backend fetches the current block
@@ -221,9 +256,16 @@ through it and configuration through `cast`. That is what `script/deploy-cc3.sh`
 does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
-**Live on CC3 testnet:** registry `0x6A44dE8E02b2617A569FDc147c45F8a15D0087De`,
-decoder linked to `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`,
-`minConfirmations[1] = 64`, admin `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
+**Live on CC3 testnet.** Current registry
+`0x24089da935030bDB09Fb7a47adF68c51661cbeF0`, decoder linked to
+`0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`, admin
+`0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
+
+Two earlier deployments are left on chain rather than hidden:
+`0x6A44dE8E02b2617A569FDc147c45F8a15D0087De` carries the W1 run below, and
+`0x63198729827F0eb9ED1A5eBC8FCDe58CBE7Fc2F2` was superseded within the hour by a
+refactor. Their transactions remain valid evidence of what the code did at the
+time.
 
 ---
 

@@ -43,12 +43,15 @@ the reason the product has no equivalent anywhere else.
 ## Status
 
 The registry is live on CC3 testnet and has taken one asset through its whole
-life against two unrelated lenders on Sepolia. Raw results, with every
-transaction hash, are in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+life against two unrelated lenders on Sepolia: pledged, a second pledge refused
+live, the refusal kept on file, settled, released, and re-pledged by the lender
+that lost the first race. Six proofs, every hash in
+[docs/VERIFICATION.md](docs/VERIFICATION.md), replayable with
+`node worker/demo.mjs`.
 
 | | |
 |---|---|
-| Registry, CC3 testnet | `0x63198729827F0eb9ED1A5eBC8FCDe58CBE7Fc2F2` |
+| Registry, CC3 testnet | `0x24089da935030bDB09Fb7a47adF68c51661cbeF0` |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
