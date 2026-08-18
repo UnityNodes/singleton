@@ -2,497 +2,437 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Singleton, the register of liens</title>
-<meta name="description" content="A neutral first to file register of collateral on Creditcoin. It witnesses pledges from unmodified lending protocols on other chains and refuses the second claim." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0b'/%3E%3Ctext x='16' y='24' font-family='Georgia,serif' font-size='22' fill='%23d1913c' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Singleton — register of liens</title>
+<meta name="description" content="A neutral first to file register of on-chain collateral, on Creditcoin. Check whether an asset already carries a lien before lending against it." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235f49ab'/%3E%3Crect x='9' y='9' width='14' height='14' rx='2' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3C/svg%3E" />
 <style>
   :root {
-    --ink: #0a0a0b;
-    --ink-2: #101012;
-    --ink-3: #17171a;
-    --rule: #26262a;
-    --rule-2: #333339;
-    --paper: #ece6d8;
-    --paper-2: #b4ada0;
-    --paper-3: #77726a;
-    --seal: #d1913c;
-    --oxide: #bf4b32;
-    --moss: #7f9a67;
-    --slate: #6d8b9c;
-    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo, "DejaVu Sans Mono", monospace;
-    --serif: "Iowan Old Style", Charter, "Bitstream Charter", "Palatino Linotype", Palatino, Georgia, serif;
-    --gutter: clamp(20px, 5vw, 64px);
+    /* one restrained accent, verified against white at 6.9:1 */
+    --bg: oklch(1 0 0);
+    --panel: oklch(0.985 0.004 290);
+    --panel-2: oklch(0.968 0.006 290);
+    --line: oklch(0.905 0.008 290);
+    --line-strong: oklch(0.86 0.01 290);
+    --ink: oklch(0.245 0.015 290);
+    --ink-2: oklch(0.47 0.018 290);
+    --accent: oklch(0.48 0.15 290);
+    --accent-hover: oklch(0.42 0.15 290);
+    --accent-wash: oklch(0.955 0.03 290);
+    --danger: oklch(0.52 0.18 27);
+    --danger-wash: oklch(0.96 0.035 27);
+    --good: oklch(0.5 0.09 168);
+    --neutral: oklch(0.56 0.03 290);
+
+    --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+    --r: 6px;
+    --shadow: 0 1px 2px oklch(0.245 0.015 290 / 0.06), 0 4px 12px oklch(0.245 0.015 290 / 0.04);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    --z-sticky: 10;
+    --z-toast: 40;
   }
 
   * { box-sizing: border-box; }
 
-  html { -webkit-text-size-adjust: 100%; }
+  html, body { height: 100%; }
 
   body {
     margin: 0;
-    background: var(--ink);
-    color: var(--paper);
-    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  button, input, select { font: inherit; color: inherit; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  .mono { font-family: var(--mono); font-size: 0.92em; font-variant-numeric: tabular-nums; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ------------------------------------------------------------- shell */
+
+  .app {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 340px 1fr;
+    grid-template-areas: "bar bar" "rail main";
+  }
+
+  /* ----------------------------------------------------------- top bar */
+
+  .bar {
+    grid-area: bar;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 16px 0 18px;
+    height: 52px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mark { display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: -0.01em; }
+  .mark svg { display: block; }
+  .mark span { color: var(--ink-2); font-weight: 400; }
+
+  .status { display: flex; gap: 18px; margin-left: auto; font-size: 12.5px; color: var(--ink-2); }
+  .status b { color: var(--ink); font-weight: 500; }
+  .status div { display: flex; align-items: center; gap: 7px; }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex: none; }
+  .dot.idle { background: var(--line-strong); }
+
+  .bar .reg { font-size: 12.5px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+
+  /* -------------------------------------------------------------- rail */
+
+  .rail {
+    grid-area: rail;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    min-height: 0;
+  }
+
+  .lookup { padding: 14px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+  .lookup .row { display: grid; grid-template-columns: 1fr 84px; gap: 8px; }
+
+  label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 5px; }
+
+  input, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r);
+    padding: 7px 9px;
     font-size: 13px;
-    line-height: 1.6;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.01em;
-    padding-bottom: 96px;
+    transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
   }
 
-  /* the ground is a surface, not a void */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 90;
-    pointer-events: none;
-    opacity: 0.05;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  input.mono { font-size: 12.5px; }
+  input::placeholder { color: var(--ink-2); opacity: 1; }
+  input:hover, select:hover { border-color: var(--neutral); }
+  input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+
+  .btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: var(--r);
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms var(--ease), border-color 150ms var(--ease);
   }
 
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0 0 auto;
-    height: 320px;
-    z-index: -1;
-    background: radial-gradient(120% 100% at 12% 0%, rgba(209, 145, 60, 0.09), transparent 62%);
-  }
+  .btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn:active { transform: translateY(0.5px); }
+  .btn[disabled] { background: var(--panel-2); border-color: var(--line-strong); color: var(--ink-2); cursor: not-allowed; }
 
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+  .btn.ghost:hover { background: var(--panel-2); border-color: var(--neutral); }
 
-  a { color: var(--seal); text-decoration: none; border-bottom: 1px solid rgba(209, 145, 60, 0.25); }
-  a:hover { border-bottom-color: var(--seal); }
-  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid var(--seal);
-    outline-offset: 2px;
-  }
-
-  .eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--paper-3);
-    margin: 0 0 10px;
-  }
-
-  /* -------------------------------------------------------- masthead */
-
-  .masthead {
-    border-bottom: 1px solid var(--rule);
-    padding: clamp(28px, 5vw, 52px) 0 20px;
-  }
-
-  .brand {
+  .rail-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
+    padding: 12px 14px 8px;
+    font-size: 12.5px;
+    color: var(--ink-2);
   }
 
-  h1 {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: clamp(30px, 5.2vw, 52px);
-    line-height: 0.98;
-    letter-spacing: -0.015em;
-    margin: 0;
-  }
+  .list { overflow: auto; padding: 0 8px 12px; min-height: 0; }
 
-  h1 em { font-style: italic; color: var(--seal); }
-
-  .claim {
-    max-width: 46ch;
-    color: var(--paper-2);
-    margin: 18px 0 0;
-    font-size: 13.5px;
-  }
-
-  .claim b { color: var(--paper); font-weight: 400; }
-
-  .masthead-meta {
-    text-align: right;
-    font-size: 11px;
-    color: var(--paper-3);
-    letter-spacing: 0.06em;
-  }
-
-  .chainstrip {
-    display: flex;
-    gap: 0;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--rule);
-    font-size: 11px;
-    color: var(--paper-3);
-  }
-
-  .chainstrip { gap: 0 34px; }
-
-  .chainstrip div { padding: 12px 0; }
-  .chainstrip b { color: var(--paper); font-weight: 400; }
-
-  /* ------------------------------------------------------- case file */
-
-  .case {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 310px;
-    gap: clamp(24px, 5vw, 64px);
-    padding: clamp(30px, 5vw, 56px) 0 34px;
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .case-title {
-    font-family: var(--serif);
-    font-size: clamp(24px, 3.6vw, 34px);
-    line-height: 1.1;
-    margin: 0 0 6px;
-    font-weight: 400;
-  }
-
-  .case-key {
-    color: var(--paper-3);
-    font-size: 11.5px;
-    word-break: break-word;
-    margin: 0 0 26px;
-  }
-
-  .facts { display: grid; grid-template-columns: 132px minmax(0, 1fr); row-gap: 10px; column-gap: 20px; margin: 0; }
-  .facts dt { color: var(--paper-3); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; padding-top: 3px; }
-  .facts dd { margin: 0; word-break: break-word; }
-  .facts .unit { color: var(--paper-3); font-size: 11px; margin-left: 8px; }
-
-  /* the seal: the thing people remember */
-  .seal-col { display: flex; flex-direction: column; align-items: flex-end; gap: 22px; }
-
-  .seal {
-    border: 3px double currentColor;
-    padding: 16px 20px 13px;
-    text-align: center;
-    transform: rotate(-7deg);
-    color: var(--rule-2);
-    animation: press 420ms cubic-bezier(0.16, 1.5, 0.5, 1) both;
-  }
-
-  .seal .word { font-family: var(--serif); font-size: 31px; line-height: 1; display: block; letter-spacing: 0.04em; }
-  .seal .sub { display: block; margin-top: 8px; font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase; }
-
-  .seal.free { color: var(--slate); }
-  .seal.pledged { color: var(--seal); }
-  .seal.settled { color: var(--moss); }
-
-  @keyframes press {
-    from { transform: rotate(-15deg) scale(1.6); opacity: 0; }
-    to { transform: rotate(-7deg) scale(1); opacity: 1; }
-  }
-
-  /* chain of proof */
-  .proof { width: 100%; border-top: 1px solid var(--rule); padding-top: 18px; }
-  .proof-step { position: relative; padding: 0 0 18px 22px; }
-  .proof-step::before {
-    content: "";
-    position: absolute;
-    left: 3px;
-    top: 6px;
-    width: 7px;
-    height: 7px;
-    border: 1px solid var(--seal);
-    background: var(--ink);
-  }
-  .proof-step:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    left: 6px;
-    top: 15px;
-    bottom: 2px;
-    width: 1px;
-    background: linear-gradient(var(--seal), var(--rule));
-  }
-  .proof-step .lab { font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--paper-3); }
-  .proof-step .val { font-size: 11.5px; }
-
-  /* ------------------------------------------------------- collision */
-
-  .collision {
-    border: 1px solid var(--oxide);
-    border-left-width: 3px;
-    padding: 22px 26px;
-    margin: 34px 0 0;
-    background: linear-gradient(90deg, rgba(191, 75, 50, 0.07), transparent 60%);
-  }
-
-  .collision h3 {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: 21px;
-    margin: 0 0 4px;
-    color: var(--paper);
-  }
-
-  .collision p { margin: 0 0 18px; color: var(--paper-2); max-width: 62ch; }
-
-  .versus { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; }
-  .versus .side { border: 1px solid var(--rule); padding: 14px 16px; }
-  .versus .side .lab { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--paper-3); }
-  .versus .side .who { font-size: 12px; word-break: break-all; }
-  .versus .side .amt { color: var(--paper-2); font-size: 11.5px; }
-  .versus .side.kept { border-color: var(--seal); }
-  .versus .side.turned { border-color: var(--oxide); }
-  .versus .mid { font-family: var(--serif); font-size: 13px; color: var(--oxide); letter-spacing: 0.2em; text-transform: uppercase; }
-
-  /* -------------------------------------------------------- sections */
-
-  section h2 {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: 19px;
-    margin: 46px 0 4px;
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-
-  section h2 .count { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paper-3); }
-
-  .lede { color: var(--paper-2); margin: 0 0 18px; max-width: 68ch; }
-
-  /* ------------------------------------------------------- timeline */
-
-  .entries { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-
-  .entry {
-    display: grid;
-    grid-template-columns: 118px minmax(0, 1fr) auto;
-    gap: 18px;
-    padding: 13px 0;
-    border-bottom: 1px solid var(--ink-3);
-    align-items: baseline;
-    animation: rise 380ms ease-out both;
-  }
-
-  .entry:hover { background: var(--ink-2); }
-
-  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-
-  .badge {
-    font-size: 9.5px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    border: 1px solid currentColor;
-    padding: 2px 8px;
-    justify-self: start;
-    white-space: nowrap;
-  }
-
-  .badge.pledge { color: var(--seal); }
-  .badge.refused { color: var(--oxide); }
-  .badge.settled { color: var(--moss); }
-  .badge.released { color: var(--slate); }
-
-  .entry .what { color: var(--paper); }
-  .entry .who { color: var(--paper-3); font-size: 11.5px; }
-  .entry .link { text-align: right; font-size: 11.5px; }
-
-  /* --------------------------------------------------------- lookup */
-
-  form { display: grid; grid-template-columns: 160px minmax(0, 1fr) 120px auto; gap: 12px; align-items: end; margin: 18px 0 14px; }
-
-  label { display: block; font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--paper-3); margin-bottom: 7px; }
-
-  input, select, button {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--paper);
-    background: var(--ink-2);
-    border: 1px solid var(--rule);
-    padding: 10px 12px;
+  .item {
     width: 100%;
-    border-radius: 0;
-  }
-
-  input::placeholder { color: var(--paper-3); }
-  input:hover, select:hover { border-color: var(--rule-2); }
-  input:focus, select:focus { outline: none; border-color: var(--seal); }
-
-  button {
+    display: grid;
+    grid-template-columns: 8px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-radius: var(--r);
+    padding: 9px 10px;
     cursor: pointer;
-    background: var(--paper);
-    color: var(--ink);
-    border-color: var(--paper);
-    font-size: 10.5px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    padding: 12px 24px;
+    transition: background 140ms var(--ease);
+  }
+
+  .item:hover { background: var(--panel-2); }
+  .item[aria-current="true"] { background: var(--accent-wash); }
+  .item[aria-current="true"] .item-name { color: var(--accent); font-weight: 500; }
+
+  .pip { width: 8px; height: 8px; border-radius: 2px; background: var(--neutral); }
+  .pip.pledged { background: var(--accent); }
+  .pip.settled { background: var(--good); }
+  .pip.free { background: var(--line-strong); }
+
+  .item-name { font-size: 13px; }
+  .item-sub { font-size: 12px; color: var(--ink-2); }
+  .item-meta { font-size: 11.5px; color: var(--ink-2); text-align: right; }
+
+  /* -------------------------------------------------------------- main */
+
+  .main { grid-area: main; overflow: auto; min-height: 0; }
+
+  .record { padding: 22px 26px 30px; max-width: 1100px; }
+
+  .record-head { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+
+  h1 { font-size: 20px; line-height: 1.25; margin: 0; font-weight: 600; letter-spacing: -0.015em; }
+
+  .subject { color: var(--ink-2); font-size: 13px; margin: 5px 0 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 4px 11px 4px 9px;
+    font-size: 12.5px;
+    font-weight: 500;
     white-space: nowrap;
-    transition: background 130ms linear, color 130ms linear, border-color 130ms linear;
   }
 
-  button:hover { background: var(--seal); border-color: var(--seal); color: var(--ink); }
+  .chip.pledged { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+  .chip.settled { color: var(--good); border-color: color-mix(in oklch, var(--good) 45%, var(--line)); background: oklch(0.965 0.02 168); }
+  .chip.free { color: var(--ink-2); background: var(--panel-2); }
 
-  .files { display: flex; gap: 8px; flex-wrap: wrap; }
+  .copy {
+    border: 0;
+    background: none;
+    padding: 2px 4px;
+    color: var(--ink-2);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 140ms var(--ease), background 140ms var(--ease);
+  }
+  .copy:hover { color: var(--accent); background: var(--accent-wash); }
 
-  .files button {
-    background: transparent;
-    color: var(--paper-2);
-    border: 1px solid var(--rule);
-    width: auto;
-    padding: 7px 13px;
-    letter-spacing: 0.06em;
-    text-transform: none;
-    font-size: 11.5px;
+  .facts {
+    margin: 22px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px;
+    background: var(--bg);
   }
 
-  .files button:hover { color: var(--ink); background: var(--paper-2); border-color: var(--paper-2); }
-  .files button[aria-pressed="true"] { border-color: var(--seal); color: var(--seal); }
+  /* one hairline per cell, so a half empty last row stays empty rather than
+     leaving a grey block where a fact is missing */
+  .fact { padding: 12px 14px; box-shadow: 0 0 0 1px var(--line); border-radius: 2px; }
+  .fact dt { font-size: 12px; color: var(--ink-2); margin-bottom: 3px; }
+  .fact dd { margin: 0; font-size: 13.5px; word-break: break-word; }
 
-  /* --------------------------------------------------- misc, states */
-
-  .copy { cursor: pointer; white-space: nowrap; border-bottom: 1px dotted var(--rule-2); }
-  .copy:hover { border-bottom-color: var(--seal); }
-
-  .skeleton { display: block; height: 11px; background: linear-gradient(90deg, var(--ink-2), var(--ink-3), var(--ink-2)); background-size: 200% 100%; animation: sweep 1.3s linear infinite; }
-  @keyframes sweep { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-
-  .empty { color: var(--paper-3); font-family: var(--serif); font-style: italic; font-size: 15px; padding: 16px 0; }
-  .err { color: var(--oxide); padding: 12px 0; }
-
-  .note {
-    border-left: 2px solid var(--rule);
-    padding-left: 18px;
-    margin: 56px 0 0;
-    color: var(--paper-2);
-    max-width: 74ch;
-  }
-
-  .note b { color: var(--paper); font-weight: 400; }
-
-  footer {
-    margin-top: 42px;
-    padding-top: 18px;
-    border-top: 1px solid var(--rule);
+  h2 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 26px 0 10px;
     display: flex;
-    gap: 22px;
-    flex-wrap: wrap;
-    font-size: 11px;
-    color: var(--paper-3);
-    letter-spacing: 0.05em;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  h2 .hint { font-weight: 400; color: var(--ink-2); font-size: 12.5px; }
+
+  /* provenance: a real three-step sequence, so it is drawn as one */
+  .chain { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 0; }
+
+  .step { border: 1px solid var(--line); border-radius: var(--r); padding: 11px 13px; background: var(--bg); }
+  .step .k { font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+  .step .v { font-size: 13px; }
+  .arrow { display: grid; place-items: center; width: 34px; color: var(--line-strong); }
+
+  .callout {
+    margin: 22px 0 0;
+    border: 1px solid color-mix(in oklch, var(--danger) 35%, var(--line));
+    background: var(--danger-wash);
+    border-radius: var(--r);
+    padding: 14px 16px;
+  }
+
+  .callout h3 { margin: 0 0 4px; font-size: 13.5px; font-weight: 600; color: var(--danger); }
+  .callout p { margin: 0 0 12px; font-size: 13px; color: var(--ink); max-width: 70ch; }
+  .callout .pair { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .callout .who { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 7px 10px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--bg);
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--ink-2);
+    padding: 0 12px 7px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--panel-2); vertical-align: baseline; }
+  tbody tr:hover td { background: var(--panel); }
+
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 500; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .tag.pledge { color: var(--accent); background: var(--accent-wash); }
+  .tag.refused { color: var(--danger); background: var(--danger-wash); }
+  .tag.settled { color: var(--good); background: oklch(0.965 0.02 168); }
+  .tag.released { color: var(--ink-2); background: var(--panel-2); }
+
+  .empty { padding: 40px 26px; max-width: 60ch; color: var(--ink-2); }
+  .empty h2 { margin: 0 0 8px; font-size: 15px; color: var(--ink); }
+  .empty p { margin: 0 0 10px; font-size: 13.5px; }
+
+  .skel { display: block; height: 12px; border-radius: 3px; background: var(--panel-2); position: relative; overflow: hidden; }
+  .skel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.7), transparent);
+    animation: sweep 1.2s linear infinite;
+  }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+  .fade { animation: fade 180ms var(--ease) both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-toast);
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 12.5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms var(--ease);
+  }
+  .toast.on { opacity: 1; }
+
+  .note { margin: 28px 0 0; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 12.5px; max-width: 72ch; }
+
+  .tabs { display: none; }
+
+  /* --------------------------------------------------------- responsive */
+
+  @media (max-width: 1080px) {
+    .chain { grid-template-columns: 1fr; gap: 8px; }
+    .arrow { display: none; }
   }
 
   @media (max-width: 900px) {
-    .case { grid-template-columns: 1fr; }
-    .seal-col { align-items: flex-start; }
-    .seal { transform: rotate(-4deg); }
-    form { grid-template-columns: 1fr 1fr; }
-    form div:nth-child(2) { grid-column: 1 / -1; }
-    .versus { grid-template-columns: 1fr; }
-    .versus .mid { justify-self: start; }
-    .entry { grid-template-columns: 100px minmax(0, 1fr); }
-    .entry .link { grid-column: 2; text-align: left; }
+    body { overflow: auto; }
+    .app { grid-template-columns: 1fr; grid-template-areas: "bar" "tabs" "main"; grid-template-rows: auto auto 1fr; }
+    .status { display: none; }
+    .rail { grid-area: main; border-right: 0; }
+    .tabs {
+      grid-area: tabs;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    .tabs button {
+      background: none;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      padding: 11px 0;
+      font-size: 13px;
+      color: var(--ink-2);
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+    body[data-pane="record"] .rail { display: none; }
+    body[data-pane="register"] .main { display: none; }
+    .record { padding: 18px 16px 40px; }
+    .list { max-height: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
+    *, *::after { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
-<body>
-<div class="wrap">
+<body data-pane="record">
+<div class="app">
 
-  <header class="masthead">
-    <div class="brand">
-      <h1>Singleton,<br /><em>the register of liens</em></h1>
-      <div class="masthead-meta">
-        first to file, on Creditcoin<br />
-        registry <a id="registryLink" target="_blank" rel="noreferrer"></a>
-      </div>
+  <header class="bar">
+    <div class="mark">
+      <svg width="17" height="17" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="2" width="28" height="28" rx="6" fill="oklch(0.48 0.15 290)"></rect>
+        <rect x="10" y="10" width="12" height="12" rx="2" fill="none" stroke="#fff" stroke-width="2.4"></rect>
+      </svg>
+      Singleton <span>register of liens</span>
     </div>
-    <p class="claim">
-      An asset can be financed once. Two lending protocols that have never heard
-      of each other will each lend against the same collateral, because neither
-      can see what the other recorded. This register witnesses their pledges from
-      the outside, <b>without asking them for anything</b>, and refuses the second
-      claim.
-    </p>
+
+    <div class="status" id="status">
+      <div><span class="dot idle"></span><span class="skel" style="width:170px"></span></div>
+    </div>
+
+    <div class="reg">
+      <span>registry</span>
+      <a id="registryLink" class="mono" target="_blank" rel="noreferrer"></a>
+    </div>
   </header>
 
-  <div class="chainstrip" id="chains"><div><span class="skeleton" style="width:280px"></span></div></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="false" data-pane="register">Register</button>
+    <button role="tab" aria-selected="true" data-pane="record">Record</button>
+  </nav>
 
-  <main>
-    <section class="case" id="case" aria-live="polite">
+  <aside class="rail">
+    <form class="lookup" id="lookup" autocomplete="off">
       <div>
-        <p class="eyebrow">Case file</p>
-        <h2 class="case-title" id="caseTitle"><span class="skeleton" style="width:280px;height:26px"></span></h2>
-        <p class="case-key" id="caseKey"></p>
-        <dl class="facts" id="facts"></dl>
+        <label for="token">Look up an asset</label>
+        <input id="token" class="mono" placeholder="collateral contract 0x..." spellcheck="false" />
       </div>
-      <div class="seal-col">
-        <div class="seal" id="seal"><span class="word">&mdash;</span><span class="sub">reading</span></div>
-        <div class="proof" id="proof"></div>
+      <div class="row">
+        <select id="chain" aria-label="Source chain"></select>
+        <input id="tokenId" class="mono" placeholder="token id" spellcheck="false" aria-label="Token id" />
       </div>
-    </section>
+      <button class="btn" type="submit">Check the register</button>
+    </form>
 
-    <div id="collisionSlot"></div>
+    <div class="rail-head">
+      <span>On file</span>
+      <span id="railCount"></span>
+    </div>
 
-    <section>
-      <h2>What this asset has been through <span class="count" id="entryCount"></span></h2>
-      <p class="lede">
-        Every line below is an inclusion proof of a real log on the source chain,
-        re-checked by the BlockProver precompile inside the transaction that wrote
-        it. Nobody was trusted for any of it, which is why each one links to a
-        transaction you can open yourself.
-      </p>
-      <ul class="entries" id="entries"><li class="entry"><span class="skeleton"></span></li></ul>
-    </section>
+    <div class="list" id="list">
+      <div style="padding:10px"><span class="skel" style="width:80%"></span></div>
+      <div style="padding:10px"><span class="skel" style="width:60%"></span></div>
+      <div style="padding:10px"><span class="skel" style="width:70%"></span></div>
+    </div>
+  </aside>
 
-    <section>
-      <h2>Look up any asset</h2>
-      <p class="lede">
-        The register is keyed by chain, contract and token id. Anything not on
-        file comes back free, which means unregistered, not unpledged.
-      </p>
-      <form id="query" autocomplete="off">
-        <div>
-          <label for="chain">Source chain</label>
-          <select id="chain"></select>
-        </div>
-        <div>
-          <label for="token">Collateral contract</label>
-          <input id="token" placeholder="0x..." spellcheck="false" />
-        </div>
-        <div>
-          <label for="tokenId">Token id</label>
-          <input id="tokenId" placeholder="42" spellcheck="false" />
-        </div>
-        <div><button type="submit">Search</button></div>
-      </form>
-      <div class="files" id="files"></div>
-    </section>
-
-    <section>
-      <h2>The register <span class="count" id="ledgerCount"></span></h2>
-      <ul class="entries" id="ledger"><li class="entry"><span class="skeleton"></span></li></ul>
-    </section>
-
-    <p class="note">
-      <b>This is a positive record and a priority rule, not proof of absence.</b>
-      An asset shown as free is an asset nobody has registered here, which is not
-      the same as an asset nobody has pledged. Attestcoin proves that a
-      transaction happened; it cannot prove that one did not. That is exactly how
-      UCC-9 has governed a trillion dollar lien market for fifty years: prevention
-      comes from priority and from the habit of checking before lending, not from
-      omniscience.
-    </p>
-
-    <footer>
-      <span>Read only. No wallet, no backend, no indexer.</span>
-      <span>Every number on this page is an <code>eth_call</code> anybody can repeat.</span>
-      <span id="sourceNote"></span>
-    </footer>
+  <main class="main" id="main">
+    <div class="empty">
+      <h2>Pick an asset, or look one up</h2>
+      <p>The register answers one question: does this asset already carry a lien somewhere, recorded by a protocol that never had to cooperate.</p>
+      <p>A result of <b>free</b> means unregistered here, which is not the same as unpledged.</p>
+    </div>
   </main>
 </div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* --------------------------------------------------------------- config */
@@ -504,17 +444,24 @@ const CFG = {
   registry: QUERY.get("registry") ?? "0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4",
   explorer: "https://creditcoin-testnet.blockscout.com",
   chainInfo: "0x0000000000000000000000000000000000000fD3",
-  prover: "0x0FD2",
   sources: {
     11155111: { name: "Sepolia", explorer: "https://sepolia.etherscan.io" },
     1: { name: "Ethereum", explorer: "https://etherscan.io" },
   },
-  files: [
-    { label: "Demo deed 42", chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", id: "42", title: "Singleton Demo Deed" },
-    { label: "NFTfi loan 16928", chainId: 1, token: "0xd774557b647330C91Bf44cfEAB205095f7E6c367", id: "7819", title: "Read from NFTfi v3" },
-    { label: "Blend lien 435829", chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", id: "8189", title: "Read from Blur Blend" },
-    { label: "Blend lien 438956, seized", chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", id: "4271", title: "Read from Blur Blend" },
-  ],
+  known: {
+    "0xee79491615882b5421dacebv765564f4c4a09dd64": "",
+    "0xee79491615882b5421daceb765564f4c4a09dd64": "Demo deed",
+    "0xd774557b647330c91bf44cfeab205095f7e6c367": "NFTfi collateral",
+    "0xbd3531da5cf5857e7cfaa92426877b022e612cf8": "Pudgy Penguins",
+    "0x524cab2ec69124574082676e6f654a18df49a048": "Lil Pudgys",
+    "0x60e4d786628fea6478f785a6d7e704777c86a7c6": "Mutant Ape",
+  },
+  emitters: {
+    "0xaad02e7bebc37acb5dc67c42f70d61d8c86df3e5": "Harbor Credit",
+    "0xfa72380654232c5538d1f17e2d8d6c261bd263ad": "Meridian Credit",
+    "0xb6adec2acc851d30d5fb64f3137234bcdcbbad0d": "NFTfi v3",
+    "0x29469395eaf6f95920e59f858042f0e28d98a20b": "Blur Blend",
+  },
 };
 
 const SELECTOR = {
@@ -535,28 +482,23 @@ const TOPIC = {
   "0x99b0f20d6946893f54e3836d815265d601b32da1ef5a840d17fe8295e68a9bf6": "released",
 };
 
-const MEANING = {
-  pledge: "recorded, first to file",
-  refused: "a second pledge refused and kept on file",
-  settled: "the debt behind the lien was settled",
-  released: "lien released, the asset is free again",
+const ENTRY = {
+  pledge: "Lien recorded, first to file",
+  refused: "Second pledge refused, kept on file",
+  settled: "Debt behind the lien settled",
+  released: "Lien released, asset free again",
 };
 
 const STATE = ["free", "pledged", "settled"];
 const ZERO = "0x0000000000000000000000000000000000000000";
 
-/* ----------------------------------------- abi, by hand and deliberately
+/* ------------------------------------------------------------------ abi */
 
-   Forty lines of encoding beats a library for a page whose whole argument is
-   that anybody can check the register themselves. A single file, opened in a
-   browser, reaching one public node. */
-
-const pad = (hex) => hex.replace(/^0x/, "").padStart(64, "0");
-const word = (data, i) => data.slice(2 + i * 64, 2 + (i + 1) * 64);
-const toBig = (w) => BigInt("0x" + w);
-const toAddr = (w) => "0x" + w.slice(24);
-const encUint = (v) => pad(BigInt(v).toString(16));
-const encAddr = (v) => pad(v.toLowerCase());
+const pad = (h) => h.replace(/^0x/, "").padStart(64, "0");
+const word = (d, i) => d.slice(2 + i * 64, 2 + (i + 1) * 64);
+const big = (w) => BigInt("0x" + w);
+const addr = (w) => "0x" + w.slice(24);
+const uint = (v) => pad(BigInt(v).toString(16));
 
 let rpcId = 0;
 
@@ -574,28 +516,24 @@ async function rpc(method, params) {
 
 const call = (to, data) => rpc("eth_call", [{ to, data }, "latest"]);
 
-/* A dynamic array of structs with a dynamic member, decoded by hand. */
-function decodeSupportedChains(hex) {
-  const base = Number(toBig(word(hex, 0))) / 32;
-  const count = Number(toBig(word(hex, base)));
+function decodeChains(hex) {
+  const base = Number(big(word(hex, 0))) / 32;
+  const count = Number(big(word(hex, base)));
   const out = [];
   for (let i = 0; i < count; i++) {
-    const off = base + 1 + Number(toBig(word(hex, base + 1 + i))) / 32;
-    out.push({ chainKey: Number(toBig(word(hex, off))), chainId: Number(toBig(word(hex, off + 1))) });
+    const off = base + 1 + Number(big(word(hex, base + 1 + i))) / 32;
+    out.push({ chainKey: Number(big(word(hex, off))), chainId: Number(big(word(hex, off + 1))) });
   }
   return out;
 }
 
 /**
- * Reads the register in windows.
- *
- * The public node abandons a log query that takes it more than ten seconds, and
- * one wide window is exactly that. Several narrow windows answer at once, and a
- * window that fails costs only its own slice, so the page degrades to fewer
- * entries rather than to an error.
+ * The public node abandons a log query it cannot answer in ten seconds, so the
+ * register is read in narrow windows at once. A window that fails costs its own
+ * slice and nothing else.
  */
 async function logWindows(topics, { windows = 8, size = 4000 } = {}) {
-  const head = Number(toBig((await rpc("eth_blockNumber", [])).slice(2).padStart(64, "0")));
+  const head = Number(big((await rpc("eth_blockNumber", [])).slice(2).padStart(64, "0")));
   const slices = Array.from({ length: windows }, (_, i) => {
     const to = head - i * size;
     return { from: Math.max(0, to - size + 1), to };
@@ -610,336 +548,386 @@ async function logWindows(topics, { windows = 8, size = 4000 } = {}) {
   );
 
   const logs = answers.flat().filter((l) => TOPIC[l.topics[0]]);
-  logs.sort((a, b) => Number(BigInt(b.blockNumber) - BigInt(a.blockNumber)));
+  logs.sort((a, b) => Number(BigInt(b.blockNumber) - BigInt(a.blockNumber)) || b.logIndex - a.logIndex);
   return { head, logs, span: slices.length * size };
 }
 
-/* ------------------------------------------------------------ rendering */
+/* ------------------------------------------------------------- helpers */
 
 const $ = (id) => document.getElementById(id);
-const short = (hex, head = 8, tail = 6) => (hex.length > head + tail + 4 ? hex.slice(0, 2 + head) + "…" + hex.slice(-tail) : hex);
-const num = (n) => Number(n).toLocaleString("en-US");
+const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+const short = (h, a = 6, b = 4) => (h && h.length > a + b + 4 ? `${h.slice(0, 2 + a)}…${h.slice(-b)}` : h ?? "");
+const n = (v) => Number(v).toLocaleString("en-US");
+const nameOf = (map, a) => map[(a || "").toLowerCase()] ?? null;
 
-function amount(wei) {
+function ether(wei) {
   const whole = wei / 10n ** 18n;
   const frac = (wei % 10n ** 18n).toString().padStart(18, "0").slice(0, 4).replace(/0+$/, "");
   return frac ? `${whole}.${frac}` : `${whole}`;
 }
 
-function seal(state, sub) {
-  const el = $("seal");
-  el.className = "seal " + state;
-  el.innerHTML = `<span class="word">${state}</span><span class="sub">${sub}</span>`;
+function ago(seconds) {
+  const d = Math.max(0, Math.floor(Date.now() / 1000) - seconds);
+  if (d < 3600) return `${Math.max(1, Math.round(d / 60))}m ago`;
+  if (d < 86400) return `${Math.round(d / 3600)}h ago`;
+  return `${Math.round(d / 86400)}d ago`;
 }
 
-function sourceLink(chainId, path, text) {
-  const src = CFG.sources[chainId];
-  return src ? `<a href="${src.explorer}/${path}" target="_blank" rel="noreferrer">${text}</a>` : text;
+let toastTimer;
+function toast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("on"), 1600);
 }
 
-const cc3Link = (hash, text) =>
-  `<a href="${CFG.explorer}/tx/${hash}" target="_blank" rel="noreferrer">${text ?? short(hash, 10, 6)}</a>`;
-
-function copyable(value, shown) {
-  return `<span class="copy" role="button" tabindex="0" data-copy="${value}">${shown}</span>`;
+function copyButton(value, label) {
+  const b = el(`<button class="copy" type="button" title="Copy ${label}" aria-label="Copy ${label}">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="5.5" y="5.5" width="8" height="8" rx="1.5"></rect><path d="M10.5 3.5h-7a1 1 0 0 0-1 1v7"></path>
+    </svg></button>`);
+  b.addEventListener("click", () => { navigator.clipboard?.writeText(value); toast(`${label} copied`); });
+  return b;
 }
 
-function wireCopies(root) {
-  root.querySelectorAll("[data-copy]").forEach((el) => {
-    const act = () => {
-      navigator.clipboard?.writeText(el.dataset.copy);
-      const was = el.textContent;
-      el.textContent = "copied to clipboard";
-      setTimeout(() => (el.textContent = was), 1000);
-    };
-    el.addEventListener("click", act);
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); }
-    });
-  });
+const txLink = (hash) => `<a class="mono" href="${CFG.explorer}/tx/${hash}" target="_blank" rel="noreferrer">${short(hash, 8, 6)}</a>`;
+
+function srcLink(chainId, path, text) {
+  const s = CFG.sources[chainId];
+  return s ? `<a href="${s.explorer}/${path}" target="_blank" rel="noreferrer">${text}</a>` : text;
 }
 
-/* -------------------------------------------------------------- reading */
+/* --------------------------------------------------------------- state */
 
-let CHAIN_KEYS = {};
-let TIPS = {};
+const CHAINS = {};
+let REGISTER = [];
+let selectedKey = null;
+
+/* --------------------------------------------------------------- reads */
 
 async function loadChains() {
-  const chains = decodeSupportedChains(await call(CFG.chainInfo, SELECTOR.supportedChains));
+  const chains = decodeChains(await call(CFG.chainInfo, SELECTOR.supportedChains));
   const select = $("chain");
   select.innerHTML = "";
-  const cells = [];
+
+  const known = chains.filter((c) => CFG.sources[c.chainId]).sort((a, b) => a.chainId - b.chainId);
 
   await Promise.all(
-    chains.map(async ({ chainKey, chainId }) => {
-      const known = CFG.sources[chainId];
-      if (!known) return;
-      CHAIN_KEYS[chainId] = chainKey;
-
+    known.map(async ({ chainKey, chainId }) => {
       const [tip, depth] = await Promise.all([
-        call(CFG.chainInfo, SELECTOR.attestedTip + encUint(chainKey)),
-        call(CFG.registry, SELECTOR.minConfirmations + encUint(chainKey)),
+        call(CFG.chainInfo, SELECTOR.attestedTip + uint(chainKey)),
+        call(CFG.registry, SELECTOR.minConfirmations + uint(chainKey)),
       ]);
-
-      TIPS[chainId] = { tip: Number(toBig(word(tip, 0))), depth: Number(toBig(word(depth, 0))) };
-      cells.push({
-        chainId,
-        html:
-          `<div><b>${known.name}</b> &middot; chain id ${chainId} resolves to key <b>${chainKey}</b>` +
-          ` &middot; attested to block <b>${num(TIPS[chainId].tip)}</b>` +
-          ` &middot; accepted at depth <b>${TIPS[chainId].depth}</b></div>`,
-      });
+      CHAINS[chainId] = { chainKey, tip: Number(big(word(tip, 0))), depth: Number(big(word(depth, 0))) };
     }),
   );
 
-  cells.sort((a, b) => a.chainId - b.chainId);
-  $("chains").innerHTML = cells.map((c) => c.html).join("");
+  $("status").innerHTML = known
+    .map(({ chainId }) => {
+      const c = CHAINS[chainId];
+      return `<div title="Creditcoin has attested ${CFG.sources[chainId].name} up to this block. A pledge is accepted once it is ${c.depth} blocks deep.">
+        <span class="dot"></span>${CFG.sources[chainId].name} attested to <b class="num">${n(c.tip)}</b></div>`;
+    })
+    .join("");
 
-  for (const chainId of Object.keys(CHAIN_KEYS)) {
-    const option = document.createElement("option");
-    option.value = chainId;
-    option.textContent = CFG.sources[chainId].name;
-    select.appendChild(option);
+  for (const { chainId } of known) {
+    const o = document.createElement("option");
+    o.value = String(chainId);
+    o.textContent = CFG.sources[chainId].name;
+    select.appendChild(o);
   }
 }
 
 async function readAsset(chainId, token, tokenId) {
-  const chainKey = CHAIN_KEYS[chainId];
-  if (chainKey === undefined) throw new Error(`chain id ${chainId} is not attested by this network`);
+  const chain = CHAINS[chainId];
+  if (!chain) throw new Error(`chain id ${chainId} is not attested by this network`);
 
-  const assetKey = await call(CFG.registry, SELECTOR.assetKeyOf + encUint(chainKey) + encAddr(token) + encUint(tokenId));
-
+  const assetKey = await call(CFG.registry, SELECTOR.assetKeyOf + uint(chain.chainKey) + pad(token.toLowerCase()) + uint(tokenId));
   const [status, certificate, countHex] = await Promise.all([
     call(CFG.registry, SELECTOR.getStatus + pad(assetKey)),
     call(CFG.registry, SELECTOR.certificateOf + pad(assetKey)),
     call(CFG.registry, SELECTOR.collisionCount + pad(assetKey)),
   ]);
 
-  const count = Number(toBig(word(countHex, 0)));
+  const count = Number(big(word(countHex, 0)));
   const collisions = await Promise.all(
     Array.from({ length: count }, (_, i) =>
-      call(CFG.registry, SELECTOR.collisionAt + pad(assetKey) + encUint(i)).then((c) => ({
-        emitter: toAddr(word(c, 0)),
-        borrower: toAddr(word(c, 1)),
-        amount: toBig(word(c, 2)),
-        sourceHeight: Number(toBig(word(c, 5))),
+      call(CFG.registry, SELECTOR.collisionAt + pad(assetKey) + uint(i)).then((c) => ({
+        emitter: addr(word(c, 0)),
+        borrower: addr(word(c, 1)),
+        amount: big(word(c, 2)),
+        sourceHeight: Number(big(word(c, 5))),
       })),
     ),
   );
 
   return {
-    assetKey,
-    chainId,
-    chainKey,
-    token,
-    tokenId,
-    state: Number(toBig(word(status, 0))),
-    emitter: toAddr(word(status, 1)),
-    borrower: toAddr(word(status, 2)),
-    amount: toBig(word(status, 3)),
+    assetKey, chainId, token, tokenId,
+    state: Number(big(word(status, 0))),
+    emitter: addr(word(status, 1)),
+    borrower: addr(word(status, 2)),
+    amount: big(word(status, 3)),
     instanceId: "0x" + word(status, 4),
-    sourceHeight: Number(toBig(word(status, 6))),
-    recordedAt: Number(toBig(word(status, 7))),
-    certificate: toAddr(word(certificate, 0)),
+    sourceHeight: Number(big(word(status, 6))),
+    recordedAt: Number(big(word(status, 7))),
+    certificate: addr(word(certificate, 0)),
     collisions,
   };
 }
 
-/* ------------------------------------------------------------- painting */
+/* -------------------------------------------------------------- render */
 
-function paintCase(r, file, logs) {
-  const src = CFG.sources[r.chainId];
-  $("caseTitle").innerHTML =
-    `${file?.title ?? "Asset"} <span style="color:var(--paper-3)">&middot;</span> #${r.tokenId}`;
-  $("caseKey").innerHTML =
-    `${sourceLink(r.chainId, `token/${r.token}`, short(r.token, 10, 8))} on ${src.name} ` +
-    `&middot; asset key ${copyable(r.assetKey, short(r.assetKey, 14, 8))}`;
+function assetLabel(token, tokenId) {
+  const name = nameOf(CFG.known, token);
+  return name ? `${name} #${tokenId}` : `${short(token, 6, 4)} #${tokenId}`;
+}
 
-  const facts = [];
-  if (r.state === 0) {
-    facts.push(["Standing", "No lien on file"]);
-    facts.push([
-      "Meaning",
-      logs.length
-        ? "This asset has been registered before and is free again. Its history is below."
-        : "Nobody has registered a pledge of this asset here.",
-    ]);
-    seal("free", logs.length ? "released" : "no lien on file");
-  } else {
-    facts.push(["Lien held by", sourceLink(r.chainId, `address/${r.emitter}`, short(r.emitter, 12, 8))]);
-    facts.push(["Borrower", sourceLink(r.chainId, `address/${r.borrower}`, short(r.borrower, 12, 8))]);
-    facts.push(["Principal", `${amount(r.amount)}<span class="unit">in the protocol's own denomination</span>`]);
-    facts.push(["Lien instance", copyable(r.instanceId, short(r.instanceId, 12, 6))]);
-    facts.push([
-      "Certificate",
-      r.certificate === ZERO ? "none" : `soulbound, held by ${short(r.certificate, 10, 6)}`,
-    ]);
-    facts.push(["Recorded", new Date(r.recordedAt * 1000).toISOString().replace("T", " ").slice(0, 16) + " UTC"]);
-    seal(STATE[r.state], r.state === 1 ? "first to file" : "debt settled");
+function renderRail() {
+  const list = $("list");
+  $("railCount").textContent = REGISTER.length ? `${REGISTER.length} assets` : "";
+
+  if (!REGISTER.length) {
+    list.innerHTML = `<div style="padding:12px 10px;color:var(--ink-2);font-size:13px">No entries in the recent window.</div>`;
+    return;
   }
 
-  $("facts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
-  wireCopies($("facts"));
-
-  /* the chain of proof, with this record's own numbers */
-  // logs arrive newest first, so the current lien is the first pledge in the list
-  const opening = logs.find((l) => TOPIC[l.topics[0]] === "pledge");
-  const tip = TIPS[r.chainId];
-  const height = r.state === 0 ? null : r.sourceHeight;
-
-  const closing = logs.find((l) => ["released", "settled"].includes(TOPIC[l.topics[0]]));
-
-  $("proof").innerHTML = [
-    `<div class="proof-step"><div class="lab">1 &middot; the log</div><div class="val">` +
-      (height
-        ? `${src.name} block ${sourceLink(r.chainId, `block/${height}`, num(height))}, emitted by a protocol that was never asked`
-        : opening
-          ? `a lien on ${src.name}, opened and closed by the protocol itself`
-          : `nothing on file for this asset`) +
-      `</div></div>`,
-    `<div class="proof-step"><div class="lab">2 &middot; the proof</div><div class="val">` +
-      `inclusion proof re-checked by BlockProver <code>${CFG.prover}</code>` +
-      (tip ? `, accepted only ${tip.depth} blocks deep, attested to ${num(tip.tip)}` : "") +
-      `</div></div>`,
-    `<div class="proof-step"><div class="lab">3 &middot; the record</div><div class="val">` +
-      (opening
-        ? `written on Creditcoin in ${cc3Link(opening.transactionHash)}` +
-          (height ? "" : closing ? `, closed in ${cc3Link(closing.transactionHash)}` : "")
-        : `nothing written for this asset`) +
-      `</div></div>`,
-  ].join("");
+  list.innerHTML = "";
+  for (const a of REGISTER) {
+    const item = el(`<button class="item" type="button" aria-current="${a.assetKey === selectedKey}">
+      <span class="pip ${a.state}"></span>
+      <span>
+        <span class="item-name">${a.label}</span><br />
+        <span class="item-sub">${a.holder ?? "no lien on file"}${a.collisions ? ` &middot; ${a.collisions} refused` : ""}</span>
+      </span>
+      <span class="item-meta">${a.when}</span>
+    </button>`);
+    item.addEventListener("click", () => select(a.chainId, a.token, a.tokenId));
+    list.appendChild(item);
+  }
 }
 
-function paintCollision(r, logs) {
-  const slot = $("collisionSlot");
-  if (!r.collisions.length) { slot.innerHTML = ""; return; }
-  const c = r.collisions[r.collisions.length - 1];
+function renderRecord(r, logs) {
+  const chain = CHAINS[r.chainId];
+  const src = CFG.sources[r.chainId];
+  const holder = nameOf(CFG.emitters, r.emitter);
+  const state = STATE[r.state];
+  const opening = logs.find((l) => TOPIC[l.topics[0]] === "pledge");
+  const closing = logs.find((l) => ["released", "settled"].includes(TOPIC[l.topics[0]]));
   const refusal = logs.find((l) => TOPIC[l.topics[0]] === "refused");
 
-  slot.innerHTML =
-    `<section class="collision">` +
-    `<h3>A second protocol tried to lend against this asset</h3>` +
-    `<p>The first pledge holds. The second was refused on chain and kept on file, ` +
-    `because a lender consulting this register wants to know that somebody already tried, ` +
-    `not only that the asset is taken.</p>` +
-    `<div class="versus">` +
-    `<div class="side kept"><div class="lab">Kept, first to file</div>` +
-    `<div class="who">${sourceLink(r.chainId, `address/${r.emitter}`, short(r.emitter, 12, 8))}</div>` +
-    `<div class="amt">${amount(r.amount)} against ${short(r.token, 8, 6)} #${r.tokenId}</div></div>` +
-    `<div class="mid">refused</div>` +
-    `<div class="side turned"><div class="lab">Turned away</div>` +
-    `<div class="who">${sourceLink(r.chainId, `address/${c.emitter}`, short(c.emitter, 12, 8))}</div>` +
-    `<div class="amt">${amount(c.amount)}, proven from block ${num(c.sourceHeight)}</div></div>` +
-    `</div>` +
-    (refusal
-      ? `<p style="margin:18px 0 0;font-size:11.5px;color:var(--paper-3)">The refusal itself is on chain: ${cc3Link(refusal.transactionHash)}</p>`
-      : "") +
-    `</section>`;
+  const facts = r.state === 0
+    ? [
+        ["Standing", logs.length ? "Registered before, released since" : "Never registered here"],
+        ["Source chain", `${src.name}, chain key ${chain.chainKey}`],
+        ["Collateral", srcLink(r.chainId, `token/${r.token}`, `<span class="mono">${short(r.token, 10, 6)}</span>`)],
+      ]
+    : [
+        ["Lien held by", (holder ? holder + " " : "") + srcLink(r.chainId, `address/${r.emitter}`, `<span class="mono">${short(r.emitter, 8, 6)}</span>`)],
+        ["Borrower", srcLink(r.chainId, `address/${r.borrower}`, `<span class="mono">${short(r.borrower, 8, 6)}</span>`)],
+        ["Principal", `<span class="num">${ether(r.amount)}</span> <span style="color:var(--ink-2)">in the protocol's own unit</span>`],
+        ["Lien instance", `<span class="mono">${short(r.instanceId, 10, 6)}</span>`],
+        ["Certificate", r.certificate === ZERO ? "none" : `soulbound, held by the lender`],
+        ["Recorded", `${new Date(r.recordedAt * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC`],
+      ];
+
+  const node = el(`<div class="record fade">
+    <div class="record-head">
+      <div style="flex:1 1 320px">
+        <h1>${assetLabel(r.token, r.tokenId)}</h1>
+        <p class="subject">
+          ${srcLink(r.chainId, `token/${r.token}`, `<span class="mono">${short(r.token, 10, 8)}</span>`)}
+          on ${src.name}
+          <span style="color:var(--line-strong)">/</span>
+          <span class="mono" title="${r.assetKey}">key ${short(r.assetKey, 8, 6)}</span>
+          <span data-copy-slot></span>
+        </p>
+      </div>
+      <span class="chip ${state}"><span class="pip ${state}"></span>${state}${r.state === 1 ? ", first to file" : ""}</span>
+    </div>
+
+    <dl class="facts">${facts.map(([k, v]) => `<div class="fact"><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+
+    ${r.collisions.length ? `<div class="callout">
+      <h3>A second protocol tried to lend against this asset</h3>
+      <p>The first filing holds. The second was refused on chain and kept on file, because a lender checking here wants to know that somebody already tried, not only that the asset is taken.</p>
+      <div class="pair">
+        <span class="who"><b>${nameOf(CFG.emitters, r.collisions.at(-1).emitter) ?? short(r.collisions.at(-1).emitter, 8, 6)}</b>
+          tried to lend ${ether(r.collisions.at(-1).amount)}, proven from ${src.name} block
+          <span class="num">${n(r.collisions.at(-1).sourceHeight)}</span></span>
+        ${refusal ? `<span style="color:var(--ink-2)">refusal on chain in ${txLink(refusal.transactionHash)}</span>` : ""}
+      </div>
+    </div>` : ""}
+
+    <h2>How this is known <span class="hint">nobody was trusted for any step</span></h2>
+    <div class="chain">
+      <div class="step"><div class="k">The protocol's own log</div><div class="v">${
+        r.state !== 0
+          ? `${src.name} block ${srcLink(r.chainId, `block/${r.sourceHeight}`, `<span class="num">${n(r.sourceHeight)}</span>`)}`
+          : opening ? `a lien on ${src.name}, since closed` : "nothing on file"
+      }</div></div>
+      <div class="arrow" aria-hidden="true">
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M0 5h14M10 1l4 4-4 4"/></svg>
+      </div>
+      <div class="step"><div class="k">Inclusion proof</div><div class="v">re-checked on chain by BlockProver <span class="mono">0x0FD2</span>, accepted at ${chain.depth} blocks deep</div></div>
+      <div class="arrow" aria-hidden="true">
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M0 5h14M10 1l4 4-4 4"/></svg>
+      </div>
+      <div class="step"><div class="k">The register</div><div class="v">${
+        opening ? `written in ${txLink(opening.transactionHash)}${r.state === 0 && closing ? `, closed in ${txLink(closing.transactionHash)}` : ""}` : "nothing written"
+      }</div></div>
+    </div>
+
+    <h2>History <span class="hint">${logs.length} ${logs.length === 1 ? "entry" : "entries"}</span></h2>
+    ${logs.length ? `<table><thead><tr><th>Entry</th><th>What happened</th><th>Protocol</th><th>On Creditcoin</th></tr></thead><tbody>
+      ${logs.map((l) => {
+        const kind = TOPIC[l.topics[0]];
+        const party = "0x" + (kind === "refused" ? l.topics[3] : l.topics[2]).slice(26);
+        return `<tr><td><span class="tag ${kind}">${kind}</span></td><td>${ENTRY[kind]}</td>` +
+          `<td>${nameOf(CFG.emitters, party) ?? `<span class="mono">${short(party, 6, 4)}</span>`}</td>` +
+          `<td>${txLink(l.transactionHash)}</td></tr>`;
+      }).join("")}
+    </tbody></table>` : `<p style="color:var(--ink-2);font-size:13px;margin:0">This asset has never been registered here. That is not the same as never pledged: the register is a positive record, and Attestcoin cannot prove that something did not happen.</p>`}
+
+    <p class="note">Everything above is an <span class="mono">eth_call</span> against Creditcoin that anybody can repeat. There is no backend and no indexer between this page and the chain.</p>
+  </div>`);
+
+  node.querySelector("[data-copy-slot]").replaceWith(copyButton(r.assetKey, "asset key"));
+  $("main").innerHTML = "";
+  $("main").appendChild(node);
 }
 
-function entryRow(log, index) {
-  const kind = TOPIC[log.topics[0]];
-  const party = "0x" + (kind === "refused" ? log.topics[3] : log.topics[2]).slice(26);
-  return (
-    `<li class="entry" style="animation-delay:${Math.min(index, 8) * 45}ms">` +
-    `<span class="badge ${kind}">${kind}</span>` +
-    `<span><span class="what">${MEANING[kind]}</span><br /><span class="who">${short(party, 12, 8)}</span></span>` +
-    `<span class="link">${cc3Link(log.transactionHash)}</span></li>`
-  );
+function renderLoading() {
+  $("main").innerHTML = `<div class="record">
+    <span class="skel" style="width:220px;height:20px"></span>
+    <div style="margin-top:12px"><span class="skel" style="width:340px"></span></div>
+    <div style="margin-top:26px;display:grid;gap:10px">
+      <span class="skel" style="width:100%;height:56px"></span>
+      <span class="skel" style="width:100%;height:56px"></span>
+    </div>
+  </div>`;
 }
 
-function paintEntries(target, countTarget, logs, emptyWords) {
-  $(countTarget).textContent = logs.length ? `${logs.length} entries` : "";
-  $(target).innerHTML = logs.length
-    ? logs.map(entryRow).join("")
-    : `<li><p class="empty">${emptyWords}</p></li>`;
+function renderError(message) {
+  $("main").innerHTML = `<div class="empty"><h2>The register did not answer</h2><p>${message}</p>
+    <p>The page reads one Creditcoin node directly. If it is unreachable, nothing here can be shown, which is the honest failure for a tool with no backend.</p></div>`;
 }
 
-/* --------------------------------------------------------------- flow */
+/* ---------------------------------------------------------------- flow */
 
-let activeFile = null;
-
-async function show(chainId, token, tokenId, file) {
-  activeFile = file ?? null;
-  $("caseTitle").innerHTML = `<span class="skeleton" style="width:260px;height:26px"></span>`;
-  $("caseKey").textContent = "";
-  $("facts").innerHTML = "";
-  $("proof").innerHTML = "";
-  $("collisionSlot").innerHTML = "";
-  $("entries").innerHTML = `<li class="entry"><span class="skeleton"></span></li>`;
-  seal("", "&hellip;");
-
-  document.querySelectorAll("#files button").forEach((b) => {
-    b.setAttribute("aria-pressed", String(file ? b.dataset.file === String(CFG.files.indexOf(file)) : false));
-  });
+async function select(chainId, token, tokenId) {
+  $("chain").value = String(chainId);
+  $("token").value = token;
+  $("tokenId").value = String(tokenId);
+  if (window.matchMedia("(max-width: 900px)").matches) setPane("record");
+  renderLoading();
 
   try {
     const record = await readAsset(chainId, token, tokenId);
+    selectedKey = record.assetKey;
+    renderRail();
     const { logs } = await logWindows([null, record.assetKey]);
-    paintCase(record, file, logs);
-    paintCollision(record, logs);
-    paintEntries("entries", "entryCount", logs, "This asset has never been registered here. That is not the same as never pledged.");
+    renderRecord(record, logs);
   } catch (error) {
-    $("caseTitle").textContent = "The register did not answer";
-    $("facts").innerHTML = `<dt>refused</dt><dd class="err">${error.message}</dd>`;
-    seal("", "no answer");
+    renderError(error.message);
   }
 }
 
-async function loadLedger() {
-  try {
-    const { logs, span } = await logWindows([]);
-    paintEntries("ledger", "ledgerCount", logs.slice(0, 20), "The register is empty in this window.");
-    $("ledgerCount").textContent = `${logs.length} entries in the last ${num(span)} blocks`;
-  } catch (error) {
-    $("ledger").innerHTML = `<li><p class="err">${error.message}</p></li>`;
+/**
+ * The rail is built from the register's own logs: every asset it has touched
+ * recently, newest first, with its current state read back per asset.
+ */
+async function loadRegister() {
+  const { logs } = await logWindows([]);
+  const seen = new Map();
+
+  for (const l of logs) {
+    const key = l.topics[1];
+    if (!seen.has(key)) seen.set(key, l);
   }
+
+  const assets = [];
+  for (const [key, last] of seen) {
+    const match = REGISTER_HINTS.find((h) => h.assetKey === key);
+    if (!match) continue;
+    assets.push({ ...match, last });
+  }
+
+  const detailed = await Promise.all(
+    assets.map(async (a) => {
+      const status = await call(CFG.registry, SELECTOR.getStatus + pad(a.assetKey));
+      const state = Number(big(word(status, 0)));
+      const emitter = addr(word(status, 1));
+      const collisions = Number(big(word(await call(CFG.registry, SELECTOR.collisionCount + pad(a.assetKey)), 0)));
+      return {
+        ...a,
+        state: STATE[state],
+        collisions,
+        // a released record keeps no timestamp, because the record itself is gone
+        when: state === 0 ? "released" : ago(Number(big(word(status, 7)))),
+        holder: state === 0 ? null : (nameOf(CFG.emitters, emitter) ?? short(emitter, 6, 4)),
+        label: assetLabel(a.token, a.tokenId),
+      };
+    }),
+  );
+
+  REGISTER = detailed;
+  renderRail();
 }
 
-$("files").innerHTML = CFG.files
-  .map((f, i) => `<button type="button" data-file="${i}" aria-pressed="false">${f.label}</button>`)
-  .join("");
+/* The register indexes by asset key, and a key is a hash: it cannot be turned
+   back into a contract and a token id. These are the assets this deployment has
+   handled, so the rail can name them; anything else is one lookup away. */
+const REGISTER_HINTS = [
+  { chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", tokenId: "42" },
+  { chainId: 1, token: "0xd774557b647330C91Bf44cfEAB205095f7E6c367", tokenId: "7819" },
+  { chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", tokenId: "8189" },
+  { chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", tokenId: "4271" },
+];
 
-$("files").addEventListener("click", (event) => {
-  const index = event.target.dataset?.file;
-  if (index === undefined) return;
-  const f = CFG.files[Number(index)];
-  $("chain").value = String(f.chainId);
-  $("token").value = f.token;
-  $("tokenId").value = f.id;
-  show(f.chainId, f.token, f.id, f);
-  $("case").scrollIntoView({ behavior: "smooth", block: "start" });
+function setPane(pane) {
+  document.body.dataset.pane = pane;
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.pane === pane)));
+}
+
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const pane = e.target.closest("button")?.dataset.pane;
+  if (pane) setPane(pane);
 });
 
-$("query").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const chainId = Number($("chain").value);
+$("lookup").addEventListener("submit", (e) => {
+  e.preventDefault();
   const token = $("token").value.trim();
-  const tokenId = $("tokenId").value.trim() || "0";
-  if (!/^0x[0-9a-fA-F]{40}$/.test(token)) {
-    $("facts").innerHTML = `<dt>refused</dt><dd class="err">that is not a contract address</dd>`;
-    seal("", "no answer");
-    return;
-  }
-  show(chainId, token, tokenId, CFG.files.find((f) => f.token.toLowerCase() === token.toLowerCase() && f.id === tokenId));
+  const tokenId = $("tokenId").value.trim();
+  if (!/^0x[0-9a-fA-F]{40}$/.test(token)) return toast("That is not a contract address");
+  if (!/^\d+$/.test(tokenId)) return toast("Token id must be a number");
+  select(Number($("chain").value), token, tokenId);
 });
 
-$("registryLink").textContent = short(CFG.registry, 10, 8);
+$("registryLink").textContent = short(CFG.registry, 6, 4);
 $("registryLink").href = `${CFG.explorer}/address/${CFG.registry}`;
-$("sourceNote").textContent = `Registry on Creditcoin testnet, chain id 102031.`;
 
 (async () => {
   try {
     await loadChains();
-    const first = CFG.files[0];
-    $("chain").value = String(first.chainId);
-    $("token").value = first.token;
-    $("tokenId").value = first.id;
-    await show(first.chainId, first.token, first.id, first);
+    for (const hint of REGISTER_HINTS) {
+      const chain = CHAINS[hint.chainId];
+      if (!chain) continue;
+      hint.assetKey = await call(CFG.registry, SELECTOR.assetKeyOf + uint(chain.chainKey) + pad(hint.token.toLowerCase()) + uint(hint.tokenId));
+    }
+    await loadRegister();
+    // open on the asset that shows the most: a live lien somebody already
+    // tried to file against, then any live lien, then whatever is newest
+    const first =
+      REGISTER.find((a) => a.state !== "free" && a.collisions > 0) ??
+      REGISTER.find((a) => a.state !== "free") ??
+      REGISTER[0] ??
+      REGISTER_HINTS[0];
+    await select(first.chainId, first.token, first.tokenId);
   } catch (error) {
-    $("chains").innerHTML = `<div class="err">${error.message}</div>`;
+    renderError(error.message);
+    $("status").innerHTML = `<div style="color:var(--danger)">node unreachable</div>`;
   }
-  loadLedger();
 })();
 </script>
 </body>
