@@ -99,37 +99,61 @@ token in the same receipt, which a griefer cannot forge.
 adapter can name any token it likes. How is that different from trusting an
 indexer?"**
 
-The sharpest objection here, and the answer is a boundary rather than a denial.
-The BlockProver decides whether a log is real; the adapter decides what a real
-log means. So an adapter cannot fabricate a pledge that never happened, and it
-can misread one that did. That is caveat 9 and it is named as a semi-trusted
-layer in the repository, not discovered in the demo. The difference from an
-indexer is the size of what is trusted: an indexer is trusted for existence,
-which is unbounded, and an adapter is trusted for interpretation of something
-already proven to exist, which is auditable in about eighty lines.
+The sharpest objection here, and the honest answer concedes more than it used
+to. This page previously said an adapter cannot fabricate a pledge that never
+happened. That was wrong, and a review proved it: an adapter that ignores the
+log it is handed can file a lien against an asset whose owner was never
+involved, and removing the adapter afterwards does not undo what it wrote.
+`test/AdminPower.t.sol` performs that attack rather than asserting it cannot
+happen.
+
+So the boundary is narrower than the sentence it replaced. What no adapter can
+do is make the precompile accept a transaction that was never mined; existence
+is decided by consensus and is not for sale. Everything downstream of that,
+meaning what a real log is taken to mean, is the adapter's, and therefore the
+administrator's who installed it.
+
+The difference from an indexer is the size of what is trusted, and it survives:
+an indexer is trusted for existence itself, which is unbounded, while an adapter
+is trusted for the interpretation of something already proven to exist, in about
+eighty lines of pure code anybody can read. That is a smaller claim than the one
+this document used to make, and it is the one that is true.
 
 **"The allowlist is admin-controlled. Worst case if that key is compromised?"**
 
-An attacker can exclude honest protocols and admit their own contract as an
-emitter, so they can occupy keys and censor. They cannot forge an inclusion
-proof, cannot make the precompile accept a log that was not mined, and cannot
-take an asset. The registry holds no funds. The certificate is soulbound and
-worth nothing to a thief.
+Worse than the allowlist alone suggests, because `setAdapter` is the same key.
+An attacker can censor honest protocols, and through an adapter they can also
+write lien records that describe nothing real. What they cannot do is forge an
+inclusion proof or make the precompile accept a log that was not mined, so every
+record still points at a transaction that happened even when the meaning
+attached to it is a lie. They cannot take an asset either: the registry holds no
+funds and the certificate is soulbound.
 
-**"A High severity bug was found on 2026-08-19. What else is unfound?"**
+The mitigation is not built and is named rather than implied: a timelock on
+`setAdapter`, or adapters frozen per emitter after first use.
 
-Unknown, which is the only honest answer. What can be said is what changed: the
-bug was that logs were counted across the whole receipt rather than the chosen
-emitter's, so a borrower could poison their own pledge and make it
-unregisterable. It is fixed, it has seven regression tests, and the fix was
-verified by removing it again and watching the tests fail. The review that
-found it, and the mutation testing that exposed an untested guard, are in the
-repository rather than summarised.
+**"Two High severity bugs were found on 2026-08-19. What else is unfound?"**
+
+Unknown, which is the only honest answer, and the shape of the two that were
+found is the useful part.
+
+The first: logs were counted across the whole receipt rather than the chosen
+emitter's, so a borrower could attach a decoy carrying the registry's own event
+signature and make their genuine pledge unregisterable. The second review found
+that fix incomplete, because the emitter itself was still inferred from a
+receipt the borrower orders, so one log from any other allowlisted protocol
+suppressed the pledge again.
+
+Both were the same mistake: the registry inferred something from data the
+attacker controls. It now infers nothing. The relayer names the emitter and the
+log index and the registry only checks, which closed the class rather than the
+two instances, made batch pledges work, and dropped mainnet gas from 716k to
+634k. `test/Suppression.t.sol` keeps both attacks as regressions.
 
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**
 
-Yes. The live registry `0x020a11bC...` was deployed after the fix and all twelve
+Yes. The live registry `0x8170B29e...` was deployed after both fixes and all twelve
 proofs were replayed onto it. The previous instance is left on chain and named
 in the verification log as predating the fix, rather than quietly removed.
 

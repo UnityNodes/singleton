@@ -380,10 +380,15 @@ Earlier deployments are left on chain rather than hidden:
 `0x24089da935030bDB09Fb7a47adF68c51661cbeF0` were superseded the same day by the
 collision record and then by the instance index,
 `0xf6229779f67E9935c969f835Ca3DA1f67eA7ECCd` carries the first Blend release,
-`0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` predates seizure being provable, and
-`0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` predates the receipt poisoning fix in
-caveat 7, which an independent review found on 2026-08-19.
-Their transactions remain valid evidence of what the code did at the time.
+`0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` predates seizure being provable.
+
+Two more were superseded on 2026-08-19 by the two reviews caveat 7 describes.
+`0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` predates the receipt poisoning fix.
+`0x020a11bCF77eDF881ca7FFE865390E8192CeC187` carried a full twelve proof run and
+still inferred which emitter a proof was about, which the second review broke.
+
+Their transactions remain valid evidence of what the code did at the time, which
+is the reason they are listed rather than quietly dropped.
 
 ---
 
