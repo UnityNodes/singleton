@@ -91,15 +91,28 @@ contract SingletonRegistryTest is Test {
 
     function _proof(uint64 chainKey, uint64 height, bytes memory encodedTx, bytes32 root)
         internal
-        pure
+        view
         returns (SingletonRegistry.Proof memory)
     {
+        return _proof(chainKey, height, encodedTx, root, LENDER_A, 0);
+    }
+
+    function _proof(
+        uint64 chainKey,
+        uint64 height,
+        bytes memory encodedTx,
+        bytes32 root,
+        address emitter,
+        uint32 logIndex
+    ) internal pure returns (SingletonRegistry.Proof memory) {
         IBlockProver.MerkleProofEntry[] memory siblings = new IBlockProver.MerkleProofEntry[](1);
         siblings[0] = IBlockProver.MerkleProofEntry({hash: root, isLeft: true});
 
         return SingletonRegistry.Proof({
             chainKey: chainKey,
             height: height,
+            emitter: emitter,
+            logIndex: logIndex,
             encodedTransaction: encodedTx,
             merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),
             continuityProof: IBlockProver.ContinuityProof({
@@ -167,7 +180,7 @@ contract SingletonRegistryTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(SingletonRegistry.AssetNotFree.selector, key, LENDER_A)
         );
-        registry.registerPledge(_proof(ETH, _final() + 1, second, bytes32(uint256(0xB))));
+        registry.registerPledge(_proof(ETH, _final() + 1, second, bytes32(uint256(0xB)), LENDER_B, 0));
 
         SingletonRegistry.Record memory r = registry.getStatus(key);
         assertEq(r.emitter, LENDER_A, "incumbent keeps priority");
@@ -182,7 +195,8 @@ contract SingletonRegistryTest is Test {
 
         bytes memory b = _encodePledgeTx(LENDER_B, COLLATERAL, 43, BORROWER, 5e18, "i2", 1);
         prover.attest(ETH, _final() + 1, b);
-        bytes32 key = registry.registerPledge(_proof(ETH, _final() + 1, b, bytes32(uint256(0xB))));
+        bytes32 key =
+            registry.registerPledge(_proof(ETH, _final() + 1, b, bytes32(uint256(0xB)), LENDER_B, 0));
 
         assertEq(uint8(registry.getStatus(key).state), uint8(SingletonRegistry.AssetState.PLEDGED));
     }
@@ -214,7 +228,7 @@ contract SingletonRegistryTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(SingletonRegistry.EmitterNotAllowed.selector, ETH, OUTSIDER)
         );
-        registry.registerPledge(_proof(ETH, _final(), t, bytes32(uint256(0xA))));
+        registry.registerPledge(_proof(ETH, _final(), t, bytes32(uint256(0xA)), OUTSIDER, 0));
     }
 
     /// Inclusion is not success. A reverted source transaction is in a block too.
@@ -232,8 +246,24 @@ contract SingletonRegistryTest is Test {
 
         registry.registerPledge(_proof(ETH, _final(), t, bytes32(uint256(0xA))));
 
-        // same chain, same height, same merkle root, so the same nullifier
-        vm.expectRevert();
+        /*
+          The nullifier is derived from the transaction's position and the log
+          within it, not from the proof bytes, so naming the same log of the
+          same transaction is refused however the proof was assembled. Asserting
+          the specific error matters: a bare expectRevert here passed even while
+          the guard was reachable for the wrong reason.
+
+          What this cannot check is whether the live BlockProver admits two
+          distinct valid proofs for one transaction. The model prover derives
+          the index from the merkle root, so the question is not answerable in
+          this suite and is not pretended to be.
+        */
+        bytes32 nullifier = keccak256(
+            abi.encode(uint8(0), ETH, _final(), uint64(uint256(bytes32(uint256(0xA))) & 0xffff), uint32(0))
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(SingletonRegistry.ProofAlreadyConsumed.selector, nullifier)
+        );
         registry.registerPledge(_proof(ETH, _final(), t, bytes32(uint256(0xA))));
     }
 
@@ -255,7 +285,9 @@ contract SingletonRegistryTest is Test {
             _encodePledgeTx(LENDER_B, COLLATERAL, TOKEN_ID, BORROWER, 1e18, "i2", 1);
         prover.attest(ETH, _final(), onEthereum);
         bytes32 ethKey =
-            registry.registerPledge(_proof(ETH, _final(), onEthereum, bytes32(uint256(0xB))));
+            registry.registerPledge(
+                _proof(ETH, _final(), onEthereum, bytes32(uint256(0xB)), LENDER_B, 0)
+            );
 
         assertTrue(
             ethKey != registry.assetKeyOf(SEPOLIA, COLLATERAL, TOKEN_ID),

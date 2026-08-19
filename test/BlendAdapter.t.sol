@@ -121,7 +121,7 @@ contract BlendAdapterTest is SourceChain {
 
         SingletonRegistry.Proof memory repay = _relayFrom(ETHEREUM, REPAID_AT, _repayFrom(NFTFI));
 
-        vm.expectRevert(SingletonRegistry.NoPledgeLog.selector);
+        vm.expectPartialRevert(SingletonRegistry.WrongEventSignature.selector);
         registry.registerRelease(repay);
 
         assertEq(

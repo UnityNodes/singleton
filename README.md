@@ -55,7 +55,7 @@ auction rather than a repayment. Twelve proofs, every hash in
 |---|---|
 | The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
 | The demo, 1:26 | [/demo](https://singleton.unitynodes.com/demo), captioned, no wallet needed to follow it |
-| Registry, CC3 testnet | `0x020a11bCF77eDF881ca7FFE865390E8192CeC187`, verified on Blockscout |
+| Registry, CC3 testnet | `0x8170B29ee13Ee120952F44eb17F00e0B161dfde7`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |

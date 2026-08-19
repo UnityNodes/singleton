@@ -50,6 +50,7 @@ contract LifecycleTest is SourceChain {
 
     function _harborSettle() internal returns (SingletonRegistry.Proof memory) {
         vm.recordLogs();
+        vm.prank(BORROWER);
         harbor.repayLien(address(deed), TOKEN_ID);
         return _relay(_log(registry.SETTLED_SIG()));
     }
@@ -104,6 +105,7 @@ contract LifecycleTest is SourceChain {
         vm.prank(BORROWER);
         meridian.drawAgainst(address(deed), TOKEN_ID, 750 ether);
         vm.recordLogs();
+        vm.prank(BORROWER);
         meridian.repay(0);
         SingletonRegistry.Proof memory foreign = _relay(_log(registry.SETTLED_SIG()));
 

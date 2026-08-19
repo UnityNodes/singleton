@@ -58,9 +58,25 @@ contract SingletonRegistry {
         uint64 reportedAt;
     }
 
+    /**
+     * A proof names the log it is about.
+     *
+     * `emitter` and `logIndex` are not conveniences. The party who sends a
+     * transaction on the source chain is usually the borrower, so anything the
+     * registry infers by scanning that transaction's receipt is chosen by the
+     * borrower. Two separate reviews found the same shape of attack through
+     * that inference: a log the borrower arranged made a genuine pledge
+     * unregisterable, and an unregisterable pledge is first to file defeated.
+     *
+     * So the relayer states which log it is filing and the registry only
+     * checks. Nothing is searched for, nothing is counted, and a receipt full
+     * of decoys changes nothing about what a relayer can file.
+     */
     struct Proof {
         uint64 chainKey;
         uint64 height;
+        address emitter;
+        uint32 logIndex;
         bytes encodedTransaction;
         IBlockProver.MerkleProof merkleProof;
         IBlockProver.ContinuityProof continuityProof;
@@ -181,9 +197,11 @@ contract SingletonRegistry {
     error ProofRejected();
     error NotFinal(uint64 height, uint64 attestedTip, uint64 required);
     error SourceTransactionReverted();
-    error NoPledgeLog();
-    error AmbiguousPledgeLogs(uint256 found);
+    error LogIndexOutOfRange(uint256 offered, uint256 length);
+    error LogNotFromEmitter(address named, address wrote);
+    error WrongEventSignature(bytes32 topic0, uint8 kind);
     error EmitterNotAllowed(uint64 chainKey, address emitter);
+    error StaleCollision(uint64 offered, uint64 incumbent);
     error ProofAlreadyConsumed(bytes32 nullifier);
     error AssetNotFree(bytes32 assetKey, address incumbent);
     error AssetNotPledged(bytes32 assetKey);
@@ -242,6 +260,7 @@ contract SingletonRegistry {
      */
     function registerPledge(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_PLEDGE);
+        _requireAllowed(p);
         SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
 
         if (pledge.token == address(0)) revert CollateralNotIdentified();
@@ -284,8 +303,10 @@ contract SingletonRegistry {
      */
     function reportCollision(Proof calldata p) external returns (uint256 index) {
         _burnNullifier(p, DOMAIN_COLLISION);
+        _requireAllowed(p);
         SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
 
+        if (pledge.token == address(0)) revert CollateralNotIdentified();
         bytes32 assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
         Record storage r = _records[assetKey];
@@ -293,6 +314,14 @@ contract SingletonRegistry {
         if (r.instanceId == pledge.instanceId && r.emitter == pledge.emitter) {
             revert NoCollisionToReport(assetKey);
         }
+        /*
+          A pledge older than the one on file is not evidence that two lenders
+          hold the same asset now. Without this, a lien that was settled and
+          released years ago can be filed against whoever holds the asset today,
+          and the list that exists to say "somebody already tried" fills with
+          liens that never overlapped.
+        */
+        if (p.height < r.sourceHeight) revert StaleCollision(p.height, r.sourceHeight);
 
         index = _collisions[assetKey].length;
         _collisions[assetKey].push(
@@ -452,14 +481,16 @@ contract SingletonRegistry {
             EvmV1Decoder.decodeReceiptFields(p.encodedTransaction);
         if (receipt.receiptStatus != 1) revert SourceTransactionReverted();
 
-        address emitter = _emitterOf(p.chainKey, receipt);
-        if (!allowedEmitter[p.chainKey][emitter]) revert EmitterNotAllowed(p.chainKey, emitter);
+        if (p.logIndex >= receipt.receiptLogs.length) {
+            revert LogIndexOutOfRange(p.logIndex, receipt.receiptLogs.length);
+        }
+        EvmV1Decoder.LogEntry memory log = receipt.receiptLogs[p.logIndex];
+        if (log.address_ != p.emitter) revert LogNotFromEmitter(p.emitter, log.address_);
 
-        address adapter = adapterOf[p.chainKey][emitter];
-        EvmV1Decoder.LogEntry memory log =
-            _singleLog(receipt, _signaturesFor(adapter, emitter, kind), emitter);
+        address adapter = adapterOf[p.chainKey][p.emitter];
+        _requireSignature(adapter, p.emitter, kind, log);
 
-        found.emitter = emitter;
+        found.emitter = p.emitter;
         if (adapter == address(0)) {
             found.token = address(uint160(uint256(log.topics[1])));
             found.tokenId = uint256(log.topics[2]);
@@ -472,27 +503,19 @@ contract SingletonRegistry {
     }
 
     /**
-     * The emitter is the first allowlisted address in the receipt, because the
-     * adapter, and therefore the signature to search for, is chosen per emitter
-     * before any log is read.
+     * The allowlist gates entry, not exit.
      *
-     * A receipt carrying logs from two allowlisted protocols resolves to the
-     * first of them and reads only its log; the second protocol's pledge in the
-     * same transaction goes unwitnessed, which is the batch case of caveat 7.
-     * Nothing here can bind a log to the wrong emitter: the log is selected
-     * under this address, not merely checked against it afterwards.
+     * Registering a pledge or filing a refusal creates a record, so those need
+     * an emitter the registry has agreed to read. Settlement and release only
+     * ever close a record the emitter already holds, and are checked against
+     * incumbency instead. Requiring the allowlist there too would mean that
+     * excluding a protocol traps every asset it had already pledged, punishing
+     * borrowers who are not party to that decision.
      */
-    function _emitterOf(uint64 chainKey, EvmV1Decoder.ReceiptFields memory receipt)
-        private
-        view
-        returns (address)
-    {
-        uint256 count = receipt.receiptLogs.length;
-        for (uint256 i; i < count; i++) {
-            address candidate = receipt.receiptLogs[i].address_;
-            if (allowedEmitter[chainKey][candidate]) return candidate;
+    function _requireAllowed(Proof calldata p) private view {
+        if (!allowedEmitter[p.chainKey][p.emitter]) {
+            revert EmitterNotAllowed(p.chainKey, p.emitter);
         }
-        return count == 0 ? address(0) : receipt.receiptLogs[0].address_;
     }
 
     /**
@@ -520,38 +543,23 @@ contract SingletonRegistry {
     }
 
     /**
-     * Exactly one log, from this emitter, across every signature the transition
-     * accepts.
+     * The named log has to be the transition the caller says it is.
      *
-     * The emitter filter belongs inside the count rather than after it. Topic
-     * zero is owned by nobody: any contract may declare the same event or write
-     * the same word with log4, and the party who sends the pledge transaction
-     * is the borrower. Counting foreign logs would let that borrower attach a
-     * second matching log to their own pledge, make it permanently
-     * unwitnessable, and then pledge the same asset again elsewhere with the
-     * register still calling it free. First to file defeated by the one party
-     * with a motive.
-     *
-     * Two logs from the emitter itself are still a batch, and a batch is
-     * caveat 7.
+     * A protocol may end a lien in more than one way, so a transition accepts
+     * several topic zeroes and any one of them is enough.
      */
-    function _singleLog(
-        EvmV1Decoder.ReceiptFields memory receipt,
-        bytes32[] memory signatures,
-        address emitter
-    ) private pure returns (EvmV1Decoder.LogEntry memory log) {
-        uint256 found;
+    function _requireSignature(
+        address adapter,
+        address emitter,
+        uint8 kind,
+        EvmV1Decoder.LogEntry memory log
+    ) private view {
+        bytes32 topic0 = log.topics.length == 0 ? bytes32(0) : log.topics[0];
+        bytes32[] memory signatures = _signaturesFor(adapter, emitter, kind);
         for (uint256 i; i < signatures.length; i++) {
-            EvmV1Decoder.LogEntry[] memory matched =
-                EvmV1Decoder.getLogsByEventSignature(receipt, signatures[i]);
-            for (uint256 j; j < matched.length; j++) {
-                if (matched[j].address_ != emitter) continue;
-                found += 1;
-                if (found > 1) revert AmbiguousPledgeLogs(found);
-                log = matched[j];
-            }
+            if (signatures[i] == topic0) return;
         }
-        if (found == 0) revert NoPledgeLog();
+        revert WrongEventSignature(topic0, kind);
     }
 
     function _requireVerified(Proof calldata p) private view {
@@ -587,7 +595,8 @@ contract SingletonRegistry {
      */
     function _burnNullifier(Proof calldata p, uint8 domain) private {
         uint64 txIndex = PROVER.calculateTxIndex(p.merkleProof);
-        bytes32 nullifier = keccak256(abi.encode(domain, p.chainKey, p.height, txIndex));
+        bytes32 nullifier =
+            keccak256(abi.encode(domain, p.chainKey, p.height, txIndex, p.logIndex));
         if (consumed[nullifier]) revert ProofAlreadyConsumed(nullifier);
         consumed[nullifier] = true;
     }

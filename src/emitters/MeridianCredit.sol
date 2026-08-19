@@ -117,9 +117,11 @@ contract MeridianCredit {
         emit Pledged(asset, assetId, msg.sender, amount, ref);
     }
 
+    /// Only the obligor clears their own draw, for the reason Harbor states.
     function repay(uint256 positionId) external {
         Position storage p = _position(positionId);
         if (p.status != STATUS_DRAWN) revert WrongStatus(p.status);
+        if (msg.sender != p.obligor) revert AssetNotHeldByObligor(p.obligor);
 
         p.status = STATUS_REPAID;
         outstandingOf[p.obligor] -= p.drawn;

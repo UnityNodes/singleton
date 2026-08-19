@@ -38,11 +38,17 @@ Timecodes below are read off frames of the recording, not off this plan. Change
 | 3 | 0:16 to 0:25 | Hold on 02, cursor still | "Neither contract can read the other's logs. So both lend." |
 | 4 | 0:25 to 0:35 | Open the register, Demo deed 42, claimed, refusal on file | "Singleton watched from outside. First to file is on record." |
 | 5 | 0:35 to 0:53 | The red panel, then the failed transaction on Blockscout | "The second pledge was refused on chain. Open the failure yourself." |
-| 6 | 0:53 to 1:05 | Register history, five entries, pledge to release to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
-| 7 | 1:05 to 1:18 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
-| 8 | 1:18 to 1:26 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
+| 6 | 0:53 to 1:04 | Register history, five entries, pledge to release to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
+| 7 | 1:04 to 1:17 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
+| 8 | 1:17 to 1:25 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
 
-Total 1:26. Step 5 is the moment; it lands at 41 percent of the runtime.
+Total 1:25. Step 5 is the moment; it lands at 41 percent of the runtime.
+
+The chapter marks on `/demo` are not the same numbers. A chapter begins where its
+narration does, but seeking there can land on a register that is still reading
+the chain, and a viewer who clicks a chapter wants the answer rather than the
+wait. So each mark sits a few seconds inside its step, on settled content, and
+every one of them was checked against a frame.
 
 The recording is reproducible: `node script/record-demo.mjs` drives the live
 site, burns the narration in as captions and writes a webm, and the encode line

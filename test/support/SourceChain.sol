@@ -121,7 +121,9 @@ abstract contract SourceChain is Test {
         return abi.encode(uint8(2), chunks);
     }
 
-    function _relayMany(Vm.Log[] memory entries)
+    /// The caller names the log it is filing, because the registry no longer
+    /// searches for one and a receipt may carry several.
+    function _relayMany(Vm.Log[] memory entries, uint32 logIndex)
         internal
         returns (SingletonRegistry.Proof memory p)
     {
@@ -137,6 +139,8 @@ abstract contract SourceChain is Test {
         p = SingletonRegistry.Proof({
             chainKey: SEPOLIA,
             height: height,
+            emitter: entries[logIndex].emitter,
+            logIndex: logIndex,
             encodedTransaction: encoded,
             merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),
             continuityProof: IBlockProver.ContinuityProof({
@@ -181,6 +185,8 @@ abstract contract SourceChain is Test {
         p = SingletonRegistry.Proof({
             chainKey: chainKey,
             height: height,
+            emitter: entry.emitter,
+            logIndex: 0,
             encodedTransaction: encoded,
             merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),
             continuityProof: IBlockProver.ContinuityProof({

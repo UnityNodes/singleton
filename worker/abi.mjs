@@ -1,8 +1,8 @@
 export const REGISTRY_ABI = [
-  "function registerPledge((uint64 chainKey,uint64 height,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (bytes32 assetKey)",
-  "function registerSettlement((uint64 chainKey,uint64 height,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (bytes32 assetKey)",
-  "function registerRelease((uint64 chainKey,uint64 height,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (bytes32 assetKey)",
-  "function reportCollision((uint64 chainKey,uint64 height,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (uint256 index)",
+  "function registerPledge((uint64 chainKey,uint64 height,address emitter,uint32 logIndex,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (bytes32 assetKey)",
+  "function registerSettlement((uint64 chainKey,uint64 height,address emitter,uint32 logIndex,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (bytes32 assetKey)",
+  "function registerRelease((uint64 chainKey,uint64 height,address emitter,uint32 logIndex,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (bytes32 assetKey)",
+  "function reportCollision((uint64 chainKey,uint64 height,address emitter,uint32 logIndex,bytes encodedTransaction,(bytes32 root,(bytes32 hash,bool isLeft)[] siblings) merkleProof,(bytes32 lowerEndpointDigest,bytes32[] roots) continuityProof) p) returns (uint256 index)",
   "function collisionCount(bytes32 assetKey) view returns (uint256)",
   "function collisionAt(bytes32 assetKey,uint256 index) view returns ((address emitter,address borrower,uint256 amount,bytes32 instanceId,uint64 chainKey,uint64 sourceHeight,uint64 reportedAt))",
   "function certificateOf(bytes32 assetKey) view returns (address)",

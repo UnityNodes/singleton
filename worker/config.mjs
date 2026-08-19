@@ -7,8 +7,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const CC3_RPC = process.env.CC3_RPC ?? "https://rpc.cc3-testnet.creditcoin.network";
 export const PROVER_URL =
   process.env.PROVER_URL ?? "https://prover.cc3-testnet.creditcoin.network";
+/*
+  Several endpoints, not one. A public Sepolia node will answer
+  eth_getTransactionReceipt with null for a transaction it has pruned or simply
+  has not got, and a demo whose whole claim is that anybody can replay it must
+  not fail because one free node shrugged. The list is tried in order.
+*/
 export const SEPOLIA_RPC =
-  process.env.SEPOLIA_RPC ?? "https://ethereum-sepolia-rpc.publicnode.com";
+  process.env.SEPOLIA_RPC ??
+  [
+    "https://sepolia.gateway.tenderly.co",
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://eth-sepolia.g.alchemy.com/v2/demo",
+  ].join(",");
 
 /**
  * The chain the pledges are read from. Sepolia by default, because that is

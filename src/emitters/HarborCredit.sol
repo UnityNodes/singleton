@@ -105,10 +105,18 @@ contract HarborCredit {
         emit Pledged(collateral, tokenId, msg.sender, principal, instanceId);
     }
 
+    /**
+     * Only the borrower closes their own lien.
+     *
+     * Without this a stranger repays on paper, the desk emits Settled, and the
+     * register faithfully records a settlement nobody paid for. The registry
+     * cannot catch that: it proves the log happened, not that the debt did.
+     */
     function repayLien(address collateral, uint256 tokenId) external {
         bytes32 slot = keccak256(abi.encodePacked(collateral, tokenId));
         Lien storage lien = lienByCollateral[slot];
         if (lien.state != LienState.OPEN) revert LienNotOpen();
+        if (msg.sender != lien.borrower) revert NotTheHolder(lien.borrower);
 
         lien.state = LienState.REPAID;
         emit Settled(collateral, tokenId, lien.borrower, lien.principal, lien.instanceId);

@@ -79,27 +79,28 @@ It also means the dual-log transfer binding in caveat 5 and the collision demo
 cannot both apply to the same pledge. The binding is an optional stronger mode
 for custodial emitters; the demonstration is non-custodial.
 
-## 7. One pledge event per transaction, from the emitter
+## 7. The relayer names the log, and that is load bearing
 
-The registry requires exactly one matching pledge log per proof, counted among
-the logs the chosen emitter wrote. A legitimate batch pledge, several assets in
-one transaction, cannot be registered as things stand. Nothing prevents
-supporting it later; it is simply not in scope now.
+A proof carries the emitter and the log index it is about. The registry does not
+search the receipt for a matching log, and does not count how many there are.
 
-The scoping to the emitter is not cosmetic. Topic zero is owned by nobody: any
-contract can declare the same event, and the party who sends a pledge
-transaction is the borrower. Counting logs from every contract in the receipt
-would let a borrower attach a second matching log to their own genuine pledge,
-make that pledge permanently unregisterable, and then pledge the same asset at a
-second protocol with the register still reporting it free. That is first to file
-defeated by the one party with a motive, and it is why the emitter filter sits
-inside the count rather than after it. An independent review found this; the
-fix, its proof of concept and the regression tests are in
-`test/Poisoning.t.sol`.
+This is the correction to two findings that were the same mistake twice. The
+party who sends a transaction on a source chain is usually the borrower, so
+anything the registry infers by scanning that receipt is chosen by the borrower.
+An external review on 2026-08-19 found that a decoy log with a borrowed topic
+zero made a genuine pledge unregisterable. A second review the same day found
+that the fix was not enough: a real log from any other allowlisted protocol,
+ordered first, decided who the emitter was, and the genuine pledge became
+unregisterable again at the cost of one throwaway lien. An unregisterable pledge
+is first to file inverted, because the borrower then chooses which lender gets
+priority.
 
-A receipt carrying pledges from two allowlisted protocols is the same case: the
-first emitter in the receipt is read and the second's pledge goes unwitnessed,
-rather than both being refused.
+Naming the log removes the inference and the whole class with it. A receipt full
+of decoys changes nothing about what a relayer can file, and a batch pledge of
+several assets in one transaction is now supported rather than refused, because
+each log is filed on its own and the replay nullifier is keyed by log as well as
+by transaction. `test/Suppression.t.sol` carries both attacks as regression
+tests.
 
 ## 8. Canonicalisation is solved here and not in general
 
@@ -114,12 +115,30 @@ as the bridge to the larger market. That is a roadmap, not a claim.
 ## 9. The allowlist is a semi-trusted layer, and the adapter more so
 
 The allowlist governs which logs are read. The BlockProver governs whether they
-are true. Those are different powers and the difference matters: an administrator
-can exclude, but cannot fabricate.
+are true. Those are different powers, and the boundary between them is the one
+real limit on an administrator: no admin action makes the precompile accept a
+transaction that was never mined.
 
-The ABI adapter is weaker than that. It maps a protocol's native event onto
-`(token, tokenId, instanceId)`, so it touches derived truth, not just selection.
-It stays thin, it is pure, and it is named for what it is.
+Everything on this side of that line, an administrator can do. This used to read
+"an administrator can exclude, but cannot fabricate", and that sentence was
+false. The ABI adapter maps a protocol's native event onto
+`(token, tokenId, instanceId)`, so an administrator who installs an adapter
+decides what a real log means, and an adapter that ignores its argument can file
+a lien against an asset whose owner was never involved. Removing the adapter
+afterwards does not undo what it wrote. The test that used to back the old claim
+only proved that de-allowlisting a lender blocks that lender's pledge; it never
+attempted fabrication. `test/AdminPower.t.sol` attempts it, and it succeeds.
+
+So the honest statement is narrower. The adapter is trusted for interpretation
+of something already proven to exist, which is auditable in about eighty lines
+of pure code. An indexer would be trusted for existence itself, which is not
+bounded by anything. That is the difference worth defending, and it is smaller
+than the sentence it replaces.
+
+Exclusion is bounded in the other direction: the allowlist gates entry, not
+exit. A lender that has been excluded can still release what it already holds,
+so excluding a protocol cannot strand the assets of borrowers who were not party
+to that decision.
 
 Two limits are worth naming with it.
 

@@ -97,6 +97,7 @@ contract AdversarialTest is SourceChain {
         vm.prank(BORROWER);
         meridian.drawAgainst(address(deed), TOKEN_ID, 750 ether);
         vm.recordLogs();
+        vm.prank(BORROWER);
         meridian.repay(0);
         SingletonRegistry.Proof memory foreign = _relay(_log(registry.SETTLED_SIG()));
 
@@ -113,9 +114,10 @@ contract AdversarialTest is SourceChain {
         );
     }
 
-    /// Admin powers are selection, never fabrication: an administrator can stop
-    /// a protocol being read and cannot write a lien of their own.
-    function test_theAdminCannotFabricateALien() public {
+    /// The admin cannot mint a certificate or write a record directly. What an
+    /// adapter lets them do instead is in AdminPower.t.sol, which is the honest
+    /// version of this claim.
+    function test_theAdminCannotWriteALienDirectly() public {
         assertEq(registry.admin(), address(this));
 
         vm.expectRevert();

@@ -123,7 +123,7 @@ contract AdapterTest is SourceChain {
 
         (, SingletonRegistry.Proof memory p) = _atlasLock(1200 ether);
 
-        vm.expectRevert(SingletonRegistry.NoPledgeLog.selector);
+        vm.expectPartialRevert(SingletonRegistry.WrongEventSignature.selector);
         registry.registerPledge(p);
     }
 

@@ -43,8 +43,44 @@ export async function resolveEmitter(registry, chainKey, receipt) {
   );
 }
 
+/**
+ * A source provider that survives one node not having the transaction.
+ *
+ * ethers' FallbackProvider quorums across endpoints, which is the wrong shape
+ * here: a node that answers null is not lying, it just does not have the data,
+ * and one honest answer is enough. So the endpoints are tried in order and the
+ * first non-empty answer wins.
+ */
+export function sourceProvider(rpcs = SOURCE_RPC) {
+  const urls = String(rpcs).split(",").map((u) => u.trim()).filter(Boolean);
+  const providers = urls.map((url) => new ethers.JsonRpcProvider(url));
+  if (providers.length === 1) return providers[0];
+
+  return new Proxy(providers[0], {
+    get(target, prop) {
+      const original = target[prop];
+      if (typeof original !== "function" || !String(prop).startsWith("get")) {
+        return typeof original === "function" ? original.bind(target) : original;
+      }
+      return async (...args) => {
+        let lastError;
+        for (const provider of providers) {
+          try {
+            const answer = await provider[prop](...args);
+            if (answer !== null && answer !== undefined) return answer;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        if (lastError) throw lastError;
+        return null;
+      };
+    },
+  });
+}
+
 export function connect(sourceRpc = SOURCE_RPC) {
-  const source = new ethers.JsonRpcProvider(sourceRpc);
+  const source = sourceProvider(sourceRpc);
   const cc3 = new ethers.JsonRpcProvider(CC3_RPC);
   const wallet = new ethers.Wallet(loadPrivateKey(), cc3);
   const registry = new ethers.Contract(requireAddress("registry"), REGISTRY_ABI, wallet);
@@ -75,7 +111,7 @@ export async function waitForFinality({ cc3, chainKey, height, depth, pollSecond
  * A short timeout there looks like a refusal and is not one, so this waits
  * properly and retries a couple of times before believing the answer.
  */
-export async function fetchProof(chainKey, txHash, { attempts = 3, log } = {}) {
+export async function fetchProof(chainKey, txHash, { emitter, logIndex, attempts = 3, log } = {}) {
   const timeout = Number(process.env.PROOF_TIMEOUT_MS ?? 120_000);
   const builder = new proofProvider.service.ProofBuilder(chainKey, PROVER_URL, timeout);
 
@@ -95,6 +131,8 @@ export async function fetchProof(chainKey, txHash, { attempts = 3, log } = {}) {
     proof: {
       chainKey,
       height: d.headerNumber,
+      emitter,
+      logIndex,
       encodedTransaction: d.txBytes,
       merkleProof: {
         root: d.merkleProof.root,
@@ -133,12 +171,13 @@ export async function relay({
 
   const chainKey = await resolveChainKey(cc3, sourceChainId);
   const emitter = await resolveEmitter(registry, chainKey, receipt);
-  const { schema, parsed, fields } = findSourceEvent(receipt, operation, emitter);
+  const { schema, position, parsed, fields } = findSourceEvent(receipt, operation, emitter);
   log(`operation  ${operation}  ->  registry.${op.method}`);
   log("source");
   log(`  tx         ${txHash}`);
   log(`  block      ${receipt.blockNumber}, status ${receipt.status}`);
   log(`  schema     ${schema.name}, event ${parsed.name} from ${emitter}`);
+  log(`  log index  ${position} of ${receipt.logs.length} in the receipt`);
   log(`  token      ${fields.token} #${fields.tokenId}`);
   log(`  borrower   ${fields.borrower}`);
   log(`  amount     ${ethers.formatEther(fields.amount)}`);
@@ -154,7 +193,16 @@ export async function relay({
 
   await waitForFinality({ cc3, chainKey, height: receipt.blockNumber, depth, log });
 
-  const { raw, proof } = await fetchProof(chainKey, txHash, { log });
+  /*
+    The registry no longer searches the receipt for the log it is being asked
+    about, so the relay has to name it. This is the same log findSourceEvent
+    picked under the same emitter, which is what keeps the two in agreement.
+  */
+  const { raw, proof } = await fetchProof(chainKey, txHash, {
+    emitter,
+    logIndex: position,
+    log,
+  });
   log("\nproof");
   log(`  headerNumber      ${raw.headerNumber}`);
   log(`  txIndex           ${raw.txIndex}`);

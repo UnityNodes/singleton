@@ -125,7 +125,7 @@ export function findSourceEvent(receipt, operation, emitter) {
     const names = Array.isArray(wanted) ? wanted : [wanted];
     const iface = new ethers.Interface(schema.abi);
 
-    for (const log of receipt.logs) {
+    for (const [position, log] of receipt.logs.entries()) {
       if (log.address.toLowerCase() !== own) continue;
       let parsed;
       try {
@@ -134,7 +134,12 @@ export function findSourceEvent(receipt, operation, emitter) {
         continue;
       }
       if (!parsed || !names.includes(parsed.name)) continue;
-      hits.push({ schema, log, parsed, fields: schema.read(parsed, log) });
+      /*
+        `position` is the log's place in this receipt, which is what the
+        registry indexes. `log.index` is its place in the whole block, and
+        passing that instead is a fifty log error on a busy block.
+      */
+      hits.push({ schema, log, position, parsed, fields: schema.read(parsed, log) });
     }
   }
 

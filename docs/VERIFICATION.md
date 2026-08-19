@@ -215,7 +215,7 @@ rather than one compromise.
 
 ## W2 live run: twelve proofs on one registry
 
-Registry `0x020a11bCF77eDF881ca7FFE865390E8192CeC187`, CC3 testnet, 2026-08-19.
+Registry `0x8170B29ee13Ee120952F44eb17F00e0B161dfde7`, CC3 testnet, 2026-08-19.
 Six proofs against our own lenders on Sepolia, six against two real protocols on
 Ethereum mainnet. Replayable with `node worker/demo.mjs` against a freshly
 deployed registry, because a proof is spendable once per operation.
@@ -224,12 +224,12 @@ deployed registry, because a proof is spendable once per operation.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0x939adf31...` | 453,670 |
-| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0xd1fb9eeb...` | reverted |
-| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0xb4b7dd6e...` | 453,222 |
-| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0x22531339...` | 459,606 |
-| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0x173e2c2d...` | 470,694 |
-| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0xfc56c0f2...` | 453,222 |
+| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0x1d50463e...` | 436,562 |
+| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0xe575aaf9...` | reverted |
+| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0x96ae506e...` | 437,738 |
+| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0x80580b4c...` | 440,874 |
+| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0xa10603e3...` | 451,962 |
+| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0xd8516025...` | 436,114 |
 
 Three things this settles that the tests alone cannot.
 
@@ -248,19 +248,19 @@ burned in step 5, issued to Meridian in step 6.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 7. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0x00b50003...` | 715,793 |
-| 8. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0xea1ec06d...` | 516,782 |
-| 9. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x687b3b39...` | 502,600 |
-| 10. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0xbc2a450d...` | 491,806 |
-| 11. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0xd295156c...` | 491,848 |
-| 12. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x67a10764...` | 519,862 |
+| 7. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0xfde7b226...` | 633,794 |
+| 8. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0x3d44d260...` | 496,426 |
+| 9. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x007c8c0b...` | 485,492 |
+| 10. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0x9dc2f08f...` | 471,772 |
+| 11. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0x1e6b2488...` | 474,740 |
+| 12. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x666d8707...` | 498,204 |
 
 Steps 11 and 12 exist because a lien ends in more than one way. Blend closes one
 with `Repay` when the borrower pays and with `Seize` when the auction fails and
 the lender takes the token. An adapter that knew only about repayment would leave
 seized liens on file forever, and a stale claim looks exactly like a live one.
 
-Mainnet proofs cost more than Sepolia ones, 492k to 716k against roughly 455k,
+Mainnet proofs cost more than Sepolia ones, 472k to 634k against roughly 440k,
 because those payloads are larger and carry more continuity roots. The spread
 across operations on one chain stays under five percent, so the lifecycle costs
 what the pledge costs.
@@ -290,8 +290,8 @@ Loan 16928, a real borrower against a real NFT:
 | Repaid | `LoanRepaid`, mainnet block 25,717,460, tx `0x34632ee5...` |
 | Collateral | `0xd774557b647330C91Bf44cfEAB205095f7E6c367` token 7819 |
 | Principal | 0.07 WETH |
-| Registered on CC3 | `0x00b5000363bf7f8c6016bf9503718f52143c7c80070b84e80732b3122335fbdf`, 715,793 gas |
-| Released on CC3 | `0xea1ec06d74e8eeb192418399279d280aa072934e2fd24927e02056d16d2f4403`, 516,782 gas |
+| Registered on CC3 | `0xfde7b226e1b728a70bf16437d7b19b8eb8b224cde810972c9a66ee0435c987c8`, 633,794 gas |
+| Released on CC3 | `0x3d44d260a9a02e9f6072d0b60e01fd78dbc74b6d1feb5c8fdffbaa988887776a`, 496,426 gas |
 
 The adapter reads `LoanTerms` out of the log data, where NFTfi keeps the
 collateral contract, the token id, the borrower and the principal, and takes the
@@ -332,14 +332,14 @@ because an opening lien has to name what it claims.
 Lien 435829, a Pudgy Penguin, `0xBd3531dA5CF5857e7CfAA92426877b022e612cf8` token
 8189, for 3.29 ether. Taken in mainnet block 25,711,377, tx `0xb1de5da8...`,
 repaid in block 25,721,378, tx `0x568aae92...`. Recorded on CC3 as
-`0x687b3b39...` and released as `0xbc2a450d...`, the release carrying no token id
+`0x007c8c0b...` and released as `0x9dc2f08f...`, the release carrying no token id
 whatsoever.
 
 Seizure is proven too. A Blend lien also ends when an auction fails and the
 lender takes the token, through `Seize`, which is identical in shape to `Repay`
 and just as final. A transition may therefore name several events: lien 438956,
 Pudgy Penguin 4271 for 3.868 ether, taken in block 25,550,390 and seized in
-block 25,651,509, is recorded as `0xd295156c...` and closed as `0x67a10764...`.
+block 25,651,509, is recorded as `0x1e6b2488...` and closed as `0x666d8707...`.
 
 An adapter that knew only about repayment would have left every seized lien on
 file, and a stale claim is indistinguishable from a live one.
@@ -362,7 +362,7 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0x020a11bCF77eDF881ca7FFE865390E8192CeC187`, decoder linked to
+`0x8170B29ee13Ee120952F44eb17F00e0B161dfde7`, decoder linked to
 `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`, admin
 `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
 
