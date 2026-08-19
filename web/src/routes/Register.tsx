@@ -226,8 +226,12 @@ export default function Register() {
           ))}
         </div>
 
+        <Link className="label ml-auto transition-colors hover:text-paper lg:ml-0" to="/demo">
+          demo
+        </Link>
+
         <a
-          className="ml-auto font-mono text-[12.5px] text-paper hover:underline lg:ml-0"
+          className="font-mono text-[12.5px] text-paper hover:underline"
           href={`${CFG.explorer}/address/${CFG.registry}`}
           target="_blank"
           rel="noreferrer"

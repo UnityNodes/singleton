@@ -27,26 +27,40 @@ nothing deployed there and nothing asked of either protocol.
 
 ## The flow
 
+Timecodes below are read off frames of the recording, not off this plan. Change
+`script/record-demo.mjs` and every number here and in the chapter list on
+`/demo` has to be checked again.
+
 | # | Time | On screen | Spoken |
 |---|---|---|---|
-| 1 | 0:00 to 0:10 | Landing hero, the coil turning | "A borrower pledges one tokenised deed and takes a loan." |
-| 2 | 0:10 to 0:20 | Scroll to the collision band, hold on 01 and 02 | "An hour later they pledge the same deed to a second lender." |
-| 3 | 0:20 to 0:30 | Hold on 02, cursor still | "Neither contract can read the other's logs. So both lend." |
-| 4 | 0:30 to 0:40 | Open the register, Demo deed 42, claimed by the first filer | "Singleton watched from outside. First to file is on record." |
-| 5 | 0:40 to 0:56 | The red panel, then the reverted transaction in the explorer | "The second pledge was refused on chain. Open the failure yourself." |
-| 6 | 0:56 to 1:08 | Register history, five entries, pledge to release to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
-| 7 | 1:08 to 1:22 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
-| 8 | 1:22 to 1:30 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
+| 1 | 0:00 to 0:08 | Landing hero, the coil turning | "A borrower pledges one tokenised deed and takes a loan." |
+| 2 | 0:08 to 0:16 | Scroll to the collision band, hold on 01 and 02 | "An hour later they pledge the same deed to a second lender." |
+| 3 | 0:16 to 0:25 | Hold on 02, cursor still | "Neither contract can read the other's logs. So both lend." |
+| 4 | 0:25 to 0:35 | Open the register, Demo deed 42, claimed, refusal on file | "Singleton watched from outside. First to file is on record." |
+| 5 | 0:35 to 0:53 | The red panel, then the failed transaction on Blockscout | "The second pledge was refused on chain. Open the failure yourself." |
+| 6 | 0:53 to 1:05 | Register history, five entries, pledge to release to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
+| 7 | 1:05 to 1:18 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
+| 8 | 1:18 to 1:26 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
 
-Total 90 seconds. Step 5 is the moment; it lands at 44 percent of the runtime.
+Total 1:26. Step 5 is the moment; it lands at 41 percent of the runtime.
+
+The recording is reproducible: `node script/record-demo.mjs` drives the live
+site, burns the narration in as captions and writes a webm, and the encode line
+in that file turns it into the mp4 served from `/demo`. Captions rather than a
+voice track, because a judge reviewing dozens of entries watches muted, and a
+caption can be paused on a hash.
 
 ## Staging the refusal
 
 **Setup.** Say nothing for the second it takes the register to answer. The state
 chip turning amber does the work.
 
-**Action.** Click the refusal hash in the red panel. The explorer opens a
-transaction with status 0 and the revert reason `AssetNotFree`.
+**Action.** Click the refusal hash in the red panel. Blockscout opens a
+transaction that failed to call `registerPledge` on `SingletonRegistry`, and
+`Show revert reason` decodes it into `AssetNotFree(bytes32 assetKey, address
+incumbent)`, carrying the asset key and the address of the lender who filed
+first. The registry and both adapters are verified there, which is what turns
+that click into an answer rather than a blob of hex.
 
 **Pause.** Three seconds on the failed transaction, cursor still.
 

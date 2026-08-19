@@ -94,6 +94,9 @@ export default function Landing() {
           </span>
 
           <nav className="ml-auto flex items-center gap-6">
+            <Link className="label transition-colors hover:text-paper" to="/demo">
+              demo
+            </Link>
             <a
               className="label hidden transition-colors hover:text-paper sm:block"
               href="https://github.com/UnityNodes/singleton"
@@ -157,14 +160,12 @@ export default function Landing() {
             >
               check an asset
             </Link>
-            <a
-              href="https://github.com/UnityNodes/singleton"
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              to="/demo"
               className="rounded-sm border border-line-2 px-6 py-3 text-[14px] font-medium transition-colors hover:border-paper-3 hover:bg-surface"
             >
-              read the contracts
-            </a>
+              watch it in ninety seconds
+            </Link>
           </div>
 
           {/* the live record, sitting at the centre of the coil */}
