@@ -25,6 +25,24 @@ import {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * The emitter the registry will pick: the first allowlisted address in the
+ * receipt. Resolved before any log is read, because that is the order the
+ * contract works in, and the log to relay is whichever one that address wrote.
+ */
+export async function resolveEmitter(registry, chainKey, receipt) {
+  const seen = new Set();
+  for (const entry of receipt.logs) {
+    const address = ethers.getAddress(entry.address);
+    if (seen.has(address)) continue;
+    seen.add(address);
+    if (await registry.allowedEmitter(chainKey, address)) return address;
+  }
+  throw new Error(
+    `no allowlisted emitter among ${seen.size} contracts in the receipt; run setEmitter first`,
+  );
+}
+
 export function connect(sourceRpc = SOURCE_RPC) {
   const source = new ethers.JsonRpcProvider(sourceRpc);
   const cc3 = new ethers.JsonRpcProvider(CC3_RPC);
@@ -113,27 +131,26 @@ export async function relay({
   const receipt = await source.getTransactionReceipt(txHash);
   if (!receipt) throw new Error(`no receipt on the source chain for ${txHash}`);
 
-  const { schema, log: sourceLog, parsed, fields } = findSourceEvent(receipt, operation);
+  const chainKey = await resolveChainKey(cc3, sourceChainId);
+  const emitter = await resolveEmitter(registry, chainKey, receipt);
+  const { schema, parsed, fields } = findSourceEvent(receipt, operation, emitter);
   log(`operation  ${operation}  ->  registry.${op.method}`);
   log("source");
   log(`  tx         ${txHash}`);
   log(`  block      ${receipt.blockNumber}, status ${receipt.status}`);
-  log(`  schema     ${schema.name}, event ${parsed.name} from ${sourceLog.address}`);
+  log(`  schema     ${schema.name}, event ${parsed.name} from ${emitter}`);
   log(`  token      ${fields.token} #${fields.tokenId}`);
   log(`  borrower   ${fields.borrower}`);
   log(`  amount     ${ethers.formatEther(fields.amount)}`);
   log(`  instanceId ${fields.instanceId}`);
 
-  const chainKey = await resolveChainKey(cc3, sourceChainId);
   const depth = Number(await registry.minConfirmations(chainKey));
-  const allowed = await registry.allowedEmitter(chainKey, sourceLog.address);
 
   log("\ncreditcoin");
   log(`  registry   ${await registry.getAddress()}`);
   log(`  chainId ${sourceChainId} -> chainKey ${chainKey}`);
   log(`  minConf    ${depth}`);
-  log(`  emitter allowlisted ${allowed}`);
-  if (!allowed) throw new Error("emitter is not on the allowlist; run setEmitter first");
+  log(`  emitter    ${emitter}, allowlisted`);
 
   await waitForFinality({ cc3, chainKey, height: receipt.blockNumber, depth, log });
 
@@ -152,11 +169,11 @@ export async function relay({
    */
   const assetKey =
     fields.token === ethers.ZeroAddress
-      ? await registry.assetOfInstance(chainKey, sourceLog.address, fields.instanceId)
+      ? await registry.assetOfInstance(chainKey, emitter, fields.instanceId)
       : await registry.assetKeyOf(chainKey, fields.token, fields.tokenId);
 
   if (assetKey === ethers.ZeroHash) {
-    throw new Error(`no open lien for ${sourceLog.address} instance ${fields.instanceId}`);
+    throw new Error(`no open lien for ${emitter} instance ${fields.instanceId}`);
   }
   log(`\nassetKey  ${assetKey}`);
 

@@ -82,6 +82,69 @@ abstract contract SourceChain is Test {
         return abi.encode(uint8(2), chunks);
     }
 
+    /**
+     * The same encoding for a receipt carrying several logs.
+     *
+     * A real transaction rarely holds exactly one, and the interesting cases
+     * are the ones where it does not: a lender's own log beside a log some
+     * other contract in the same call chose to emit.
+     */
+    function _encodeMany(Vm.Log[] memory entries, uint8 receiptStatus)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory common = abi.encode(
+            uint64(1), uint64(200000), BORROWER, false, entries[0].emitter, uint256(0), bytes("")
+        );
+
+        EvmV1Decoder.AccessListEntryBytes32[] memory accessList =
+            new EvmV1Decoder.AccessListEntryBytes32[](0);
+        bytes memory typeSpecific = abi.encode(
+            uint64(1), uint128(1e9), uint128(3e10), accessList, uint8(0), bytes32(0), bytes32(0)
+        );
+
+        EvmV1Decoder.LogEntryTuple[] memory logs =
+            new EvmV1Decoder.LogEntryTuple[](entries.length);
+        for (uint256 i; i < entries.length; i++) {
+            logs[i] = EvmV1Decoder.LogEntryTuple({
+                address_: entries[i].emitter, topics: entries[i].topics, data: entries[i].data
+            });
+        }
+
+        bytes memory receipt = abi.encode(receiptStatus, uint64(90000), logs, new bytes(256));
+
+        bytes[] memory chunks = new bytes[](3);
+        chunks[0] = common;
+        chunks[1] = typeSpecific;
+        chunks[2] = receipt;
+        return abi.encode(uint8(2), chunks);
+    }
+
+    function _relayMany(Vm.Log[] memory entries)
+        internal
+        returns (SingletonRegistry.Proof memory p)
+    {
+        bytes memory encoded = _encodeMany(entries, 1);
+        bytes32 root = bytes32(_nextRoot++);
+        uint64 height = _nextHeight++;
+
+        prover.attest(SEPOLIA, height, encoded);
+
+        IBlockProver.MerkleProofEntry[] memory siblings = new IBlockProver.MerkleProofEntry[](1);
+        siblings[0] = IBlockProver.MerkleProofEntry({hash: root, isLeft: true});
+
+        p = SingletonRegistry.Proof({
+            chainKey: SEPOLIA,
+            height: height,
+            encodedTransaction: encoded,
+            merkleProof: IBlockProver.MerkleProof({root: root, siblings: siblings}),
+            continuityProof: IBlockProver.ContinuityProof({
+                lowerEndpointDigest: bytes32(0), roots: new bytes32[](0)
+            })
+        });
+    }
+
     /// Packages a captured log as a proof the model prover will accept.
     function _relay(Vm.Log memory entry) internal returns (SingletonRegistry.Proof memory) {
         return _relay(entry, 1);

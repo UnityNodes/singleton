@@ -106,8 +106,18 @@ export const SCHEMAS = [
  * whichever schema recognises it. Anything but exactly one match is refused
  * here rather than on chain, so the failure is legible.
  */
-export function findSourceEvent(receipt, operation) {
+/**
+ * The one log of this kind the emitter wrote.
+ *
+ * Scoped to the emitter, exactly as the registry scopes it. Topic zero is owned
+ * by nobody, so a receipt can carry a matching log some other contract in the
+ * same transaction chose to emit; counting those would make the worker refuse a
+ * pledge the registry accepts, and disagreeing with the contract is the one
+ * thing a mirror must never do.
+ */
+export function findSourceEvent(receipt, operation, emitter) {
   const hits = [];
+  const own = emitter.toLowerCase();
 
   for (const schema of SCHEMAS) {
     const wanted = schema.events[operation];
@@ -116,6 +126,7 @@ export function findSourceEvent(receipt, operation) {
     const iface = new ethers.Interface(schema.abi);
 
     for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== own) continue;
       let parsed;
       try {
         parsed = iface.parseLog(log);
@@ -129,7 +140,9 @@ export function findSourceEvent(receipt, operation) {
 
   if (hits.length !== 1) {
     const seen = hits.map((h) => `${h.schema.name}:${h.parsed.name}`).join(", ") || "none";
-    throw new Error(`expected exactly one ${operation} log, found ${hits.length} (${seen})`);
+    throw new Error(
+      `expected exactly one ${operation} log from ${emitter}, found ${hits.length} (${seen})`,
+    );
   }
   return hits[0];
 }

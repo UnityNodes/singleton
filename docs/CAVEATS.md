@@ -79,11 +79,27 @@ It also means the dual-log transfer binding in caveat 5 and the collision demo
 cannot both apply to the same pledge. The binding is an optional stronger mode
 for custodial emitters; the demonstration is non-custodial.
 
-## 7. One pledge event per transaction
+## 7. One pledge event per transaction, from the emitter
 
-The registry requires exactly one matching pledge log per proof. A legitimate
-batch pledge, several assets in one transaction, cannot be registered as things
-stand. Nothing prevents supporting it later; it is simply not in scope now.
+The registry requires exactly one matching pledge log per proof, counted among
+the logs the chosen emitter wrote. A legitimate batch pledge, several assets in
+one transaction, cannot be registered as things stand. Nothing prevents
+supporting it later; it is simply not in scope now.
+
+The scoping to the emitter is not cosmetic. Topic zero is owned by nobody: any
+contract can declare the same event, and the party who sends a pledge
+transaction is the borrower. Counting logs from every contract in the receipt
+would let a borrower attach a second matching log to their own genuine pledge,
+make that pledge permanently unregisterable, and then pledge the same asset at a
+second protocol with the register still reporting it free. That is first to file
+defeated by the one party with a motive, and it is why the emitter filter sits
+inside the count rather than after it. An independent review found this; the
+fix, its proof of concept and the regression tests are in
+`test/Poisoning.t.sol`.
+
+A receipt carrying pledges from two allowlisted protocols is the same case: the
+first emitter in the receipt is read and the second's pledge goes unwitnessed,
+rather than both being refused.
 
 ## 8. Canonicalisation is solved here and not in general
 

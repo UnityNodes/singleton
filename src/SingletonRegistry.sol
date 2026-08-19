@@ -191,6 +191,7 @@ contract SingletonRegistry {
     error WrongInstance(bytes32 expected, bytes32 offered);
     error NoCollisionToReport(bytes32 assetKey);
     error TransitionUnsupported(address emitter, uint8 kind);
+    error ConfirmationsNotSet(uint64 chainKey);
     error CollateralNotIdentified();
     error InstanceAlreadyOpen(address emitter, bytes32 instanceId);
     error UnknownInstance(address emitter, bytes32 instanceId);
@@ -220,7 +221,14 @@ contract SingletonRegistry {
         emit AdapterSet(chainKey, emitter, adapter);
     }
 
+    /**
+     * A depth of zero accepts a pledge one block deep, which is precisely the
+     * reorg window this setting exists to close. There is no safe default for
+     * it, so zero is refused rather than stored and a chain stays unreadable
+     * until somebody states a depth for it.
+     */
     function setMinConfirmations(uint64 chainKey, uint64 depth) external onlyAdmin {
+        if (depth == 0) revert ConfirmationsNotSet(chainKey);
         minConfirmations[chainKey] = depth;
     }
 
@@ -449,8 +457,7 @@ contract SingletonRegistry {
 
         address adapter = adapterOf[p.chainKey][emitter];
         EvmV1Decoder.LogEntry memory log =
-            _singleLog(receipt, _signaturesFor(adapter, emitter, kind));
-        if (log.address_ != emitter) revert EmitterNotAllowed(p.chainKey, log.address_);
+            _singleLog(receipt, _signaturesFor(adapter, emitter, kind), emitter);
 
         found.emitter = emitter;
         if (adapter == address(0)) {
@@ -470,9 +477,10 @@ contract SingletonRegistry {
      * before any log is read.
      *
      * A receipt carrying logs from two allowlisted protocols resolves to the
-     * first of them, and if the matching log turns out to belong to the other
-     * the proof is refused rather than misread. Refusing a rare shape is the
-     * safe direction; nothing here can bind a log to the wrong emitter.
+     * first of them and reads only its log; the second protocol's pledge in the
+     * same transaction goes unwitnessed, which is the batch case of caveat 7.
+     * Nothing here can bind a log to the wrong emitter: the log is selected
+     * under this address, not merely checked against it afterwards.
      */
     function _emitterOf(uint64 chainKey, EvmV1Decoder.ReceiptFields memory receipt)
         private
@@ -511,21 +519,37 @@ contract SingletonRegistry {
         if (signatures.length == 0) revert TransitionUnsupported(emitter, kind);
     }
 
-    /// Exactly one log across every signature the transition accepts. Two would
-    /// be a batch, and a batch is caveat 7.
-    function _singleLog(EvmV1Decoder.ReceiptFields memory receipt, bytes32[] memory signatures)
-        private
-        pure
-        returns (EvmV1Decoder.LogEntry memory log)
-    {
+    /**
+     * Exactly one log, from this emitter, across every signature the transition
+     * accepts.
+     *
+     * The emitter filter belongs inside the count rather than after it. Topic
+     * zero is owned by nobody: any contract may declare the same event or write
+     * the same word with log4, and the party who sends the pledge transaction
+     * is the borrower. Counting foreign logs would let that borrower attach a
+     * second matching log to their own pledge, make it permanently
+     * unwitnessable, and then pledge the same asset again elsewhere with the
+     * register still calling it free. First to file defeated by the one party
+     * with a motive.
+     *
+     * Two logs from the emitter itself are still a batch, and a batch is
+     * caveat 7.
+     */
+    function _singleLog(
+        EvmV1Decoder.ReceiptFields memory receipt,
+        bytes32[] memory signatures,
+        address emitter
+    ) private pure returns (EvmV1Decoder.LogEntry memory log) {
         uint256 found;
         for (uint256 i; i < signatures.length; i++) {
             EvmV1Decoder.LogEntry[] memory matched =
                 EvmV1Decoder.getLogsByEventSignature(receipt, signatures[i]);
-            if (matched.length == 0) continue;
-            found += matched.length;
-            if (found > 1) revert AmbiguousPledgeLogs(found);
-            log = matched[0];
+            for (uint256 j; j < matched.length; j++) {
+                if (matched[j].address_ != emitter) continue;
+                found += 1;
+                if (found > 1) revert AmbiguousPledgeLogs(found);
+                log = matched[j];
+            }
         }
         if (found == 0) revert NoPledgeLog();
     }
@@ -549,6 +573,7 @@ contract SingletonRegistry {
         IChainInfo.HeightHashResult memory tip =
             CHAIN_INFO.get_latest_attestation_height_and_hash(chainKey);
         uint64 depth = minConfirmations[chainKey];
+        if (depth == 0) revert ConfirmationsNotSet(chainKey);
         if (!tip.exists || height + depth > tip.height) {
             revert NotFinal(height, tip.exists ? tip.height : 0, depth);
         }
