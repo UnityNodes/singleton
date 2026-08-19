@@ -268,18 +268,12 @@ export default function Landing() {
                   act.refused ? "hover:bg-refused-dim/12" : "hover:bg-surface/50",
                 )}
               >
-                {act.refused ? (
-                  <>
-                    <span
-                      aria-hidden
-                      className="verdict absolute inset-y-0 left-0 w-px bg-refused shadow-[0_0_18px_2px_var(--color-refused)]"
-                    />
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute -left-24 top-1/2 h-64 w-[560px] -translate-y-1/2 rounded-full bg-refused/12 blur-3xl"
-                    />
-                  </>
-                ) : null}
+                {act.refused && (
+                  <span
+                    aria-hidden
+                    className="verdict pointer-events-none absolute -left-24 top-1/2 h-64 w-[620px] -translate-y-1/2 rounded-full bg-refused/14 blur-3xl"
+                  />
+                )}
 
                 <span
                   className={cn(
