@@ -215,7 +215,7 @@ rather than one compromise.
 
 ## W2 live run: twelve proofs on one registry
 
-Registry `0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4`, CC3 testnet, 2026-08-18.
+Registry `0x020a11bCF77eDF881ca7FFE865390E8192CeC187`, CC3 testnet, 2026-08-19.
 Six proofs against our own lenders on Sepolia, six against two real protocols on
 Ethereum mainnet. Replayable with `node worker/demo.mjs` against a freshly
 deployed registry, because a proof is spendable once per operation.
@@ -224,12 +224,12 @@ deployed registry, because a proof is spendable once per operation.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0xc10d2ade...` | 452,060 |
-| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0x88e75476...` | reverted |
-| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0xa9331fe3...` | 451,612 |
-| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0xe524bab5...` | 457,996 |
-| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0x0ec0c703...` | 469,084 |
-| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0x8a8b5563...` | 451,612 |
+| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0x939adf31...` | 453,670 |
+| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0xd1fb9eeb...` | reverted |
+| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0xb4b7dd6e...` | 453,222 |
+| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0x22531339...` | 459,606 |
+| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0x173e2c2d...` | 470,694 |
+| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0xfc56c0f2...` | 453,222 |
 
 Three things this settles that the tests alone cannot.
 
@@ -248,19 +248,19 @@ burned in step 5, issued to Meridian in step 6.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 7. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0x96094c97...` | 716,591 |
-| 8. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0x552e1b58...` | 515,172 |
-| 9. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0xfac92e9a...` | 500,990 |
-| 10. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0x6ebeba66...` | 490,196 |
-| 11. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0x270dca9f...` | 490,238 |
-| 12. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x44b65cb9...` | 518,252 |
+| 7. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0x00b50003...` | 715,793 |
+| 8. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0xea1ec06d...` | 516,782 |
+| 9. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x687b3b39...` | 502,600 |
+| 10. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0xbc2a450d...` | 491,806 |
+| 11. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0xd295156c...` | 491,848 |
+| 12. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x67a10764...` | 519,862 |
 
 Steps 11 and 12 exist because a lien ends in more than one way. Blend closes one
 with `Repay` when the borrower pays and with `Seize` when the auction fails and
 the lender takes the token. An adapter that knew only about repayment would leave
 seized liens on file forever, and a stale claim looks exactly like a live one.
 
-Mainnet proofs cost more than Sepolia ones, 490k to 717k against roughly 450k,
+Mainnet proofs cost more than Sepolia ones, 492k to 716k against roughly 455k,
 because those payloads are larger and carry more continuity roots. The spread
 across operations on one chain stays under five percent, so the lifecycle costs
 what the pledge costs.
@@ -290,8 +290,8 @@ Loan 16928, a real borrower against a real NFT:
 | Repaid | `LoanRepaid`, mainnet block 25,717,460, tx `0x34632ee5...` |
 | Collateral | `0xd774557b647330C91Bf44cfEAB205095f7E6c367` token 7819 |
 | Principal | 0.07 WETH |
-| Registered on CC3 | `0x96094c970144f3ab480e182b75b18ac75948427056d9f52c97cd1486eabfa7d2`, 716,591 gas |
-| Released on CC3 | `0x552e1b583fc667c317de3cb377e7dc52192d9e29c157e22845f6ad23a9e5b88c`, 515,172 gas |
+| Registered on CC3 | `0x00b5000363bf7f8c6016bf9503718f52143c7c80070b84e80732b3122335fbdf`, 715,793 gas |
+| Released on CC3 | `0xea1ec06d74e8eeb192418399279d280aa072934e2fd24927e02056d16d2f4403`, 516,782 gas |
 
 The adapter reads `LoanTerms` out of the log data, where NFTfi keeps the
 collateral contract, the token id, the borrower and the principal, and takes the
@@ -332,14 +332,14 @@ because an opening lien has to name what it claims.
 Lien 435829, a Pudgy Penguin, `0xBd3531dA5CF5857e7CfAA92426877b022e612cf8` token
 8189, for 3.29 ether. Taken in mainnet block 25,711,377, tx `0xb1de5da8...`,
 repaid in block 25,721,378, tx `0x568aae92...`. Recorded on CC3 as
-`0xfac92e9a...` and released as `0x6ebeba66...`, the release carrying no token id
+`0x687b3b39...` and released as `0xbc2a450d...`, the release carrying no token id
 whatsoever.
 
 Seizure is proven too. A Blend lien also ends when an auction fails and the
 lender takes the token, through `Seize`, which is identical in shape to `Repay`
 and just as final. A transition may therefore name several events: lien 438956,
 Pudgy Penguin 4271 for 3.868 ether, taken in block 25,550,390 and seized in
-block 25,651,509, is recorded as `0x270dca9f...` and closed as `0x44b65cb9...`.
+block 25,651,509, is recorded as `0xd295156c...` and closed as `0x67a10764...`.
 
 An adapter that knew only about repayment would have left every seized lien on
 file, and a stale claim is indistinguishable from a live one.
@@ -362,28 +362,27 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4`, decoder linked to
+`0x020a11bCF77eDF881ca7FFE865390E8192CeC187`, decoder linked to
 `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`, admin
 `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
 
 Adapters: NFTfi `0xE51eD7b5e8Fda55053C91726B0739813510FE913`, Blend
-`0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67`, both pure and stateless.
+`0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67`, both pure and stateless. They hold
+no state, so a redeploy of the registry reuses them.
 
-That instance predates the fix for the receipt poisoning described in caveat 7,
-which an independent review found on 2026-08-19. The code in this repository
-carries the fix and `test/Poisoning.t.sol` proves it; the deployed bytecode does
-not, and is superseded as soon as the registry is redeployed. Configuration for
-a fresh one is a single command, `node worker/provision.mjs`, and
+Configuring a fresh registry is one command, `node worker/provision.mjs`, and
 `node worker/provision.mjs --check` reads any registry back against the same
-plan.
+plan rather than trusting that the commands were run.
 
 Earlier deployments are left on chain rather than hidden:
 `0x6A44dE8E02b2617A569FDc147c45F8a15D0087De` carries the W1 run below,
 `0x63198729827F0eb9ED1A5eBC8FCDe58CBE7Fc2F2` and
 `0x24089da935030bDB09Fb7a47adF68c51661cbeF0` were superseded the same day by the
 collision record and then by the instance index,
-`0xf6229779f67E9935c969f835Ca3DA1f67eA7ECCd` carries the first Blend release, and
-`0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` predates seizure being provable.
+`0xf6229779f67E9935c969f835Ca3DA1f67eA7ECCd` carries the first Blend release,
+`0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` predates seizure being provable, and
+`0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` predates the receipt poisoning fix in
+caveat 7, which an independent review found on 2026-08-19.
 Their transactions remain valid evidence of what the code did at the time.
 
 ---
