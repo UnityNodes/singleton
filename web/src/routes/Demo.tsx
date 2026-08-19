@@ -160,8 +160,14 @@ export default function Demo() {
                 <Link to="/register" className="label transition-colors hover:text-paper">
                   open the register
                 </Link>
+                <a className="label transition-colors hover:text-paper" href="/singleton-deck.pdf">
+                  the deck
+                </a>
+                <a className="label transition-colors hover:text-paper" href="/singleton-one-pager.pdf">
+                  the one pager
+                </a>
                 <a
-                  className="label transition-colors hover:text-paper"
+                  className="label hidden transition-colors hover:text-paper lg:inline"
                   href={`${CFG.explorer}/address/${CFG.registry}`}
                   target="_blank"
                   rel="noreferrer"
