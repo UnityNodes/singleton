@@ -54,11 +54,18 @@ auction rather than a repayment. Twelve proofs, every hash in
 | | |
 |---|---|
 | The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
-| Registry, CC3 testnet | `0x020a11bCF77eDF881ca7FFE865390E8192CeC187` |
+| The demo, 1:26 | [/demo](https://singleton.unitynodes.com/demo), captioned, no wallet needed to follow it |
+| Registry, CC3 testnet | `0x020a11bCF77eDF881ca7FFE865390E8192CeC187`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
+
+54 tests cover it, including the receipt poisoning an independent review found
+on 2026-08-19 and the regression that keeps it closed. The registry and both
+adapters are verified on Blockscout, so the refusal in the demo decodes to
+`AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
+hex.
 
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
