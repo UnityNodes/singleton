@@ -26,11 +26,15 @@ import {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * The emitter the registry will pick: the first allowlisted address in the
- * receipt. Resolved before any log is read, because that is the order the
- * contract works in, and the log to relay is whichever one that address wrote.
+ * Which emitter this relay files for: the first allowlisted address in the
+ * receipt.
+ *
+ * The registry picks nothing, so this is a convenience for a command line that
+ * takes a transaction hash and no more. Anything the relay chooses here it then
+ * states in the proof, and the registry checks the named log against the named
+ * address rather than searching for either.
  */
-export async function resolveEmitter(registry, chainKey, receipt) {
+export async function chooseEmitter(registry, chainKey, receipt) {
   const seen = new Set();
   for (const entry of receipt.logs) {
     const address = ethers.getAddress(entry.address);
@@ -170,7 +174,7 @@ export async function relay({
   if (!receipt) throw new Error(`no receipt on the source chain for ${txHash}`);
 
   const chainKey = await resolveChainKey(cc3, sourceChainId);
-  const emitter = await resolveEmitter(registry, chainKey, receipt);
+  const emitter = await chooseEmitter(registry, chainKey, receipt);
   const { schema, position, parsed, fields } = findSourceEvent(receipt, operation, emitter);
   log(`operation  ${operation}  ->  registry.${op.method}`);
   log("source");

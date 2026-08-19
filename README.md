@@ -63,8 +63,8 @@ auction rather than a repayment. Twelve proofs, every hash in
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
 
-54 tests cover it, including the receipt poisoning an independent review found
-on 2026-08-19 and the regression that keeps it closed. The registry and both
+61 tests cover it, including both suppression attacks that independent reviews
+found on 2026-08-19 and the regressions that keep them closed. The registry and both
 adapters are verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
 hex.

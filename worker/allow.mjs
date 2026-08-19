@@ -6,9 +6,11 @@ import { CC3_RPC, EXPLORER, SOURCE_CHAIN_ID, loadPrivateKey, requireAddress } fr
 /**
  * Admin operations on the registry: the allowlist and the confirmation depth.
  *
- * The allowlist governs which logs are read, never whether they are true. That
- * distinction is caveat 9 and it is the reason an administrator here can
- * exclude a protocol but cannot fabricate a pledge.
+ * The allowlist governs which logs are read; the BlockProver governs whether
+ * they happened. Only the second is beyond an administrator's reach. An adapter
+ * installed here decides what a real log means, which is enough to write a lien
+ * that describes nothing, so caveat 9 names this key as the trusted part rather
+ * than pretending it is only a filter.
  *
  *   node worker/allow.mjs 0xEmitter [on|off]
  *   node worker/allow.mjs --min-conf 64

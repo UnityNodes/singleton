@@ -116,7 +116,8 @@ administrator's who installed it.
 The difference from an indexer is the size of what is trusted, and it survives:
 an indexer is trusted for existence itself, which is unbounded, while an adapter
 is trusted for the interpretation of something already proven to exist, in about
-eighty lines of pure code anybody can read. That is a smaller claim than the one
+fifty to a hundred and thirty lines of pure code anybody can read. That is a
+smaller claim than the one
 this document used to make, and it is the one that is true.
 
 **"The allowlist is admin-controlled. Worst case if that key is compromised?"**

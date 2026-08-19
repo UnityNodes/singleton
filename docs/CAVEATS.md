@@ -130,7 +130,8 @@ only proved that de-allowlisting a lender blocks that lender's pledge; it never
 attempted fabrication. `test/AdminPower.t.sol` attempts it, and it succeeds.
 
 So the honest statement is narrower. The adapter is trusted for interpretation
-of something already proven to exist, which is auditable in about eighty lines
+of something already proven to exist, which is auditable in the fifty to a
+hundred and thirty lines
 of pure code. An indexer would be trusted for existence itself, which is not
 bounded by anything. That is the difference worth defending, and it is smaller
 than the sentence it replaces.

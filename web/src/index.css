@@ -262,6 +262,7 @@ body::after {
     0 0 0 1px color-mix(in oklch, var(--color-open) 32%, transparent),
     0 14px 42px -20px color-mix(in oklch, var(--color-open) 80%, transparent);
 }
+.lit-paper { box-shadow: 0 12px 38px -16px color-mix(in oklch, var(--color-paper) 75%, transparent); }
 .lit-refused {
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--color-refused) 38%, transparent),
