@@ -310,7 +310,14 @@ contract SingletonRegistry {
         bytes32 assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
 
         Record storage r = _records[assetKey];
-        if (r.state == AssetState.FREE) revert NoCollisionToReport(assetKey);
+        /*
+          Only a live lien can be collided with. A settled one has been repaid,
+          so a later borrow against the same asset is somebody's legitimate next
+          loan rather than a second claim on the first, and filing it as a
+          refusal would put an accusation on the record of a borrower who did
+          nothing wrong.
+        */
+        if (r.state != AssetState.PLEDGED) revert NoCollisionToReport(assetKey);
         if (r.instanceId == pledge.instanceId && r.emitter == pledge.emitter) {
             revert NoCollisionToReport(assetKey);
         }
@@ -379,7 +386,20 @@ contract SingletonRegistry {
         if (r.emitter != ev.emitter) revert NotTheIncumbent(r.emitter, ev.emitter);
         if (r.instanceId != ev.instanceId) revert WrongInstance(r.instanceId, ev.instanceId);
 
+        /*
+          The refusals go with the lien they were filed against.
+          
+          A collision says "somebody tried to lend against this asset while that
+          lender held it". Once the lien is released that sentence has no
+          subject, and keeping the list produced a record where the incumbent
+          appeared as a refused claimant against itself: the lender that lost
+          the first race files legitimately once the asset is free, and its own
+          earlier refusal was still on file describing the very lien now on
+          record. The DoublePledge event is the permanent evidence and stays in
+          the log forever; this array is a convenience view of the current lien.
+        */
         _revokeCertificate(uint256(assetKey));
+        delete _collisions[assetKey];
         delete _assetByInstance[_instanceKey(p.chainKey, ev.emitter, ev.instanceId)];
         delete _records[assetKey];
 
@@ -433,7 +453,12 @@ contract SingletonRegistry {
     }
 
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == 0x01ffc9a7 || interfaceId == 0x80ac58cd;
+        /*
+          ERC-165 only. Claiming ERC-721 would be false: every transfer and
+          approval on this certificate reverts Soulbound, so a wallet that
+          believed the claim would offer a move it cannot make.
+        */
+        return interfaceId == 0x01ffc9a7;
     }
 
     /**

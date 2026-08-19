@@ -90,7 +90,7 @@ contract LienModelTest is SourceChain {
      * record names Meridian as the incumbent and the single collision on file
      * is Meridian's own pledge, byte for byte.
      */
-    function test_theRefusalStaysOnFileAgainstTheLenderThatLaterWonTheAsset() public {
+    function test_theRefusalGoesWithTheLienItWasFiledAgainst() public {
         registry.registerPledge(_harborPledge(1000 ether));
 
         // One real Sepolia log, filed twice: once as the refusal while Harbor
@@ -111,23 +111,24 @@ contract LienModelTest is SourceChain {
         registry.registerPledge(_relayFrom(SEPOLIA, drawnAt, drawn));
 
         SingletonRegistry.Record memory r = registry.getStatus(assetKey);
-        SingletonRegistry.Collision memory c = registry.collisionAt(assetKey, 0);
 
-        assertEq(registry.collisionCount(assetKey), 1, "the refusal outlived the lien");
-        assertEq(r.emitter, address(meridian), "the incumbent");
-        assertEq(c.emitter, r.emitter, "and the refused second claimant are the same lender");
-        assertEq(c.amount, r.amount, "for the same principal");
-        assertEq(c.sourceHeight, r.sourceHeight, "proven from the same source block");
+        assertEq(r.emitter, address(meridian), "the lender that lost the race now holds it");
+        assertEq(
+            registry.collisionCount(assetKey),
+            0,
+            "and is not on file as a refused claimant against its own lien"
+        );
     }
 
     // ---------------------------------------------------------------- 2
 
     /**
-     * SETTLED means the debt is repaid, and the registry still treats the asset
-     * as taken. A lender that lends against it next is refused, and the refusal
-     * is filed as a double pledge even though no two lenders ever overlapped.
+     * SETTLED means the debt is repaid while the registry still treats the asset
+     * as taken, because only the source chain can say the lien is over. A later
+     * borrow is therefore refused, but it is not filed as a double pledge: no
+     * two lenders ever overlapped.
      */
-    function test_aSettledLienStillBlocksTheAssetAndFilesTheNextBorrowAsACollision() public {
+    function test_aSettledLienBlocksTheAssetWithoutAccusingTheNextBorrower() public {
         registry.registerPledge(_harborPledge(1000 ether));
         registry.registerSettlement(_harborSettle());
 
@@ -146,10 +147,17 @@ contract LienModelTest is SourceChain {
         );
         registry.registerPledge(later);
 
-        // The same proof, filed on the collision path, is accepted and recorded
-        // as somebody trying to lend against a live lien.
+        /*
+          The asset is still blocked until the lender proves the release, which
+          is caveat territory rather than a bug: the source chain, not the
+          registry, decides when a lien is over. But the second borrow is not a
+          collision, because the first debt was repaid before it happened, and
+          filing it as one would accuse a borrower who did nothing wrong.
+        */
+        vm.expectRevert(
+            abi.encodeWithSelector(SingletonRegistry.NoCollisionToReport.selector, assetKey)
+        );
         registry.reportCollision(later);
-        assertEq(registry.collisionCount(assetKey), 1, "a repaid lien produced a collision");
     }
 
     // ---------------------------------------------------------------- 3

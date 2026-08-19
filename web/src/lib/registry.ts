@@ -29,6 +29,21 @@ export const COLLATERAL: Record<string, string> = {
   "0x60e4d786628fea6478f785a6d7e704777c86a7c6": "Mutant Ape",
 };
 
+/**
+ * Names for addresses this page can recognise, and whether they are ours.
+ *
+ * The two demo lenders are marked because the whole claim is that the register
+ * reads protocols that never heard of it. Rendering our own contracts in the
+ * same typography as NFTfi would invite exactly the misreading the project
+ * exists to avoid.
+ */
+export const OURS = new Set([
+  "0xaad02e7bebc37acb5dc67c42f70d61d8c86df3e5",
+  "0xfa72380654232c5538d1f17e2d8d6c261bd263ad",
+]);
+
+export const isOurs = (address: string) => OURS.has(address.toLowerCase());
+
 export const PROTOCOLS: Record<string, string> = {
   "0xaad02e7bebc37acb5dc67c42f70d61d8c86df3e5": "Harbor Credit",
   "0xfa72380654232c5538d1f17e2d8d6c261bd263ad": "Meridian Credit",
@@ -261,10 +276,17 @@ export const nameOf = (map: Record<string, string>, a?: string) =>
 
 export const num = (v: number | bigint) => Number(v).toLocaleString("en-US");
 
-export function ether(wei: bigint) {
-  const whole = wei / 10n ** 18n;
-  const frac = (wei % 10n ** 18n).toString().padStart(18, "0").slice(0, 4).replace(/0+$/, "");
-  return frac ? `${whole}.${frac}` : `${whole}`;
+/**
+ * The amount exactly as the protocol wrote it, with no decimals assumed.
+ *
+ * The registry stores an integer and the source event carries no decimals, so
+ * there is nothing here that knows whether an amount is wei or six decimal
+ * USDC. Dividing by ten to the eighteen anyway printed a five thousand dollar
+ * NFTfi loan as `0`, under a label that said "in the protocol's own unit". The
+ * raw integer is that unit, and needs no caveat.
+ */
+export function amount(raw: bigint) {
+  return raw.toLocaleString("en-US");
 }
 
 export function ago(seconds: number) {

@@ -186,8 +186,19 @@ export default function Landing() {
                 v: record ? `${nameOf(COLLATERAL, record.token) ?? "asset"} #${record.tokenId}` : null,
               },
               {
+                /*
+                  Null, not "none", when the chain has not answered. The two are
+                  different sentences: one says the register holds nothing
+                  against this asset, the other says we do not know yet. Saying
+                  the first while the node is down is the exact falsehood this
+                  page tells lenders not to accept from anybody else.
+                */
                 k: "lien held by",
-                v: claimed ? (nameOf(PROTOCOLS, record!.emitter) ?? short(record!.emitter, 6, 4)) : "none",
+                v: !record
+                  ? null
+                  : claimed
+                    ? (nameOf(PROTOCOLS, record.emitter) ?? short(record.emitter, 6, 4))
+                    : "none",
                 lit: !!claimed,
               },
               {
@@ -197,9 +208,11 @@ export default function Landing() {
               },
               {
                 k: "proven from",
-                v: claimed
-                  ? `${SOURCES[record!.chainId].name} block ${num(record!.sourceHeight)}`
-                  : "nothing on file",
+                v: !record
+                  ? null
+                  : claimed
+                    ? `${SOURCES[record.chainId]?.name ?? "source"} block ${num(record.sourceHeight)}`
+                    : "nothing on file",
               },
             ].map((cell) => (
               <div key={cell.k} className="bg-ink/60 px-5 py-4 backdrop-blur-sm">

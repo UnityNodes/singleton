@@ -14,7 +14,7 @@ import {
   ZERO,
   ago,
   assetKeyOf,
-  ether,
+  amount,
   nameOf,
   num,
   readAsset,
@@ -307,8 +307,8 @@ export default function Register() {
         </form>
 
         <div className="flex items-baseline justify-between border-b border-line px-3.5 pb-2.5 pt-3">
-          <span className="label">on file</span>
-          <span className="label">{rail ? `${rail.length} assets` : ""}</span>
+          <span className="label">assets this page tracks</span>
+          <span className="label">{rail ? `${rail.length}` : ""}</span>
         </div>
 
         <div className="min-h-0 overflow-auto px-2 pb-3">
@@ -373,15 +373,15 @@ export default function Register() {
         {rail && (
           <div className="grid grid-cols-3 border-b border-line">
             {[
-              { k: "assets on file", v: String(rail.length), tone: "", glow: false },
+              { k: "assets tracked here", v: String(rail.length), tone: "", glow: false },
               {
-                k: "liens live now",
+                k: "of those, claimed",
                 v: String(rail.filter((a) => a.state !== "free").length),
                 tone: "text-live",
                 glow: rail.some((a) => a.state !== "free"),
               },
               {
-                k: "pledges refused",
+                k: "refusals on their file",
                 v: String(rail.reduce((n, a) => n + a.collisions, 0)),
                 tone: "text-refused",
                 glow: rail.some((a) => a.collisions > 0),
@@ -514,8 +514,8 @@ export default function Register() {
                     </a>
                   </Fact>
                   <Fact term="principal">
-                    <span className="tabular">{ether(record.amount)}</span>{" "}
-                    <span className="text-paper-2">in the protocol's own unit</span>
+                    <span className="tabular">{amount(record.amount)}</span>{" "}
+                    <span className="text-paper-2">as the protocol wrote it, no decimals assumed</span>
                   </Fact>
                   <Fact term="lien instance">
                     <span className="font-mono">{short(record.instanceId, 10, 6)}</span>
@@ -546,7 +546,7 @@ export default function Register() {
                       {nameOf(PROTOCOLS, record.collisions.at(-1)!.emitter) ??
                         short(record.collisions.at(-1)!.emitter, 8, 6)}
                     </b>{" "}
-                    tried to lend {ether(record.collisions.at(-1)!.amount)}, proven from {source.name}{" "}
+                    tried to lend {amount(record.collisions.at(-1)!.amount)}, proven from {source.name}{" "}
                     block <span className="tabular">{num(record.collisions.at(-1)!.sourceHeight)}</span>
                   </span>
                   {refusal && (
@@ -573,7 +573,7 @@ export default function Register() {
                   No allowlisted protocol has a lien recorded here.{" "}
                   {logs.length > 0
                     ? "It carried one before and the lender released it, which is the history below."
-                    : "It has never been registered here at all."}{" "}
+                    : "No entry for it in the blocks this page swept."}{" "}
                   That is a positive record and a priority rule, not proof of absence: Attestcoin
                   proves that a transaction happened, never that one did not.
                 </p>
@@ -711,9 +711,9 @@ export default function Register() {
               </table>
             ) : (
               <p className="mt-1 max-w-[70ch] text-[13px] text-paper-2">
-                This asset has never been registered here. That is not the same as never pledged: the
-                register is a positive record, and Attestcoin cannot prove that something did not
-                happen.
+                No entry for this asset in the blocks this page swept, which is not the same as never
+                registered, and neither is the same as never pledged. The register is a positive
+                record, and Attestcoin cannot prove that something did not happen.
               </p>
             )}
 
