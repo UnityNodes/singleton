@@ -369,6 +369,14 @@ field.
 Adapters: NFTfi `0xE51eD7b5e8Fda55053C91726B0739813510FE913`, Blend
 `0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67`, both pure and stateless.
 
+That instance predates the fix for the receipt poisoning described in caveat 7,
+which an independent review found on 2026-08-19. The code in this repository
+carries the fix and `test/Poisoning.t.sol` proves it; the deployed bytecode does
+not, and is superseded as soon as the registry is redeployed. Configuration for
+a fresh one is a single command, `node worker/provision.mjs`, and
+`node worker/provision.mjs --check` reads any registry back against the same
+plan.
+
 Earlier deployments are left on chain rather than hidden:
 `0x6A44dE8E02b2617A569FDc147c45F8a15D0087De` carries the W1 run below,
 `0x63198729827F0eb9ED1A5eBC8FCDe58CBE7Fc2F2` and

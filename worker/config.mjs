@@ -35,6 +35,10 @@ export const addresses = {
   meridian: process.env.MERIDIAN ?? deployed.meridian,
   borrower: process.env.BORROWER ?? deployed.borrower,
   tokenId: process.env.TOKEN_ID ?? deployed.tokenId ?? 42,
+  nftfi: process.env.NFTFI ?? deployed.nftfi,
+  nftfiAdapter: process.env.NFTFI_ADAPTER ?? deployed.nftfiAdapter,
+  blend: process.env.BLEND ?? deployed.blend,
+  blendAdapter: process.env.BLEND_ADAPTER ?? deployed.blendAdapter,
 };
 
 export function saveDeployed(patch) {
