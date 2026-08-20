@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CFG, short } from "@/lib/registry";
 
 const VIDEO = "/demo/singleton.mp4";
-const RUNTIME = 86;
+const RUNTIME = 90;
 
 /**
  * Timecodes are read off frames of the recording in script/record-demo.mjs, not
@@ -19,9 +19,9 @@ const CHAPTERS = [
   { at: 16, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
   { at: 30, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
   { at: 46, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
-  { at: 60, title: "a lien ends more than one way", line: "Settled, released, then the loser re-files legitimately." },
-  { at: 70, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
-  { at: 78, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
+  { at: 64, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
+  { at: 72, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
+  { at: 82, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
 ];
 
 const STACK = [

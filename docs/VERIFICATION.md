@@ -273,6 +273,26 @@ with `Repay` when the borrower pays and with `Seize` when the auction fails and
 the lender takes the token. An adapter that knew only about repayment would leave
 seized liens on file forever, and a stale claim looks exactly like a live one.
 
+### The batch, measured rather than argued
+
+Eight fresh liens were opened on Sepolia for this, four filed one at a time and
+four filed together, against the same registry with the same adapters.
+
+| | Gas |
+|---|---|
+| Four pledges, one transaction each | 397,222 + 395,878 + 394,982 + 394,534 = **1,582,616** |
+| The same four as one batch, `0x94f2484e...` | **989,237** |
+| Saved | **593,379, or 37.5 percent** |
+
+Per pledge that is 395,654 alone against 247,309 batched.
+
+The saving is not a constant and the reason matters. What the batch amortises is
+the continuity proof, and a continuity proof grows with the distance from the
+last attestation: this one carried eighteen roots for a span of nine blocks. A
+relayer catching up on a wider range carries a longer proof, pays for it once
+instead of once per pledge, and saves more. A relayer filing a single pledge
+saves nothing, which is why both paths exist.
+
 Mainnet proofs cost more than Sepolia ones, 442k to 603k against roughly 408k,
 because those payloads are larger and carry more continuity roots. The spread
 across operations on one chain stays under five percent, so the lifecycle costs

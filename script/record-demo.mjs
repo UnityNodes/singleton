@@ -92,6 +92,21 @@ const context = await browser.newContext({
 });
 await context.addInitScript(INIT);
 
+/*
+  Blockscout indexes a freshly mined transaction lazily, and the first load of a
+  new refusal has twice taken about forty seconds to show its revert reason.
+  That is a real property of the demo rather than a fluke, so the explorer is
+  warmed in a context that is not being recorded. Recording the wait would
+  publish a minute of a third party's spinner as if it were the product.
+*/
+const warmup = await browser.newContext({ viewport: { width: 1440, height: 810 } });
+const warmPage = await warmup.newPage();
+const warmedAt = Date.now();
+await warmPage.goto(`${EXPLORER}/${REFUSAL}`, { waitUntil: "domcontentloaded", timeout: 90000 });
+await warmPage.getByText("Show revert reason").waitFor({ timeout: 90000 });
+console.log(`  explorer warm after ${((Date.now() - warmedAt) / 1000).toFixed(1)}s`);
+await warmup.close();
+
 const page = await context.newPage();
 const say = (text) => page.evaluate((t) => window.__cap(t), text);
 const wait = (ms) => page.waitForTimeout(ms);
@@ -155,11 +170,20 @@ await wait(9200);
 mark("5 refusal");
 
 /* 6. a lien ends more than one way */
+/*
+ * 6. the other asset, whose lien ran its whole life.
+ *
+ * The narration is about settlement and release, so the screen has to be the
+ * asset that was settled and released. The register opens on deed 43, which is
+ * the standing refusal; deed 42 is the one with the five entry history.
+ */
 await page.goto(`${SITE}/register`, { waitUntil: "domcontentloaded", timeout: 60000 });
 await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
 await say("Settled, released, then the loser re-files legitimately. Four proofs.");
+await page.getByText("Demo deed #42").first().click();
+await page.getByText("Lien released, asset free again").first().waitFor({ timeout: 45000 });
 await page.evaluate(() => window.__scrollToText("history"));
-await wait(8000);
+await wait(7200);
 mark("6 history");
 
 /* 7. two protocols that never heard of us */
