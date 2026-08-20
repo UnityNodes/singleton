@@ -45,6 +45,7 @@ contract BlendAdapterTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(ETHEREUM, MIN_CONF);
+        registry.setMinAttestors(ETHEREUM, MIN_ATTESTORS);
         registry.setEmitter(ETHEREUM, BLEND, true);
         registry.setAdapter(ETHEREUM, BLEND, address(adapter));
 

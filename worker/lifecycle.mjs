@@ -57,7 +57,7 @@ for (const log of receipt.logs) {
     continue;
   }
   console.log(`\n${parsed.name}  token ${parsed.args.collateralToken} #${parsed.args.tokenId}`);
-  console.log(`          amount ${ethers.formatEther(parsed.args.amount)}`);
+  console.log(`          amount ${parsed.args.amount}`);
   console.log(`          instanceId ${parsed.args.pledgeInstanceId}`);
 }
 

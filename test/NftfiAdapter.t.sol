@@ -43,6 +43,7 @@ contract NftfiAdapterTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(ETHEREUM, MIN_CONF);
+        registry.setMinAttestors(ETHEREUM, MIN_ATTESTORS);
         registry.setEmitter(ETHEREUM, NFTFI, true);
         registry.setAdapter(ETHEREUM, NFTFI, address(adapter));
 

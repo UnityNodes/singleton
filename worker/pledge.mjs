@@ -34,7 +34,7 @@ const contract = new ethers.Contract(
 console.log(`lender    ${lender} ${target}`);
 console.log(`asset     ${deed} #${tokenId}`);
 console.log(`borrower  ${wallet.address}`);
-console.log(`amount    ${ethers.formatEther(amount)}`);
+console.log(`amount    ${amount}`);
 
 const tx =
   lender === "harbor"
@@ -57,7 +57,7 @@ for (const log of receipt.logs) {
   console.log(`\nPledged   token       ${parsed.args.collateralToken}`);
   console.log(`          tokenId     ${parsed.args.tokenId}`);
   console.log(`          borrower    ${parsed.args.borrower}`);
-  console.log(`          amount      ${ethers.formatEther(parsed.args.amount)}`);
+  console.log(`          amount      ${parsed.args.amount}`);
   console.log(`          instanceId  ${parsed.args.pledgeInstanceId}`);
 }
 

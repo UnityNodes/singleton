@@ -20,6 +20,10 @@ set -euo pipefail
 CC3_RPC="${CC3_RPC:-https://rpc.cc3-testnet.creditcoin.network}"
 SOURCE_CHAIN_ID="${SOURCE_CHAIN_ID:-11155111}"
 MIN_CONFIRMATIONS="${MIN_CONFIRMATIONS:-64}"
+# Below three, one attestor is a majority of the set that attested the block a
+# lien was read from. The registry records nothing for a chain with no floor
+# stated, so this is set here rather than left for provisioning to remember.
+MIN_ATTESTORS="${MIN_ATTESTORS:-3}"
 CHAIN_INFO=0x0000000000000000000000000000000000000fD3
 
 : "${PRIVATE_KEY:?set PRIVATE_KEY}"
@@ -38,6 +42,10 @@ echo "registry $registry"
 cast send "$registry" "setMinConfirmations(uint64,uint64)" "$chain_key" "$MIN_CONFIRMATIONS" \
   --private-key "$PRIVATE_KEY" --rpc-url "$CC3_RPC" --legacy >/dev/null 2>&1
 echo "minConfirmations[$chain_key] = $MIN_CONFIRMATIONS"
+
+cast send "$registry" "setMinAttestors(uint64,uint64)" "$chain_key" "$MIN_ATTESTORS" \
+  --private-key "$PRIVATE_KEY" --rpc-url "$CC3_RPC" --legacy >/dev/null 2>&1
+echo "minAttestors[$chain_key] = $MIN_ATTESTORS"
 
 for emitter in "${HARBOR:-}" "${MERIDIAN:-}"; do
   [ -z "$emitter" ] && continue

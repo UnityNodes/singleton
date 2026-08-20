@@ -10,9 +10,10 @@ const params = new URLSearchParams(typeof location === "undefined" ? "" : locati
 
 export const CFG = {
   rpc: params.get("rpc") ?? "https://rpc.cc3-testnet.creditcoin.network",
-  registry: params.get("registry") ?? "0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D",
+  registry: params.get("registry") ?? "0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4",
   explorer: "https://creditcoin-testnet.blockscout.com",
   chainInfo: "0x0000000000000000000000000000000000000fD3",
+  stash: "0x0000000000000000000000000000000000000fd4",
   prover: "0x0FD2",
 };
 
@@ -60,6 +61,9 @@ const SELECTOR = {
   minConfirmations: "0xfd166d65",
   supportedChains: "0x69e18c3c",
   attestedTip: "0x809112da",
+  minAttestors: "0x48b5474b",
+  attestorsCount: "0x8de0db2f",
+  minBond: "0x588a794d",
 };
 
 export const TOPIC: Record<string, EntryKind> = {
@@ -82,11 +86,25 @@ export interface RegistryLog {
   logIndex: string;
 }
 
+/**
+ * How much attestor security stood behind a record when it was made.
+ *
+ * The registry reads these off the chain at the moment it accepts a proof and
+ * stores them with the lien, so a record made under a full quorum and one made
+ * under a thin one do not read the same years later.
+ */
+export interface Security {
+  attestedTip: number;
+  attestors: number;
+  minBond: bigint;
+}
+
 export interface Collision {
   emitter: string;
   borrower: string;
   amount: bigint;
   sourceHeight: number;
+  security: Security;
 }
 
 export interface Record_ {
@@ -102,6 +120,7 @@ export interface Record_ {
   sourceHeight: number;
   recordedAt: number;
   certificate: string;
+  security: Security;
   collisions: Collision[];
 }
 
@@ -109,6 +128,9 @@ export interface ChainFacts {
   chainKey: number;
   tip: number;
   depth: number;
+  attestors: number;
+  floor: number;
+  bond: bigint;
 }
 
 const pad = (hex: string) => hex.replace(/^0x/, "").padStart(64, "0");
@@ -116,6 +138,16 @@ const word = (data: string, i: number) => data.slice(2 + i * 64, 2 + (i + 1) * 6
 const big = (w: string) => BigInt("0x" + w);
 const addr = (w: string) => "0x" + w.slice(24);
 const uint = (v: string | number | bigint) => pad(BigInt(v).toString(16));
+
+/**
+ * The three trailing words of a record or a refusal. Both structs end with the
+ * same block, so both are read the same way from wherever it starts.
+ */
+const security = (data: string, at: number): Security => ({
+  attestedTip: Number(big(word(data, at))),
+  attestors: Number(big(word(data, at + 1))),
+  minBond: big(word(data, at + 2)),
+});
 
 let rpcId = 0;
 
@@ -153,14 +185,20 @@ export async function readChains(): Promise<Record<number, ChainFacts>> {
     chains
       .filter((c) => SOURCES[c.chainId])
       .map(async ({ chainKey, chainId }) => {
-        const [tip, depth] = await Promise.all([
+        const [tip, depth, attestors, floor, bond] = await Promise.all([
           call(CFG.chainInfo, SELECTOR.attestedTip + uint(chainKey)),
           call(CFG.registry, SELECTOR.minConfirmations + uint(chainKey)),
+          call(CFG.stash, SELECTOR.attestorsCount + uint(chainKey)),
+          call(CFG.registry, SELECTOR.minAttestors + uint(chainKey)),
+          call(CFG.stash, SELECTOR.minBond + uint(chainKey)),
         ]);
         facts[chainId] = {
           chainKey,
           tip: Number(big(word(tip, 0))),
           depth: Number(big(word(depth, 0))),
+          attestors: Number(big(word(attestors, 0))),
+          floor: Number(big(word(floor, 0))),
+          bond: big(word(bond, 0)),
         };
       }),
   );
@@ -194,6 +232,7 @@ export async function readAsset(
         borrower: addr(word(c, 1)),
         amount: big(word(c, 2)),
         sourceHeight: Number(big(word(c, 5))),
+        security: security(c, 7),
       })),
     ),
   );
@@ -211,6 +250,7 @@ export async function readAsset(
     sourceHeight: Number(big(word(status, 6))),
     recordedAt: Number(big(word(status, 7))),
     certificate: addr(word(certificate, 0)),
+    security: security(status, 8),
     collisions,
   };
 }
@@ -287,6 +327,18 @@ export const num = (v: number | bigint) => Number(v).toLocaleString("en-US");
  */
 export function amount(raw: bigint) {
   return raw.toLocaleString("en-US");
+}
+
+/**
+ * A CTC bond, where the unit is known.
+ *
+ * Unlike a loan amount this one carries no ambiguity: the precompile returns
+ * wei of CTC and nothing else, so dividing is safe here in a way it is not
+ * anywhere else in this file.
+ */
+export function ctc(wei: bigint) {
+  const whole = wei / 10n ** 18n;
+  return `${whole.toLocaleString("en-US")} CTC`;
 }
 
 export function ago(seconds: number) {

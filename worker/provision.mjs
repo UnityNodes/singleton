@@ -6,10 +6,10 @@ import { CC3_RPC, EXPLORER, addresses, loadPrivateKey, requireAddress } from "./
 /**
  * Brings a freshly deployed registry to the configuration the demo expects.
  *
- * The depth for a chain is stated before any emitter on it is allowlisted. The
- * registry refuses to read a chain nobody has stated a depth for, so the order
- * is not cosmetic: an emitter allowlisted first would sit there looking
- * configured while every proof against it reverted.
+ * The depth and the attestor floor for a chain are stated before any emitter on
+ * it is allowlisted. The registry refuses to read a chain nobody has stated
+ * both for, so the order is not cosmetic: an emitter allowlisted first would sit
+ * there looking configured while every proof against it reverted.
  *
  * Chain keys are resolved live against ChainInfo, never hardcoded: key 1 is
  * Sepolia on CC3 testnet and Ethereum on CC3 mainnet.
@@ -18,6 +18,14 @@ import { CC3_RPC, EXPLORER, addresses, loadPrivateKey, requireAddress } from "./
  *   node worker/provision.mjs --check   reads the registry back and says nothing
  */
 const DEPTH = Number(process.env.MIN_CONFIRMATIONS ?? 64);
+
+/*
+  Below three, one attestor is a majority of the set that attested the block a
+  lien was read from. Creditcoin bonds seven for Sepolia and four for Ethereum
+  as this is written, so three is a floor with room to rotate rather than a
+  number chosen to be met.
+*/
+const FLOOR = Number(process.env.MIN_ATTESTORS ?? 3);
 
 const PLAN = [
   {
@@ -35,6 +43,20 @@ const PLAN = [
     ],
   },
 ];
+
+/**
+ * How many attestors are bonded for a chain right now, read from the same
+ * precompile the registry reads. Reported next to the floor so that a passing
+ * check says the guard is set and satisfied, not only that it is set.
+ */
+async function attestors(provider, chainKey) {
+  const stash = new ethers.Contract(
+    "0x0000000000000000000000000000000000000fd4",
+    ["function getAttestorsCount(uint64) view returns (uint256)"],
+    provider,
+  );
+  return stash.getAttestorsCount(chainKey);
+}
 
 const check = process.argv.includes("--check");
 const cc3 = new ethers.JsonRpcProvider(CC3_RPC);
@@ -60,6 +82,26 @@ for (const chain of PLAN) {
     console.log(`  minConfirmations ${DEPTH}  ${EXPLORER}/tx/${tx.hash}`);
   } else {
     console.log(`  minConfirmations ${DEPTH}  already set`);
+  }
+
+  const floor = Number(await registry.minAttestors(chainKey));
+  const bonded = Number(await attestors(cc3, chainKey));
+  if (check) {
+    console.log(
+      `  minAttestors ${floor}${floor === FLOOR ? "" : `  WRONG, want ${FLOOR}`}` +
+        `  (${bonded} bonded right now)`,
+    );
+    if (floor !== FLOOR) wrong++;
+    if (bonded < FLOOR) {
+      console.log(`  the attestor set is below the floor, this chain records nothing`);
+      wrong++;
+    }
+  } else if (floor !== FLOOR) {
+    const tx = await registry.setMinAttestors(chainKey, FLOOR);
+    await tx.wait();
+    console.log(`  minAttestors ${FLOOR}  ${EXPLORER}/tx/${tx.hash}`);
+  } else {
+    console.log(`  minAttestors ${FLOOR}  already set  (${bonded} bonded right now)`);
   }
 
   for (const emitter of chain.emitters) {

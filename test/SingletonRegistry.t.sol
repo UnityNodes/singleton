@@ -6,15 +6,17 @@ import {SingletonRegistry} from "../src/SingletonRegistry.sol";
 import {IBlockProver} from "../src/interfaces/IBlockProver.sol";
 import {IChainInfo} from "../src/interfaces/IChainInfo.sol";
 import {EvmV1Decoder} from "../src/vendor/EvmV1Decoder.sol";
-import {ProverModel, ChainInfoModel} from "./mocks/Precompiles.sol";
+import {AttestorStashModel, ProverModel, ChainInfoModel} from "./mocks/Precompiles.sol";
 
 contract SingletonRegistryTest is Test {
     address constant PROVER_ADDR = 0x0000000000000000000000000000000000000FD2;
     address constant CHAININFO_ADDR = 0x0000000000000000000000000000000000000fD3;
+    address constant STASH_ADDR = 0x0000000000000000000000000000000000000fd4;
 
     uint64 constant ETH = 3;
     uint64 constant SEPOLIA = 1;
     uint64 constant MIN_CONF = 64;
+    uint64 constant MIN_ATTESTORS = 3;
     uint64 constant TIP = 25_776_130;
 
     /// Two genuinely different lenders. Different code, different addresses,
@@ -30,16 +32,21 @@ contract SingletonRegistryTest is Test {
     SingletonRegistry registry;
     ProverModel prover;
     ChainInfoModel info;
+    AttestorStashModel stash;
 
     function setUp() public {
         vm.etch(PROVER_ADDR, address(new ProverModel()).code);
         vm.etch(CHAININFO_ADDR, address(new ChainInfoModel()).code);
+        vm.etch(STASH_ADDR, address(new AttestorStashModel()).code);
         prover = ProverModel(PROVER_ADDR);
         info = ChainInfoModel(CHAININFO_ADDR);
+        stash = AttestorStashModel(STASH_ADDR);
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(ETH, MIN_CONF);
+        registry.setMinAttestors(ETH, MIN_ATTESTORS);
         registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.setMinAttestors(SEPOLIA, MIN_ATTESTORS);
         registry.setEmitter(ETH, LENDER_A, true);
         registry.setEmitter(ETH, LENDER_B, true);
     }
@@ -180,7 +187,9 @@ contract SingletonRegistryTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(SingletonRegistry.AssetNotFree.selector, key, LENDER_A)
         );
-        registry.registerPledge(_proof(ETH, _final() + 1, second, bytes32(uint256(0xB)), LENDER_B, 0));
+        registry.registerPledge(
+            _proof(ETH, _final() + 1, second, bytes32(uint256(0xB)), LENDER_B, 0)
+        );
 
         SingletonRegistry.Record memory r = registry.getStatus(key);
         assertEq(r.emitter, LENDER_A, "incumbent keeps priority");
@@ -195,8 +204,9 @@ contract SingletonRegistryTest is Test {
 
         bytes memory b = _encodePledgeTx(LENDER_B, COLLATERAL, 43, BORROWER, 5e18, "i2", 1);
         prover.attest(ETH, _final() + 1, b);
-        bytes32 key =
-            registry.registerPledge(_proof(ETH, _final() + 1, b, bytes32(uint256(0xB)), LENDER_B, 0));
+        bytes32 key = registry.registerPledge(
+            _proof(ETH, _final() + 1, b, bytes32(uint256(0xB)), LENDER_B, 0)
+        );
 
         assertEq(uint8(registry.getStatus(key).state), uint8(SingletonRegistry.AssetState.PLEDGED));
     }
@@ -259,7 +269,9 @@ contract SingletonRegistryTest is Test {
           this suite and is not pretended to be.
         */
         bytes32 nullifier = keccak256(
-            abi.encode(uint8(0), ETH, _final(), uint64(uint256(bytes32(uint256(0xA))) & 0xffff), uint32(0))
+            abi.encode(
+                uint8(0), ETH, _final(), uint64(uint256(bytes32(uint256(0xA))) & 0xffff), uint32(0)
+            )
         );
         vm.expectRevert(
             abi.encodeWithSelector(SingletonRegistry.ProofAlreadyConsumed.selector, nullifier)
@@ -284,10 +296,9 @@ contract SingletonRegistryTest is Test {
         bytes memory onEthereum =
             _encodePledgeTx(LENDER_B, COLLATERAL, TOKEN_ID, BORROWER, 1e18, "i2", 1);
         prover.attest(ETH, _final(), onEthereum);
-        bytes32 ethKey =
-            registry.registerPledge(
-                _proof(ETH, _final(), onEthereum, bytes32(uint256(0xB)), LENDER_B, 0)
-            );
+        bytes32 ethKey = registry.registerPledge(
+            _proof(ETH, _final(), onEthereum, bytes32(uint256(0xB)), LENDER_B, 0)
+        );
 
         assertTrue(
             ethKey != registry.assetKeyOf(SEPOLIA, COLLATERAL, TOKEN_ID),

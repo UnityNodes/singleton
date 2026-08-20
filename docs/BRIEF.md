@@ -69,28 +69,45 @@ named as one in caveat 9.
 
 `registerPledge(proof)` on Creditcoin. Every name below was checked on chain.
 
-1. `BlockProver(0x0FD2).verify(chainKey, height, txBytes, merkleProof, continuityProof)`,
+1. Nullifier, burned before anything external is called. `txIndex` is not in the
+   proof payload, so derive it with `BlockProver.calculateTxIndex(merkleProof)`
+   and burn `keccak256(domain, chainKey, height, txIndex, logIndex)`. The domain
+   is what keeps a collision report from spending the proof that would register
+   the same pledge legitimately later.
+2. The emitter must be allowlisted for that chain. Entry only, never exit.
+3. `BlockProver(0x0FD2).verify(chainKey, height, txBytes, merkleProof, continuityProof)`,
    the view form. The registry writes its own state and does not need the
    precompile to emit, so `verifyAndEmit` is unnecessary. Revert on false.
-2. Finality window. Read the tip from
+4. What is standing behind the answer.
+   `AttestorStash(0x0FD4).getAttestorsCount(chainKey)` and
+   `getMinBondRequirement(chainKey)`, refused below `minAttestors[chainKey]`,
+   and kept with the record either way.
+5. Finality window. Read the tip from
    `ChainInfo(0x0fD3).get_latest_attestation_height_and_hash(chainKey)` and
    require `height + MIN_CONFIRMATIONS[chainKey] <= tip.height`. Written as an
    addition, because `tip - depth` underflows and reverts opaquely on a chain
    whose tip is below the configured depth.
-3. `require(receiptStatus == 1)`. Inclusion is not success.
-4. `getLogsByEventSignature(receipt, PLEDGED_SIG)`, exactly one match, and the
-   emitter must be allowlisted for that chain.
-5. Derive `assetKey`.
-6. Nullifier. `txIndex` is not in the proof payload; derive it with
-   `BlockProver.calculateTxIndex(merkleProof)`, then burn
-   `keccak256(chainKey, height, txIndex)`.
-7. First to file. If the asset is free, record it and mint a soulbound
-   certificate to the emitter. Otherwise emit `DoublePledge` and revert.
-8. `getStatus(assetKey)` for protocols to consult before lending.
+6. `require(receiptStatus == 1)`. Inclusion is not success.
+7. The named log. The proof carries `emitter` and `logIndex`, and the registry
+   checks that the log at that index was written by that emitter and carries a
+   topic zero this transition accepts. Nothing is searched for and nothing is
+   counted, because the party who sends the source transaction is usually the
+   borrower and anything inferred from the receipt is therefore chosen by them.
+   Two separate reviews found the same attack through that inference.
+8. Derive `assetKey`.
+9. First to file. If the asset is free, record it and mint a soulbound
+   certificate to the emitter. Otherwise revert `AssetNotFree`, and the loser
+   files `reportCollision` to put the refusal on the record.
+10. `getStatus(assetKey)` for protocols to consult before lending.
 
-Note on step 6: `calculateTxIndex` recovers position from merkle path laterality.
-That mechanism is the entire basis of another entry in this hackathon, index41.
-Here it is plumbing for a nullifier. Do not present it as novel.
+Note on step 1: `calculateTxIndex` recovers position from merkle path
+laterality. That mechanism is the entire basis of another entry in this
+hackathon, index41. Here it is plumbing for a nullifier. Do not present it as
+novel.
+
+`registerPledges(batch)` runs the same list for many proofs against one
+continuity proof, and turns steps 3, 4 and the tip read in 5 from a per pledge
+cost into a per transaction one.
 
 ## 6. Lifecycle, four proofs against one key
 

@@ -30,19 +30,25 @@ console.log(`state      ${STATE_NAMES[Number(record.state)]}`);
 if (Number(record.state) !== 0) {
   console.log(`lien held by ${record.emitter}`);
   console.log(`  borrower    ${record.borrower}`);
-  console.log(`  amount      ${ethers.formatEther(record.amount)}`);
+  console.log(`  amount      ${record.amount} in the unit the protocol wrote`);
   console.log(`  instanceId  ${record.instanceId}`);
   console.log(`  proven at   source height ${record.sourceHeight}`);
   console.log(`  recorded    ${new Date(Number(record.recordedAt) * 1000).toISOString()}`);
   console.log(`  certificate ${certificate}`);
+  console.log(
+    `  attested by ${record.security.attestors} bonded attestors,` +
+      ` ${ethers.formatEther(record.security.minBond)} CTC each,` +
+      ` against an attested tip of ${record.security.attestedTip}`,
+  );
 }
 
 console.log(`\nrefused pledges on this asset: ${collisions}`);
 for (let i = 0; i < collisions; i++) {
   const c = await registry.collisionAt(assetKey, i);
   console.log(
-    `  ${i + 1}. ${c.emitter} for ${ethers.formatEther(c.amount)}` +
-      ` at source height ${c.sourceHeight}, instance ${c.instanceId}`,
+    `  ${i + 1}. ${c.emitter} for ${c.amount}` +
+      ` at source height ${c.sourceHeight}, instance ${c.instanceId}` +
+      `, witnessed under ${c.security.attestors} attestors`,
   );
 }
 

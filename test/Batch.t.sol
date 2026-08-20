@@ -18,10 +18,13 @@ import {MeridianCredit} from "../src/emitters/MeridianCredit.sol";
  * one of them takes the whole transaction with it.
  */
 contract BatchTest is SourceChain {
-    bytes4 constant SINGLE_VERIFY =
-        bytes4(keccak256("verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))"));
+    bytes4 constant SINGLE_VERIFY = bytes4(
+        keccak256("verify(uint64,uint64,bytes,(bytes32,(bytes32,bool)[]),(bytes32,bytes32[]))")
+    );
     bytes4 constant BATCH_VERIFY = bytes4(
-        keccak256("verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))")
+        keccak256(
+            "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))"
+        )
     );
 
     SingletonRegistry registry;
@@ -38,10 +41,13 @@ contract BatchTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.setMinAttestors(SEPOLIA, MIN_ATTESTORS);
         registry.setEmitter(SEPOLIA, address(harbor), true);
         registry.setEmitter(SEPOLIA, address(meridian), true);
 
-        for (uint256 id = 1; id <= 6; id++) deed.mint(BORROWER, id);
+        for (uint256 id = 1; id <= 6; id++) {
+            deed.mint(BORROWER, id);
+        }
         meridian.setCreditLimit(BORROWER, 1_000_000 ether);
     }
 
@@ -91,10 +97,14 @@ contract BatchTest is SourceChain {
     function test_fourSinglesVerifyFourTimes() public {
         Vm.Log[] memory entries = _harborPledges(4);
         SingletonRegistry.Proof[] memory proofs = new SingletonRegistry.Proof[](4);
-        for (uint256 i; i < 4; i++) proofs[i] = _relay(entries[i]);
+        for (uint256 i; i < 4; i++) {
+            proofs[i] = _relay(entries[i]);
+        }
 
         vm.expectCall(PROVER_ADDR, abi.encodeWithSelector(SINGLE_VERIFY), 4);
-        for (uint256 i; i < 4; i++) registry.registerPledge(proofs[i]);
+        for (uint256 i; i < 4; i++) {
+            registry.registerPledge(proofs[i]);
+        }
     }
 
     /// Every member is checked. A batch is not a way to smuggle a pledge past a

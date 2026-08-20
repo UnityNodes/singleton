@@ -184,7 +184,7 @@ export async function relay({
   log(`  log index  ${position} of ${receipt.logs.length} in the receipt`);
   log(`  token      ${fields.token} #${fields.tokenId}`);
   log(`  borrower   ${fields.borrower}`);
-  log(`  amount     ${ethers.formatEther(fields.amount)}`);
+  log(`  amount     ${fields.amount}`);
   log(`  instanceId ${fields.instanceId}`);
 
   const depth = Number(await registry.minConfirmations(chainKey));
@@ -267,7 +267,7 @@ export async function relay({
   log("\nregistry record");
   log(`  state       ${STATE_NAMES[Number(record.state)]}`);
   log(`  emitter     ${record.emitter}`);
-  log(`  amount      ${ethers.formatEther(record.amount)}`);
+  log(`  amount      ${record.amount}`);
   log(`  instanceId  ${record.instanceId}`);
   log(`  certificate ${await registry.certificateOf(assetKey)}`);
   log(`  collisions  ${collisions}`);

@@ -15,7 +15,6 @@ import {IChainInfo} from "../../src/interfaces/IChainInfo.sol";
 contract ProverModel {
     mapping(bytes32 => bool) public attested;
 
-
     function attest(uint64 chainKey, uint64 height, bytes calldata encodedTransaction) external {
         attested[keccak256(abi.encode(chainKey, height, encodedTransaction))] = true;
     }
@@ -78,5 +77,40 @@ contract ChainInfoModel {
         return IChainInfo.HeightHashResult({
             height: tip, hash: bytes32(uint256(1)), isAttestation: true, exists: true
         });
+    }
+}
+
+/**
+ * Model of the AttestorStash precompile, mirroring the live CC3 testnet values
+ * read on 2026-08-20: seven bonded attestors for Sepolia, four for Ethereum,
+ * and a hundred CTC of bond required on both.
+ *
+ * The count is settable so a test can shrink the set the way the real one
+ * shrinks. Storage survives here because the tests set it after etching, not
+ * in a constructor.
+ */
+contract AttestorStashModel {
+    uint64 public constant SEPOLIA_ATTESTORS = 7;
+    uint64 public constant ETHEREUM_ATTESTORS = 4;
+    uint256 public constant BOND = 100 ether;
+
+    mapping(uint64 => uint256) private _override;
+    mapping(uint64 => bool) private _overridden;
+
+    function setAttestorsCount(uint64 chainKey, uint256 count) external {
+        _override[chainKey] = count;
+        _overridden[chainKey] = true;
+    }
+
+    function getAttestorsCount(uint64 chainKey) external view returns (uint256) {
+        if (_overridden[chainKey]) return _override[chainKey];
+        if (chainKey == 1) return SEPOLIA_ATTESTORS;
+        if (chainKey == 3) return ETHEREUM_ATTESTORS;
+        return 0;
+    }
+
+    function getMinBondRequirement(uint64 chainKey) external pure returns (uint256) {
+        if (chainKey == 1 || chainKey == 3) return BOND;
+        return 0;
     }
 }

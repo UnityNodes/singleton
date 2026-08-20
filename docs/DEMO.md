@@ -9,7 +9,7 @@ a demo mode: it is the product, because a register that had to be trusted with
 keys would not be neutral.
 
 **Live**: <https://singleton.unitynodes.com>
-**Registry**: `0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D` on CC3 testnet, verified
+**Registry**: `0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4` on CC3 testnet, verified
 **Evidence**: fifteen inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
 
 ---

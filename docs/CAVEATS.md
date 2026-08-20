@@ -227,3 +227,34 @@ An adapter is also a per protocol integration written by us, not by the
 protocol. It is the one place where being wrong looks like being right, which is
 why each one stays short enough to read in a sitting and is tested against real
 logs captured from the chain it claims to read.
+
+## 10. The attestor floor is a liveness dial, and it points both ways
+
+The registry reads how many attestors are bonded for a source chain and refuses
+to create records once that set falls below a stated floor. This is a real
+guard, and it has a real cost: a chain whose attestor set thins stops being
+readable, so a lender that would have filed first loses the race for reasons
+that have nothing to do with the borrower or the asset.
+
+That is the intended trade. A first to file register whose records are only as
+good as the quorum behind them should stop writing rather than write records
+nobody can weigh. But it is a trade, not a free improvement, and it means the
+floor is a number an administrator sets and can move. Setting it high is a way
+to halt a chain, which belongs on the same page as everything else in caveat 9.
+
+Two things bound it.
+
+The floor gates entry and never exit, tested in
+`test_aThinnedAttestorSetDoesNotTrapAnAssetAlreadyOnFile`. A settlement or a
+release goes through whatever the attestor set is doing, so no administrator and
+no attestor rotation can strand an asset already on file.
+
+Zero is refused. `setMinAttestors(chainKey, 0)` reverts `QuorumNotSet`, and a
+chain with no floor stated records nothing at all rather than recording
+everything. The registry has already had one review find a guard whose default
+disabled it, and this one was written after that lesson rather than before.
+
+What the floor cannot do is make a thin set safe. If Creditcoin's attestors for
+a chain are compromised rather than merely few, the count reads high and the
+proofs are worthless, and no number this contract can read would say so. The
+floor is a check on how much security is standing, not on whether it is honest.

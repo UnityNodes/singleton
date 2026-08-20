@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IBlockProver, BlockProverLib} from "./interfaces/IBlockProver.sol";
+import {IAttestorStash} from "./interfaces/IAttestorStash.sol";
 import {IChainInfo, ChainInfoLib} from "./interfaces/IChainInfo.sol";
 import {IPledgeAdapter} from "./interfaces/IPledgeAdapter.sol";
 import {EvmV1Decoder} from "./vendor/EvmV1Decoder.sol";
@@ -34,6 +35,22 @@ contract SingletonRegistry {
         SETTLED
     }
 
+    /**
+     * How much attestor security stood behind a record at the moment it was
+     * made.
+     *
+     * A cross chain record is only ever as good as the set that attested the
+     * block it was read from, and that set changes size. Recording the numbers
+     * with the lien is what lets a lender reading this register later tell a
+     * record made under a full quorum from one made under a thin one, instead
+     * of finding both written down the same way.
+     */
+    struct Security {
+        uint64 attestedTip;
+        uint64 attestors;
+        uint128 minBond;
+    }
+
     struct Record {
         AssetState state;
         address emitter;
@@ -43,6 +60,7 @@ contract SingletonRegistry {
         uint64 chainKey;
         uint64 sourceHeight;
         uint64 recordedAt;
+        Security security;
     }
 
     /// A refused second pledge, kept because the refusal is worth more than the
@@ -56,6 +74,7 @@ contract SingletonRegistry {
         uint64 chainKey;
         uint64 sourceHeight;
         uint64 reportedAt;
+        Security security;
     }
 
     /**
@@ -133,6 +152,8 @@ contract SingletonRegistry {
 
     IBlockProver public constant PROVER = IBlockProver(0x0000000000000000000000000000000000000FD2);
     IChainInfo public constant CHAIN_INFO = IChainInfo(0x0000000000000000000000000000000000000fD3);
+    IAttestorStash public constant ATTESTOR_STASH =
+        IAttestorStash(0x0000000000000000000000000000000000000fd4);
 
     string public constant name = "Singleton Lien Certificate";
     string public constant symbol = "LIEN";
@@ -150,6 +171,10 @@ contract SingletonRegistry {
 
     /// Confirmation depth before a source block is accepted. Stricter for L2s.
     mapping(uint64 => uint64) public minConfirmations;
+
+    /// How many bonded attestors a chain has to carry before this registry will
+    /// create a record from anything read out of it.
+    mapping(uint64 => uint64) public minAttestors;
 
     mapping(bytes32 => Record) private _records;
     mapping(bytes32 => Collision[]) private _collisions;
@@ -202,6 +227,21 @@ contract SingletonRegistry {
         uint64 sourceHeight
     );
 
+    /**
+     * The attestation the registry believed, kept in the log on purpose.
+     *
+     * Releasing a lien deletes its record, and with it the numbers below. The
+     * log is the part that cannot be deleted, so a register that wants to be
+     * auditable years later has to put them there too.
+     */
+    event AttestationWitnessed(
+        bytes32 indexed assetKey,
+        uint64 chainKey,
+        uint64 attestedTip,
+        uint64 attestors,
+        uint256 minBond
+    );
+
     event EmitterAllowed(uint64 indexed chainKey, address indexed emitter, bool allowed);
 
     event AdapterSet(uint64 indexed chainKey, address indexed emitter, address adapter);
@@ -229,6 +269,8 @@ contract SingletonRegistry {
     error NoCollisionToReport(bytes32 assetKey);
     error TransitionUnsupported(address emitter, uint8 kind);
     error ConfirmationsNotSet(uint64 chainKey);
+    error QuorumNotSet(uint64 chainKey);
+    error QuorumTooThin(uint64 chainKey, uint64 attestors, uint64 required);
     error CollateralNotIdentified();
     error InstanceAlreadyOpen(address emitter, bytes32 instanceId);
     error UnknownInstance(address emitter, bytes32 instanceId);
@@ -269,6 +311,24 @@ contract SingletonRegistry {
         minConfirmations[chainKey] = depth;
     }
 
+    /**
+     * The smallest attestor set this registry will create a record from.
+     *
+     * Zero is refused for the same reason a confirmation depth of zero is: a
+     * guard whose default disables it is not a guard, and this project has
+     * already had one review point at exactly that shape. An unattested chain
+     * answers zero attestors, so a stated floor is also what stops the registry
+     * reading a chain Creditcoin does not attest at all.
+     *
+     * Below three, a single attestor is a majority of the set. That is the floor
+     * used on both live chains, not because three is magic, but because it is
+     * the smallest number where no one attestor decides alone.
+     */
+    function setMinAttestors(uint64 chainKey, uint64 floor) external onlyAdmin {
+        if (floor == 0) revert QuorumNotSet(chainKey);
+        minAttestors[chainKey] = floor;
+    }
+
     // ----------------------------------------------------------- core ops
 
     /**
@@ -280,8 +340,9 @@ contract SingletonRegistry {
     function registerPledge(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_PLEDGE);
         _requireAllowed(p);
-        SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
-        assetKey = _recordPledge(p.chainKey, p.height, pledge);
+        (SourceEvent memory pledge, Security memory security) =
+            _readSourceEvent(p, KIND_PLEDGE, true);
+        assetKey = _recordPledge(p.chainKey, p.height, pledge, security);
     }
 
     /**
@@ -305,10 +366,7 @@ contract SingletonRegistry {
      * is refused with a continuity mismatch, and every forged member of an
      * otherwise honest batch is refused too.
      */
-    function registerPledges(BatchProof calldata b)
-        external
-        returns (bytes32[] memory assetKeys)
-    {
+    function registerPledges(BatchProof calldata b) external returns (bytes32[] memory assetKeys) {
         uint256 count = b.heights.length;
         if (count == 0) revert EmptyBatch();
         if (
@@ -321,9 +379,11 @@ contract SingletonRegistry {
         );
         if (!ok) revert ProofRejected();
 
+        Security memory security = _witness(b.chainKey, true);
+
         assetKeys = new bytes32[](count);
         for (uint256 i; i < count; i++) {
-            _requireFinal(b.chainKey, b.heights[i]);
+            _requireFinal(b.chainKey, b.heights[i], security.attestedTip);
             if (!allowedEmitter[b.chainKey][b.emitters[i]]) {
                 revert EmitterNotAllowed(b.chainKey, b.emitters[i]);
             }
@@ -332,14 +392,16 @@ contract SingletonRegistry {
             SourceEvent memory pledge = _readEvent(
                 b.chainKey, b.encodedTransactions[i], b.emitters[i], b.logIndexes[i], KIND_PLEDGE
             );
-            assetKeys[i] = _recordPledge(b.chainKey, b.heights[i], pledge);
+            assetKeys[i] = _recordPledge(b.chainKey, b.heights[i], pledge, security);
         }
     }
 
-    function _recordPledge(uint64 chainKey, uint64 height, SourceEvent memory pledge)
-        private
-        returns (bytes32 assetKey)
-    {
+    function _recordPledge(
+        uint64 chainKey,
+        uint64 height,
+        SourceEvent memory pledge,
+        Security memory security
+    ) private returns (bytes32 assetKey) {
         if (pledge.token == address(0)) revert CollateralNotIdentified();
         assetKey = _assetKey(chainKey, pledge.token, pledge.tokenId);
 
@@ -360,13 +422,17 @@ contract SingletonRegistry {
             instanceId: pledge.instanceId,
             chainKey: chainKey,
             sourceHeight: height,
-            recordedAt: uint64(block.timestamp)
+            recordedAt: uint64(block.timestamp),
+            security: security
         });
 
         _issueCertificate(pledge.emitter, uint256(assetKey));
 
         emit PledgeRecorded(
             assetKey, pledge.emitter, pledge.borrower, chainKey, pledge.amount, pledge.instanceId
+        );
+        emit AttestationWitnessed(
+            assetKey, chainKey, security.attestedTip, security.attestors, security.minBond
         );
     }
 
@@ -381,7 +447,8 @@ contract SingletonRegistry {
     function reportCollision(Proof calldata p) external returns (uint256 index) {
         _burnNullifier(p, DOMAIN_COLLISION);
         _requireAllowed(p);
-        SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
+        (SourceEvent memory pledge, Security memory security) =
+            _readSourceEvent(p, KIND_PLEDGE, true);
 
         if (pledge.token == address(0)) revert CollateralNotIdentified();
         bytes32 assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
@@ -416,11 +483,15 @@ contract SingletonRegistry {
                 instanceId: pledge.instanceId,
                 chainKey: p.chainKey,
                 sourceHeight: p.height,
-                reportedAt: uint64(block.timestamp)
+                reportedAt: uint64(block.timestamp),
+                security: security
             })
         );
 
         emit DoublePledge(assetKey, r.emitter, pledge.emitter, p.chainKey, p.height);
+        emit AttestationWitnessed(
+            assetKey, p.chainKey, security.attestedTip, security.attestors, security.minBond
+        );
     }
 
     /**
@@ -431,7 +502,7 @@ contract SingletonRegistry {
      */
     function registerSettlement(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_SETTLE);
-        SourceEvent memory ev = _readSourceEvent(p, KIND_SETTLE);
+        (SourceEvent memory ev,) = _readSourceEvent(p, KIND_SETTLE, false);
 
         assetKey = _resolveAsset(p.chainKey, ev);
         Record storage r = _records[assetKey];
@@ -454,7 +525,7 @@ contract SingletonRegistry {
      */
     function registerRelease(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_RELEASE);
-        SourceEvent memory ev = _readSourceEvent(p, KIND_RELEASE);
+        (SourceEvent memory ev,) = _readSourceEvent(p, KIND_RELEASE, false);
 
         assetKey = _resolveAsset(p.chainKey, ev);
         Record storage r = _records[assetKey];
@@ -465,7 +536,7 @@ contract SingletonRegistry {
 
         /*
           The refusals go with the lien they were filed against.
-          
+
           A collision says "somebody tried to lend against this asset while that
           lender held it". Once the lien is released that sentence has no
           subject, and keeping the list produced a record where the incumbent
@@ -571,13 +642,14 @@ contract SingletonRegistry {
 
     /// Verifies the proof, then reads exactly one log of the requested kind out
     /// of the receipt it carries.
-    function _readSourceEvent(Proof calldata p, uint8 kind)
+    function _readSourceEvent(Proof calldata p, uint8 kind, bool entering)
         private
         view
-        returns (SourceEvent memory found)
+        returns (SourceEvent memory found, Security memory security)
     {
         _requireVerified(p);
-        _requireFinal(p.chainKey, p.height);
+        security = _witness(p.chainKey, entering);
+        _requireFinal(p.chainKey, p.height, security.attestedTip);
 
         found = _readEvent(p.chainKey, p.encodedTransaction, p.emitter, p.logIndex, kind);
     }
@@ -690,20 +762,63 @@ contract SingletonRegistry {
     }
 
     /**
+     * Reads what the registry is about to trust, before it trusts it.
+     *
+     * The attested tip is read once per transaction rather than once per proof.
+     * It cannot change inside a transaction, so a batch of twenty pledges asks
+     * the chain for it once, which is the second time the batch path turns a
+     * per item cost into a per transaction one.
+     *
+     * The quorum floor applies on the way in and not on the way out, which is
+     * the same line the emitter allowlist draws and for the same reason. A
+     * pledge or a refusal creates a record, so it has to meet the standard in
+     * force now. A settlement or a release only closes a record that already
+     * exists, and refusing those because the attestor set shrank afterwards
+     * would trap assets in the registry that the source chain has already
+     * freed, punishing a borrower for something no party to the lien did.
+     *
+     * The narrowing casts are safe by supply rather than by check. An attestor
+     * count past 2^64 and a bond past 2^128 wei are both larger than CTC exists
+     * in, and if the chain's own precompile lied about either number then every
+     * proof this registry rests on is already worthless.
+     */
+    function _witness(uint64 chainKey, bool entering)
+        private
+        view
+        returns (Security memory security)
+    {
+        IChainInfo.HeightHashResult memory tip =
+            CHAIN_INFO.get_latest_attestation_height_and_hash(chainKey);
+        security.attestedTip = tip.exists ? tip.height : 0;
+        if (!entering) return security;
+
+        uint64 floor = minAttestors[chainKey];
+        if (floor == 0) revert QuorumNotSet(chainKey);
+
+        uint64 attestors = uint64(ATTESTOR_STASH.getAttestorsCount(chainKey));
+        if (attestors < floor) revert QuorumTooThin(chainKey, attestors, floor);
+
+        security.attestors = attestors;
+        security.minBond = uint128(ATTESTOR_STASH.getMinBondRequirement(chainKey));
+    }
+
+    /**
      * Rejects anything still inside the reorg window.
      *
      * Written as an addition rather than `tip - depth` on purpose: subtraction
      * underflows and reverts opaquely on a chain whose attested tip is lower
      * than the configured depth, which is a real state for a freshly added
      * chain.
+     *
+     * A chain with no attestation at all arrives here as a tip of zero, which
+     * no stated depth can satisfy, so the unattested case and the too recent
+     * case are refused by the same line.
      */
-    function _requireFinal(uint64 chainKey, uint64 height) private view {
-        IChainInfo.HeightHashResult memory tip =
-            CHAIN_INFO.get_latest_attestation_height_and_hash(chainKey);
+    function _requireFinal(uint64 chainKey, uint64 height, uint64 attestedTip) private view {
         uint64 depth = minConfirmations[chainKey];
         if (depth == 0) revert ConfirmationsNotSet(chainKey);
-        if (!tip.exists || height + depth > tip.height) {
-            revert NotFinal(height, tip.exists ? tip.height : 0, depth);
+        if (attestedTip == 0 || height + depth > attestedTip) {
+            revert NotFinal(height, attestedTip, depth);
         }
     }
 

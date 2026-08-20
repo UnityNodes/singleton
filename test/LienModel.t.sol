@@ -43,6 +43,7 @@ contract LienModelTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.setMinAttestors(SEPOLIA, MIN_ATTESTORS);
         registry.setEmitter(SEPOLIA, address(harbor), true);
         registry.setEmitter(SEPOLIA, address(meridian), true);
         registry.setEmitter(SEPOLIA, address(atlas), true);
@@ -211,7 +212,9 @@ contract LienModelTest is SourceChain {
 
         SingletonRegistry.Proof memory honest = _harborPledge(1000 ether);
         vm.expectRevert(
-            abi.encodeWithSelector(SingletonRegistry.AssetNotFree.selector, assetKey, address(atlas))
+            abi.encodeWithSelector(
+                SingletonRegistry.AssetNotFree.selector, assetKey, address(atlas)
+            )
         );
         registry.registerPledge(honest);
     }
@@ -253,7 +256,9 @@ contract LienModelTest is SourceChain {
         registry.registerPledge(second);
 
         assertEq(
-            uint8(registry.getStatus(registry.assetKeyOf(SEPOLIA, address(deed), SECOND_TOKEN)).state),
+            uint8(
+                registry.getStatus(registry.assetKeyOf(SEPOLIA, address(deed), SECOND_TOKEN)).state
+            ),
             uint8(SingletonRegistry.AssetState.FREE),
             "a genuine first filing was refused and nothing records that it happened"
         );

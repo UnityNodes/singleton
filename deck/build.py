@@ -99,7 +99,8 @@ slide('''
     <b>In use</b>
     <p>BlockProver <code>0x0FD2</code>, <b>both forms of verify</b>: one transaction for a single
     pledge, and an array against one shared continuity proof for a batch. ChainInfo <code>0x0fD3</code>
-    for the attested tip and the chain key. The deployed <code>EvmV1Decoder</code>.</p>
+    for the attested tip and the chain key. AttestorStash <code>0x0FD4</code> for the bonded set behind
+    that attestation. The deployed <code>EvmV1Decoder</code>.</p>
     <p><b>Both</b> attested source chains: <code>get_supported_chains</code> reports two on CC3 testnet
     and both are read.</p>
     <p><b>Measured, not estimated.</b> Four pledges filed one at a time cost 1,582,616 gas. The same
@@ -111,9 +112,11 @@ slide('''
     <p class="body">SubstrateTransfer moves CTC and a register holds none. The signature verifiers want
     Substrate keys and the evidence here is an inclusion proof. Staking and the legacy loan pallets are
     not reachable from Solidity at all. Writability is not shipped.</p>
-    <b>Not built, and named</b>
-    <p class="body">Batch verification, the ChainInfo bounds queries, and AttestorStash. The full list
-    with reasons is in <code>docs/SURFACES.md</code>.</p>
+    <b>Refused after measuring</b>
+    <p class="body"><code>is_height_attested</code> works, and on both live chains it is exactly the
+    comparison the finality guard already makes: true up to the attested tip, false one block past it,
+    no gaps below, genesis zero. Spending a call to be told what <code>height &lt;= tip</code> says is
+    not depth. The full list with reasons is in <code>docs/SURFACES.md</code>.</p>
   </div>
 </div>''')
 
@@ -130,7 +133,7 @@ slide('''
   716k to 634k.</p></li>
 </ol>
 <p class="foot-note">Also corrected: a caveat claiming an administrator cannot fabricate, which was false,
-and the vacuous test that backed it. 61 tests, every attack kept as a regression.</p>''')
+and the vacuous test that backed it. 85 tests, every attack kept as a regression.</p>''')
 
 slide('''
 <h2 class="display">Said before anybody has to ask.</h2>
@@ -162,7 +165,7 @@ slide('''
   <span>singleton.unitynodes.com</span>
   <span>/demo, 1:25, captioned</span>
   <span>github.com/UnityNodes/singleton</span>
-  <span>0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D</span>
+  <span>0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4</span>
 </div>''')
 
 CSS = f'''

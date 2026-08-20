@@ -15,6 +15,7 @@ import {
   ago,
   assetKeyOf,
   amount,
+  ctc,
   nameOf,
   num,
   readAsset,
@@ -217,11 +218,20 @@ export default function Register() {
             <span
               key={chainId}
               className="flex items-center gap-2"
-              title={`Creditcoin has attested ${SOURCES[Number(chainId)].name} to this block. A pledge is accepted once it is ${facts.depth} blocks deep.`}
+              title={`Creditcoin has attested ${SOURCES[Number(chainId)].name} to this block, on the word of ${facts.attestors} bonded attestors. A pledge is accepted once it is ${facts.depth} blocks deep, and only while at least ${facts.floor} attestors are bonded.`}
             >
-              <span className="ping inline-block size-1.5 shrink-0 rounded-full bg-settled text-settled" />
+              <span
+                className={`ping inline-block size-1.5 shrink-0 rounded-full ${
+                  facts.attestors >= facts.floor
+                    ? "bg-settled text-settled"
+                    : "bg-refused text-refused"
+                }`}
+              />
               {SOURCES[Number(chainId)].name} attested to{" "}
               <b className="tabular font-medium text-paper">{num(facts.tip)}</b>
+              <span className="text-paper-3">
+                by <b className="tabular font-medium text-paper-2">{facts.attestors}</b>
+              </span>
             </span>
           ))}
         </div>
@@ -611,6 +621,13 @@ export default function Register() {
               <Step title="inclusion proof">
                 re-checked on chain by BlockProver <span className="font-mono">{CFG.prover}</span>,
                 accepted at {chain.depth} blocks deep
+                {opening && record.security.attestors > 0 && (
+                  <>
+                    , on the word of{" "}
+                    <b className="tabular font-medium text-paper">{record.security.attestors}</b>{" "}
+                    attestors bonded {ctc(record.security.minBond)} each
+                  </>
+                )}
               </Step>
               <div className="hidden place-items-center px-3 text-line-2 lg:grid">
                 <ArrowRight size={16} className="breathe" />

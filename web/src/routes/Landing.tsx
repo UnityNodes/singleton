@@ -9,6 +9,7 @@ import {
   PROTOCOLS,
   SOURCES,
   nameOf,
+  ctc,
   num,
   readAsset,
   readChains,
@@ -238,6 +239,12 @@ export default function Landing() {
                 <span>
                   {SOURCES[Number(id)].name.toLowerCase()} attested to{" "}
                   <span className="tabular text-paper-2">{num(f.tip)}</span>, accepted {f.depth} deep
+                  {f.attestors > 0 && (
+                    <>
+                      , by <span className="tabular text-paper-2">{f.attestors}</span> attestors
+                      bonded {ctc(f.bond)}
+                    </>
+                  )}
                 </span>
               </span>
             ))}

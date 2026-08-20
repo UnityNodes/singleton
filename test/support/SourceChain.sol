@@ -5,7 +5,7 @@ import {Test, Vm} from "forge-std/Test.sol";
 import {SingletonRegistry} from "../../src/SingletonRegistry.sol";
 import {IBlockProver} from "../../src/interfaces/IBlockProver.sol";
 import {EvmV1Decoder} from "../../src/vendor/EvmV1Decoder.sol";
-import {ProverModel, ChainInfoModel} from "../mocks/Precompiles.sol";
+import {AttestorStashModel, ProverModel, ChainInfoModel} from "../mocks/Precompiles.sol";
 
 /**
  * A source chain the tests can pledge on.
@@ -23,16 +23,19 @@ import {ProverModel, ChainInfoModel} from "../mocks/Precompiles.sol";
 abstract contract SourceChain is Test {
     address internal constant PROVER_ADDR = 0x0000000000000000000000000000000000000FD2;
     address internal constant CHAININFO_ADDR = 0x0000000000000000000000000000000000000fD3;
+    address internal constant STASH_ADDR = 0x0000000000000000000000000000000000000fd4;
 
     uint64 internal constant SEPOLIA = 1;
     uint64 internal constant ETHEREUM = 3;
     uint64 internal constant MIN_CONF = 64;
+    uint64 internal constant MIN_ATTESTORS = 3;
     uint64 internal constant TIP = 11_509_380;
 
     address internal constant BORROWER = address(0xB0110);
     uint256 internal constant TOKEN_ID = 42;
 
     ProverModel internal prover;
+    AttestorStashModel internal stash;
 
     uint64 private _nextHeight = TIP - MIN_CONF - 500;
     uint256 private _nextRoot = 0xA0;
@@ -40,7 +43,9 @@ abstract contract SourceChain is Test {
     function _installPrecompiles() internal {
         vm.etch(PROVER_ADDR, address(new ProverModel()).code);
         vm.etch(CHAININFO_ADDR, address(new ChainInfoModel()).code);
+        vm.etch(STASH_ADDR, address(new AttestorStashModel()).code);
         prover = ProverModel(PROVER_ADDR);
+        stash = AttestorStashModel(STASH_ADDR);
     }
 
     function _log(bytes32 signature) internal view returns (Vm.Log memory) {
@@ -104,8 +109,7 @@ abstract contract SourceChain is Test {
             uint64(1), uint128(1e9), uint128(3e10), accessList, uint8(0), bytes32(0), bytes32(0)
         );
 
-        EvmV1Decoder.LogEntryTuple[] memory logs =
-            new EvmV1Decoder.LogEntryTuple[](entries.length);
+        EvmV1Decoder.LogEntryTuple[] memory logs = new EvmV1Decoder.LogEntryTuple[](entries.length);
         for (uint256 i; i < entries.length; i++) {
             logs[i] = EvmV1Decoder.LogEntryTuple({
                 address_: entries[i].emitter, topics: entries[i].topics, data: entries[i].data
@@ -167,8 +171,9 @@ abstract contract SourceChain is Test {
         b.logIndexes = new uint32[](count);
         b.encodedTransactions = new bytes[](count);
         b.merkleProofs = new IBlockProver.MerkleProof[](count);
-        b.sharedContinuityProof =
-            IBlockProver.ContinuityProof({lowerEndpointDigest: bytes32(0), roots: new bytes32[](0)});
+        b.sharedContinuityProof = IBlockProver.ContinuityProof({
+            lowerEndpointDigest: bytes32(0), roots: new bytes32[](0)
+        });
 
         for (uint256 i; i < count; i++) {
             bytes memory encoded = _encode(entries[i], 1);
@@ -176,8 +181,7 @@ abstract contract SourceChain is Test {
             prover.attest(SEPOLIA, height, encoded);
 
             IBlockProver.MerkleProofEntry[] memory siblings = new IBlockProver.MerkleProofEntry[](1);
-            siblings[0] =
-                IBlockProver.MerkleProofEntry({hash: bytes32(_nextRoot++), isLeft: true});
+            siblings[0] = IBlockProver.MerkleProofEntry({hash: bytes32(_nextRoot++), isLeft: true});
 
             b.heights[i] = height;
             b.emitters[i] = entries[i].emitter;

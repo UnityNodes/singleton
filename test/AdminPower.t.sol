@@ -64,6 +64,7 @@ contract AdminPowerTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.setMinAttestors(SEPOLIA, MIN_ATTESTORS);
         registry.setEmitter(SEPOLIA, address(harbor), true);
         registry.setEmitter(SEPOLIA, address(meridian), true);
 
@@ -117,7 +118,9 @@ contract AdminPowerTest is SourceChain {
     /// The boundary that does hold: no adapter can produce a record from a
     /// transaction that was never mined, because the precompile decides that.
     function test_noAdapterMakesTheProverAcceptAnUnminedTransaction() public {
-        registry.setAdapter(SEPOLIA, address(harbor), address(new FabricatingAdapter(address(deed), 3)));
+        registry.setAdapter(
+            SEPOLIA, address(harbor), address(new FabricatingAdapter(address(deed), 3))
+        );
 
         vm.recordLogs();
         vm.prank(BORROWER);

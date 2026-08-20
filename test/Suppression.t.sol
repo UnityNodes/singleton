@@ -75,6 +75,7 @@ contract SuppressionTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.setMinAttestors(SEPOLIA, MIN_ATTESTORS);
         registry.setEmitter(SEPOLIA, address(harbor), true);
         registry.setEmitter(SEPOLIA, address(meridian), true);
 
@@ -229,7 +230,9 @@ contract SuppressionTest is SourceChain {
         p.logIndex = 9;
 
         vm.expectRevert(
-            abi.encodeWithSelector(SingletonRegistry.LogIndexOutOfRange.selector, uint256(9), uint256(1))
+            abi.encodeWithSelector(
+                SingletonRegistry.LogIndexOutOfRange.selector, uint256(9), uint256(1)
+            )
         );
         registry.registerPledge(p);
     }

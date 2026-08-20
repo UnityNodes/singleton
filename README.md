@@ -47,17 +47,17 @@ life against two unrelated lenders on Sepolia: pledged, a second pledge refused
 live, the refusal kept on file, settled, released, and re-pledged by the lender
 that lost the first race. Six more proofs read two real protocols on Ethereum
 mainnet, which have never heard of it, including a lien that ended in a failed
-auction rather than a repayment. Twelve proofs, every hash in
+auction rather than a repayment. Fifteen proofs, every hash in
 [docs/VERIFICATION.md](docs/VERIFICATION.md), replayable with
 `node worker/demo.mjs`.
 
 | | |
 |---|---|
 | The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
-| The demo, 1:25 | [/demo](https://singleton.unitynodes.com/demo), captioned, no wallet needed to follow it |
+| The demo, 1:30 | [/demo](https://singleton.unitynodes.com/demo), captioned, no wallet needed to follow it |
 | The deck | [singleton-deck.pdf](https://singleton.unitynodes.com/singleton-deck.pdf), ten slides |
 | The one pager | [singleton-one-pager.pdf](https://singleton.unitynodes.com/singleton-one-pager.pdf) |
-| Registry, CC3 testnet | `0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D`, verified on Blockscout |
+| Registry, CC3 testnet | `0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
@@ -70,11 +70,21 @@ continuity proof paid once instead of once per pledge, so it grows with the
 distance a relayer is catching up over. All or nothing on purpose: a batch that
 cannot file one of its members takes the whole transaction with it.
 
-73 tests cover it, including both suppression attacks that independent reviews
+85 tests cover it, including both suppression attacks that independent reviews
 found on 2026-08-19 and the regressions that keep them closed. The registry and both
 adapters are verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
 hex.
+
+**A record is only as good as the quorum that attested it, so the quorum is part
+of the record.** Creditcoin bonds seven attestors for Sepolia and four for
+Ethereum, a hundred CTC each, and those numbers move. Every bridge and oracle
+shipped so far stores a record made under seven the same way as one made under
+two. This registry reads the count and the bond inside the transaction that
+accepts a proof, keeps both with the lien and with every refusal, emits them in a
+log that outlives the record itself, and refuses to file anything at all once the
+set has fallen below a stated floor. The floor gates entry and never exit, so no
+attestor rotation can strand an asset already on file.
 
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
@@ -95,10 +105,14 @@ them inside its own transaction.
 
 1. Verifies the proof through `BlockProver.verify` at `0x0FD2`.
 2. Rejects anything inside the reorg window, using the attested height read from
-   `ChainInfo.get_latest_attestation_height_and_hash` at `0x0FD3`.
+   `ChainInfo.get_latest_attestation_height_and_hash` at `0x0FD3`, and reads how
+   many attestors were bonded behind it from `AttestorStash` at `0x0FD4`.
 3. Requires `receiptStatus == 1`, because inclusion is not success.
-4. Finds the log, requires its emitter to be allowlisted for that chain, and
-   reads it either natively or through that emitter's adapter.
+4. Reads the log the proof names, requires it to have been written by the
+   emitter the proof names, requires that emitter to be allowlisted for the
+   chain, and decodes it either natively or through that emitter's adapter. The
+   registry searches the receipt for nothing, because the party who sends the
+   source transaction is usually the borrower.
 5. Derives `assetKey = keccak256(chainKey, tokenAddress, tokenId)`.
 6. Burns a per-operation nullifier so the same proof cannot be replayed.
 7. Records the pledge if the asset is free and issues a soulbound certificate to

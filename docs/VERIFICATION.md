@@ -395,9 +395,14 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D`, decoder linked to
-`0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`, admin
-`0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
+`0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4`, decoder linked to
+`0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`,
+`minAttestors[1] = 3`, admin `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
+
+A chain needs both numbers before the registry will read it. `provision.mjs`
+states them before allowlisting any emitter on that chain, because an emitter
+allowlisted first sits there looking configured while every proof against it
+reverts.
 
 Adapters: NFTfi `0xE51eD7b5e8Fda55053C91726B0739813510FE913`, Blend
 `0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67`, both pure and stateless. They hold
@@ -414,6 +419,10 @@ Earlier deployments are left on chain rather than hidden:
 collision record and then by the instance index,
 `0xf6229779f67E9935c969f835Ca3DA1f67eA7ECCd` carries the first Blend release,
 `0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` predates seizure being provable.
+
+`0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D` carries the fifteen proof W2 run and
+the batch measurement, and was superseded on 2026-08-20 by the attestor quorum:
+it recorded nothing about how much security stood behind the proofs it accepted.
 
 Two more were superseded on 2026-08-19 by the two reviews caveat 7 describes.
 `0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` predates the receipt poisoning fix.

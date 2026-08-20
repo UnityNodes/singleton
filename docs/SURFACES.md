@@ -21,6 +21,7 @@ registered at an address not probed here is not claimed either way.
 |---|---|---|
 | BlockProver | `0x0FD2` | Both forms of `verify` in view: one transaction for a single pledge, an array against one shared continuity proof for a batch. Plus `calculateTxIndex` for the replay nullifier |
 | ChainInfo | `0x0fD3` | `get_latest_attestation_height_and_hash` on chain for the finality guard, `get_supported_chains` off chain to resolve a chain key from a chain id |
+| AttestorStash | `0x0FD4` | `getAttestorsCount` and `getMinBondRequirement` read inside the transaction that accepts a proof. Both numbers are stored with the lien and with every refusal, and a chain whose set has fallen below a stated floor stops producing records |
 | EvmV1Decoder | `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` | Receipt and log decoding, as a linked library rather than a copy |
 | `@gluwa/usc-sdk` 0.18.0 | | `ProofBuilder.getProof` in the relay |
 | Attested source chains | keys 1 and 3 | Sepolia and Ethereum mainnet, which `get_supported_chains` reports as the whole list |
@@ -55,7 +56,6 @@ Two requirements the documentation puts in a danger block, both met:
 | SubstrateTransfer | `0x0FD1` | Moves CTC from the EVM ledger to a Substrate account, one way. A register holds no funds and moves none. |
 | Sr25519Verifier | `0x13B9` | Substrate-keyed signatures. Nothing here is signed by a borrower; the evidence is an inclusion proof. |
 | Ed25519Verifier | `0x13BA` | Same. |
-| AttestorStash | `0x0FD4` | Reads the attestor set and its bonding. Named below as the strongest thing not built, rather than dismissed. |
 | CTC staking, nomination pools | | Not reachable from Solidity at all. There is no staking precompile; this is a property of the chain, not a choice. |
 | The legacy Creditcoin loan pallets | | Not in the CC3 runtime. They run on a separate Substrate chain with no EVM and no attestation registration, so no contract can reach them. |
 | Attestcoin writability, the outbound direction | | Not shipped. The docs say it is in third party testing. A register only needs to read. |
@@ -63,29 +63,55 @@ Two requirements the documentation puts in a danger block, both met:
 | `QueryBuilder` byte offsets | | An alternative to structural decoding, cheaper in gas. The deployed decoder already does the job, and using both would be two ways of reading the same bytes. |
 | `PrecompileBlockProver`, `PrecompileChainInfoProvider` | | Typed off-chain wrappers. Verification happens inside the contract here, which is the stronger position; verifying off chain and trusting the result is the thing this project exists to avoid. |
 
-## Not built, and worth naming
+## What the attestor set is for
 
-Two surfaces have a real argument and are absent. Saying so is cheaper than
-being asked.
+A cross chain record inherits the security of the set that attested the block it
+was read from. That set is not a constant. Creditcoin bonds seven attestors for
+Sepolia and four for Ethereum as this is written, a hundred CTC each, and those
+numbers are readable by any contract on the chain.
 
-**`is_height_attested` and `get_attestation_bounds`.** The finality guard infers
-from the tip. These two would let the registry state precisely which attested
-interval a witnessed pledge falls inside, and record it with the lien.
+Nothing that consumes an attestation writes them down. A record made while seven
+attestors stood behind it and a record made while two did are stored identically
+by every bridge, oracle and message layer, so the question "how much was standing
+behind this when it was written" has no answer after the fact. The registry
+answers it: `Record.security` and `Collision.security` carry the count, the bond
+and the attested tip that were true at the moment the proof was accepted, and
+`AttestationWitnessed` puts the same three numbers in the log, which survives the
+lien being released and its record deleted.
 
-**`is_height_attested` and `get_attestation_bounds`.** The finality guard infers
-from the tip. These two would let the registry state precisely which attested
-interval a witnessed pledge falls inside, and record it with the lien.
+The floor is the enforcing half. `setMinAttestors` states the smallest set a
+chain may have before this registry will create a record from anything read out
+of it, and zero is refused for the same reason a confirmation depth of zero is.
+Three is used on both live chains: below three, a single attestor is a majority
+of the set. The floor gates entry only. A settlement or a release still goes
+through under a collapsed set, because trapping a borrower's asset over an
+attestor rotation they had no part in would be a worse failure than the one the
+floor exists to prevent.
 
-**AttestorStash.** `getAttestorsCount` and `getMinBondRequirement` would let the
-registry read, at witness time, how much economic security stood behind the
-attestation it just believed, and refuse below a floor. For a register whose
-whole claim is that its record is only as good as the quorum behind it, that is
-the most substantive unused surface on the chain.
+An unattested chain key answers zero attestors rather than reverting, verified
+live, so the floor doubles as the refusal to read a chain Creditcoin does not
+attest at all.
 
-Called on CC3 testnet while writing this: `getAttestorsCount(1)` is 7,
-`getAttestorsCount(3)` is 4, and `getMinBondRequirement` is 100 CTC on both. So
-the twelve proofs this submission rests on were attested by four and seven
-bonded attestors respectively, and the registry currently records none of that.
+## Refused after measuring, not before
 
-`is_height_attested(1, 11510076)` returns true for the block the first pledge
-came from, which is the one call that would replace an inference with an answer.
+**`is_height_attested`.** It exists and it works. It is also, on both live
+chains, exactly the comparison the finality guard already makes. Measured at CC3
+block 5343128 against chain key 1, attested tip 11529470: true at 11529469 and
+at 11529470, false at 11529471 and above, and true at every height sampled below
+it down to zero, with no gaps. `get_attestation_genesis_height` returns 0 for
+both chains, so there is no lower bound to fall outside of either. Calling it
+would spend a staticcall to be told what `height <= tip` already says. It is
+listed here rather than in the table above because the reason it is unused is a
+measurement, not an assumption.
+
+There is no `get_attestation_bounds`. An earlier draft of this document named
+one; the selector returns "Unknown selector" on CC3 testnet, and the claim has
+been removed rather than softened.
+
+**`get_latest_checkpoint_height_and_hash`.** A separate marker that trails the
+attested tip: at CC3 block 5343190, chain key 1 reported an attestation at
+11529540 and a checkpoint at 11529400, chain key 3 an attestation at 25796830
+and a checkpoint at 25796700. Both checkpoint results carry `isAttestation`
+false. The registry gates on the attested tip because a height it accepts has to
+be one the attestor set stood behind, and that is the flag the checkpoint result
+clears.

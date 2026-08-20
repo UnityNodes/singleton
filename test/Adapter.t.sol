@@ -39,6 +39,7 @@ contract AdapterTest is SourceChain {
 
         registry = new SingletonRegistry();
         registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.setMinAttestors(SEPOLIA, MIN_ATTESTORS);
         registry.setEmitter(SEPOLIA, address(harbor), true);
         registry.setEmitter(SEPOLIA, address(atlas), true);
         registry.setAdapter(SEPOLIA, address(atlas), address(adapter));
