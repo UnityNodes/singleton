@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CFG, short } from "@/lib/registry";
 
 const VIDEO = "/demo/singleton.mp4";
-const RUNTIME = 105;
+const RUNTIME = 107;
 
 /**
  * Timecodes are read off frames of the recording in script/record-demo.mjs, not
@@ -21,8 +21,8 @@ const CHAPTERS = [
   { at: 48, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
   { at: 62, title: "what stood behind the record", line: "The attestor set the registry believed, kept with the lien." },
   { at: 78, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
-  { at: 90, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
-  { at: 99, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
+  { at: 91, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
+  { at: 101, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
 ];
 
 const STACK = [
@@ -250,7 +250,7 @@ export default function Demo() {
               },
               {
                 k: "read the contracts",
-                v: "The registry, the adapters, 85 tests, and the caveats written before anybody had to ask for them.",
+                v: "The registry, the adapters, 87 tests, and the caveats written before anybody had to ask for them.",
                 href: "https://github.com/UnityNodes/singleton",
               },
             ].map((door) => {

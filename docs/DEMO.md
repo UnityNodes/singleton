@@ -1,4 +1,4 @@
-# Demo, a hundred and five seconds
+# Demo, a hundred and seven seconds
 
 One asset, two lenders, a refusal anybody can open. Then the same registry
 pointed at two protocols on Ethereum mainnet that never heard of it.
@@ -9,7 +9,7 @@ a demo mode: it is the product, because a register that had to be trusted with
 keys would not be neutral.
 
 **Live**: <https://singleton.unitynodes.com>
-**Registry**: `0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1` on CC3 testnet, verified
+**Registry**: `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7` on CC3 testnet, verified
 **Evidence**: fifteen inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
 
 ---
@@ -38,12 +38,12 @@ Timecodes below are read off frames of the recording, not off this plan. Change
 | 3 | 0:19 to 0:28 | Hold on 02, cursor still | "Neither contract can read the other's logs. So both lend." |
 | 4 | 0:28 to 0:38 | Open the register, Demo deed 43, claimed, refusal on file | "Singleton watched from outside. First to file is on record." |
 | 5 | 0:38 to 0:55 | The red panel, then the failed transaction on Blockscout | "The second pledge was refused on chain. Open the failure yourself." |
-| 6 | 0:55 to 1:12 | The chain of custody, the attestor line inside the inclusion proof | "Each record keeps the attestor set that stood behind it. Seven, bonded." then "Raise the floor above the live set and it refuses: QuorumTooThin, 0xaecd340d." |
-| 7 | 1:12 to 1:25 | The other deed opened, five entries from pledge to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
-| 8 | 1:25 to 1:36 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
-| 9 | 1:36 to 1:45 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
+| 6 | 0:55 to 1:12 | The chain of custody, the attestor line inside the inclusion proof | "Each record keeps the attestor set that stood behind it. Seven, bonded." then "Raise the floor above the live set and it refuses: QuorumTooThin, 0xe19625fe." |
+| 7 | 1:12 to 1:26 | The other deed opened, five entries from pledge to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
+| 8 | 1:26 to 1:38 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
+| 9 | 1:38 to 1:47 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
 
-Total 1:45. Step 5 is the moment; it lands at 36 percent of the runtime.
+Total 1:47. Step 5 is the moment; it lands at 36 percent of the runtime.
 
 Step 6 is the only one whose second caption is not on the screen it plays over.
 The attestor line is, and the refusal it names is a transaction anybody can

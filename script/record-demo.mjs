@@ -14,7 +14,7 @@ import { chromium } from "/root/cips/node_modules/playwright-core/index.mjs";
  */
 const SITE = process.env.SITE ?? "https://singleton.unitynodes.com";
 /* The standing refusal on deed 43, on the registry the site currently reads. */
-const REFUSAL = "0xba304959056622b3b27880f7d2211a0ecc703007a70de040f4c509849c7be8e2";
+const REFUSAL = "0x9f3c0067f084e0fb5a512d2ba6f8cc8c2e41c6ba371f7ae836c984a72e73297b";
 const EXPLORER = "https://creditcoin-testnet.blockscout.com/tx";
 const outDir = process.argv[2] ?? "/tmp/rec/out";
 
@@ -182,7 +182,7 @@ await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
 await say("Each record keeps the attestor set that stood behind it. Seven, bonded.");
 await page.evaluate(() => window.__scrollToText("inclusion proof"));
 await wait(7000);
-await say("Raise the floor above the live set and it refuses: QuorumTooThin, 0xaecd340d.");
+await say("Raise the floor above the live set and it refuses: QuorumTooThin, 0xe19625fe.");
 await wait(6600);
 mark("6 quorum");
 

@@ -1,7 +1,7 @@
 {
   "registryNetwork": "cc3-testnet",
   "registryChainId": 102031,
-  "registry": "0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1",
+  "registry": "0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7",
   "sourceNetwork": "sepolia",
   "sourceChainId": 11155111,
   "sourceChainKey": 1,
@@ -15,6 +15,6 @@
   "blendAdapter": "0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67",
   "nftfi": "0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D",
   "blend": "0x29469395eAf6f95920E59F858042f0e28D98a20B",
-  "previousRegistry": "0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D",
+  "previousRegistry": "0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1",
   "minAttestors": 3
 }

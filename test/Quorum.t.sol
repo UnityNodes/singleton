@@ -19,6 +19,11 @@ import {MeridianCredit} from "../src/emitters/MeridianCredit.sol";
  */
 contract QuorumTest is SourceChain {
     bytes4 constant COUNT = bytes4(keccak256("getAttestorsCount(uint64)"));
+    bytes4 constant BATCH_VERIFY = bytes4(
+        keccak256(
+            "verify(uint64,uint64[],bytes[],(bytes32,(bytes32,bool)[])[],(bytes32,bytes32[]))"
+        )
+    );
 
     SingletonRegistry registry;
     RwaDeed deed;
@@ -208,6 +213,46 @@ contract QuorumTest is SourceChain {
      * the batch path turns into a per transaction one, after the continuity
      * proof itself.
      */
+    /**
+     * A batch member is a record like any other, so it carries the same
+     * provenance. Without this, the one read shared across the batch could be
+     * dropped on the floor for every member but the first and the suite would
+     * not notice.
+     */
+    function test_everyMemberOfABatchCarriesTheWitnessedQuorum() public {
+        Vm.Log[] memory entries = new Vm.Log[](4);
+        for (uint256 i; i < 4; i++) {
+            entries[i] = _harborPledge(i + 1);
+        }
+
+        bytes32[] memory keys = registry.registerPledges(_relayBatch(entries));
+
+        for (uint256 i; i < keys.length; i++) {
+            SingletonRegistry.Record memory r = registry.getStatus(keys[i]);
+            assertEq(r.security.attestors, 7, "each member, not only the first");
+            assertEq(r.security.minBond, 100 ether);
+            assertEq(r.security.attestedTip, TIP);
+        }
+    }
+
+    /// A batch below the floor is refused before the precompile is asked to
+    /// verify anything, because no proof can rescue a chain nobody is behind.
+    function test_aThinnedAttestorSetStopsABatchBeforeItIsVerified() public {
+        Vm.Log[] memory entries = new Vm.Log[](3);
+        for (uint256 i; i < 3; i++) {
+            entries[i] = _harborPledge(i + 1);
+        }
+        SingletonRegistry.BatchProof memory b = _relayBatch(entries);
+
+        stash.setAttestorsCount(SEPOLIA, 1);
+
+        vm.expectCall(PROVER_ADDR, abi.encodeWithSelector(BATCH_VERIFY), 0);
+        vm.expectRevert(
+            abi.encodeWithSelector(SingletonRegistry.QuorumTooThin.selector, SEPOLIA, 1, 3)
+        );
+        registry.registerPledges(b);
+    }
+
     function test_aBatchReadsTheAttestorSetOnceForAllOfItsMembers() public {
         Vm.Log[] memory entries = new Vm.Log[](4);
         for (uint256 i; i < 4; i++) {

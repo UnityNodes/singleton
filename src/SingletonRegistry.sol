@@ -374,12 +374,19 @@ contract SingletonRegistry {
                 || b.encodedTransactions.length != count || b.merkleProofs.length != count
         ) revert BatchLengthMismatch(count);
 
+        /*
+          The quorum is checked before the proof, not after, because verifying a
+          batch is the expensive call in this function and a chain below its
+          floor cannot produce a record whatever the proof says. The single
+          entry point already ordered it this way; this is the batch path
+          agreeing with it.
+        */
+        Security memory security = _witness(b.chainKey);
+
         bool ok = PROVER.verify(
             b.chainKey, b.heights, b.encodedTransactions, b.merkleProofs, b.sharedContinuityProof
         );
         if (!ok) revert ProofRejected();
-
-        Security memory security = _witness(b.chainKey);
 
         assetKeys = new bytes32[](count);
         for (uint256 i; i < count; i++) {

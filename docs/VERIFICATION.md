@@ -393,7 +393,7 @@ waits two minutes and retries.
 
 ## W3 live run: the quorum on the record, and the floor refusing
 
-Registry `0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1`, CC3 testnet, 2026-08-20,
+Registry `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7`, CC3 testnet, 2026-08-20,
 verified on Blockscout. The same fifteen proofs as the run above, replayed with
 `node worker/demo.mjs` against a registry that now reads the attestor set inside
 the transaction that accepts each of them.
@@ -403,7 +403,7 @@ What a lender sees afterwards, from `node worker/status.mjs`:
 ```
 lien held by 0xfA72380654232c5538d1F17e2D8d6c261bd263AD
   proven at   source height 11510077
-  attested by 7 bonded attestors, 100.0 CTC each, against an attested tip of 11529710
+  attested by 7 bonded attestors, 100.0 CTC each, against an attested tip of 11530870
 ```
 
 Those three numbers were true when the proof was accepted, not when the question
@@ -416,9 +416,9 @@ otherwise fine was submitted, and the chain refused it:
 
 | | |
 |---|---|
-| Floor raised to 8 | `0xf2e11a8729a209bb1317ce8f99f6d88f6e781ca1974c8ef62a9c606559fb033c` |
-| The refusal, status 0 | `0xaecd340dd30de64f82b63d56d834e67eebb1aafe4cd0d378d2fdc3012033c6b3`, `QuorumTooThin(1, 7, 8)` |
-| Floor restored to 3 | `0x99d2702ea76affdf56d890ef80eb3204417bd7843089f2351858da07e7706a3b` |
+| Floor raised to 8 | `0x45b7239c76d5631f3bccd7e52d4dce1e2b02ee6967803041e70029cf1c54e066` |
+| The refusal, status 0 | `0xe19625fe701992994240bc6db4695669172558da26fddde694e27b25642be6ef`, `QuorumTooThin(1, 7, 8)` |
+| Floor restored to 3 | `0xa5a3b1958f38c2871472efa80281f4992f27d0fbacd5952a2d21bf2abf9d6547` |
 
 The same proof, resubmitted with the floor back at three, is refused for a
 different reason: `StaleCollision(11510076, 11510077)`. Same registry, same
@@ -568,7 +568,7 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1`, decoder linked to
+`0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7`, decoder linked to
 `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`,
 `minAttestors[1] = 3`, admin `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
 
@@ -602,6 +602,13 @@ the `QuorumTooThin` refusal in `0x733962b7...`, and was superseded within the
 hour by the smaller shape of the same feature.
 `0x65F561a73451E878327Cf3775dc21Ca9CBEF72e8` is that smaller shape, deployed to
 measure it before it went live.
+
+`0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1` carried its own fifteen proof run
+and its own `QuorumTooThin` refusal, and was replaced the same day because the
+batch entry point verified the proof before it checked the quorum. That order
+never changed an outcome, only what a refused batch paid for on the way to being
+refused, and it disagreed with the single entry point. A registry whose source
+did not match its deployed bytecode would have been the larger problem.
 
 `0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D` carries the fifteen proof W2 run and
 the batch measurement, and was superseded on 2026-08-20 by the attestor quorum:

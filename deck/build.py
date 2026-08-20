@@ -38,7 +38,7 @@ slide('''
   <div class="chips">
     <span>BUIDL CTC 2026 &middot; RWA</span>
     <span>singleton.unitynodes.com</span>
-    <span>0x25b0963E &middot; CC3 testnet, verified</span>
+    <span>0xcccE8847 &middot; CC3 testnet, verified</span>
   </div>
 </div>''')
 
@@ -160,7 +160,7 @@ slide('''
     <p class="body"><b>And it is enforced.</b> Below a stated floor the registry stops filing anything for
     that chain. Entry only, never exit, so no attestor rotation can strand an asset already on file. We
     raised the floor above the live set on purpose and the chain refused a real proof:
-    <code>QuorumTooThin(1, 7, 8)</code>, transaction <code>0xaecd340d</code>, still there.</p>
+    <code>QuorumTooThin(1, 7, 8)</code>, transaction <code>0xe19625fe</code>, still there.</p>
     <p class="body"><b>It points at us too.</b> Ethereum carries four attestors against our floor of three.
     One deregistration halts the mainnet half of this demo. We did not lower the floor to two to make that
     go away, because three is the smallest set where no single attestor is a majority.</p>
@@ -180,7 +180,7 @@ slide('''
   716k to 634k.</p></li>
 </ol>
 <p class="foot-note">Also corrected: a caveat claiming an administrator cannot fabricate, which was false,
-and the vacuous test that backed it. 85 tests, every attack kept as a regression.</p>''')
+and the vacuous test that backed it. 87 tests, every attack kept as a regression.</p>''')
 
 slide('''
 <h2 class="display">Said before anybody has to ask.</h2>
@@ -212,7 +212,7 @@ slide('''
   <span>singleton.unitynodes.com</span>
   <span>/demo, 1:25, captioned</span>
   <span>github.com/UnityNodes/singleton</span>
-  <span>0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1</span>
+  <span>0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7</span>
 </div>''')
 
 CSS = f'''
