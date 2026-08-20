@@ -386,15 +386,19 @@ export default function Landing() {
                 v: "The precompile re-checks the inclusion proof inside the transaction that accepts the pledge, past the confirmation depth.",
               },
               {
+                k: "attestorstash 0x0FD4",
+                v: "How many bonded attestors stood behind that attestation, read in the same transaction and written down with the record. Below a stated floor, nothing is filed at all.",
+              },
+              {
                 k: "the register",
                 v: "First to file is recorded and given a soulbound certificate. Anything second reverts.",
               },
-            ].map((step, i) => (
+            ].map((step, i, all) => (
               <li
                 key={step.k}
                 className={cn(
                   "group grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 border-t border-line py-6 transition-colors hover:bg-surface/60",
-                  i === 2 && "border-b",
+                  i === all.length - 1 && "border-b",
                 )}
               >
                 <span className="label tabular pt-1 transition-colors group-hover:text-paper">

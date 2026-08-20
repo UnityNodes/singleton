@@ -248,8 +248,38 @@ what has to stay free for the priority rule to work.
 | A positive record prevents nothing | High | Said first, on the landing page and in the demo. UCC-9 has governed on exactly that basis for fifty years. |
 | An indexer could do this off chain | Medium | It could, and then the register is a company. The point is the witness being a precompile. |
 | Adoption requires lenders to publish their book | Medium | Filing buys priority. That is the whole incentive UCC-9 runs on. |
-| Two precompiles is not deep platform use | Medium | Answered by [SURFACES.md](SURFACES.md), not by argument. |
+| Two precompiles is not deep platform use | Medium | Three now, and answered by [SURFACES.md](SURFACES.md) rather than by argument. The fourth was tested and refused with the measurement that refused it. |
+| The attestor floor is a halt switch in the administrator's hand | Medium | True, and it is caveat 10 rather than a footnote. Bounded two ways: it gates entry and never exit, tested, so nothing already on file can be stranded; and zero is refused, so a chain with no floor stated records nothing rather than everything. |
+| You are one deregistration from breaking your own mainnet demo | Low but fair | Correct. Ethereum carries four attestors against a floor of three. The floor was not lowered to two to make that go away, because three is the smallest set in which no single attestor is a majority, and `provision.mjs --check` prints the margin so it is not a surprise. |
+| Your headline gas number was explained wrongly | Low | It was, and we found it and said so before anyone asked. The 37.5 percent is real; the reason was the per call code size charge, not the shared continuity proof. The correction is in the README, the deck and [VERIFICATION.md](VERIFICATION.md). |
 | Testnet only | Low | Six proofs read Ethereum mainnet. The registry is on testnet because that is where the faucet is. |
+
+## The quorum questions, asked the hostile way
+
+**"Recording a number nobody checks is theatre."** It is checked. The same read
+that stores the count enforces a floor against it, and the floor has refused a
+real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0xaecd340d...`,
+status 0, on a verified contract so the error decodes. The register also exposes
+the count publicly, so a lending protocol reading it can apply a stricter
+standard than ours without asking us to change anything.
+
+**"The attestor set never changes, so this solves nothing."** It changes. The
+precompile answers at historical heights and the whole readable history is in
+[VERIFICATION.md](VERIFICATION.md): Sepolia went 0 to 1 to 6 to 7 between
+2026-05-01 and 2026-07-09, Ethereum 0 to 1 to 3 to 4 in the same window. This
+was checked because the premise was load bearing, not because anyone asked.
+
+**"Creditcoin already tells you which chains are attested."** It tells you which
+are supported, which is not the same thing. On block 4,858,940
+`get_supported_chains` reported Ethereum and `getAttestorsCount(3)` reported
+zero. Every other part of this project uses that list to decide what is
+readable, so this is the gap the floor closes.
+
+**"A high count does not mean the attestors are honest."** No, and caveat 10
+says exactly that in its last paragraph. The floor measures how much security is
+standing, never whether it is truthful. If the set is compromised rather than
+merely small, the count reads high and the proofs are worthless, and nothing a
+contract on this chain can read would say otherwise.
 
 ## What this changed in the pitch
 
