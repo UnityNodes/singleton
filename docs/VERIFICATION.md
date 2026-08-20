@@ -479,6 +479,42 @@ majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
 
+## Auditing our own claims, mechanically
+
+Three redeploys in one day produced the same class of error three times: a
+reference that was true last week, still resolves, still decodes, and still
+looks right in a browser, because it belongs to a registry the project no longer
+runs. Reading the page cannot catch that. Only something that knows which
+registry is current can.
+
+`node script/audit-claims.mjs` collects every 32 byte value this repository
+states, resolves each against Creditcoin, Sepolia and Ethereum, and fails if a
+Creditcoin transaction cited anywhere outside this file belongs to a registry
+that is not the live one. This file is exempt because naming superseded
+deployments is its job.
+
+It was written after the audit, not before, and the first thing it did was fail:
+
+```
+3 stale references:
+  0x68505d90...  cited in: web/src/routes/Demo.tsx
+  0x14a445f8...  cited in: web/src/routes/Landing.tsx
+  0xe6b94874...  cited in: web/src/routes/Landing.tsx
+```
+
+The first is worse than the other two. `web/src/routes/Demo.tsx` offered it under
+the words "the failed transaction **from the video**", and it was a refusal on a
+registry three deployments old while the video showed a different one. All three
+now point at the current run, and the check runs before publishing rather than
+after somebody notices.
+
+One thing it found that was **not** a fault, and is worth keeping. Two Sepolia
+transactions this project cites return null from
+`ethereum-sepolia-rpc.publicnode.com` and resolve normally from
+`sepolia.gateway.tenderly.co`. A single endpoint audit would have reported them
+as missing. `worker/config.mjs` already tries several endpoints in order for
+exactly this reason, and the audit does the same.
+
 ## A real protocol, unmodified and unaware
 
 The demo lenders are ours, which is a fair objection. So the same registry was

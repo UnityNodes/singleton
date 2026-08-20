@@ -98,6 +98,12 @@ log that outlives the record itself, and refuses to file anything at all once th
 set has fallen below a stated floor. The floor gates entry and never exit, so no
 attestor rotation can strand an asset already on file.
 
+Every hash and address this repository states is checked against the chains by
+`node script/audit-claims.mjs`, which fails if a Creditcoin transaction cited
+anywhere outside the verification log belongs to a registry that is not the live
+one. It was written after the third redeploy produced the same stale reference,
+and it failed on its first run.
+
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
 readable on-chain inside the accepting transaction, and the whole Sepolia read
