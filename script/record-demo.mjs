@@ -3,7 +3,7 @@ import path from "node:path";
 import { chromium } from "/root/cips/node_modules/playwright-core/index.mjs";
 
 /**
- * Records the ninety second demo against the live site.
+ * Records the demo against the live site, a little under two minutes.
  *
  * The narration is burned in as captions rather than spoken, because a judge
  * reviewing dozens of entries watches muted, and a caption a reader can pause on
@@ -13,7 +13,8 @@ import { chromium } from "/root/cips/node_modules/playwright-core/index.mjs";
  *   node script/record-demo.mjs [outDir]
  */
 const SITE = process.env.SITE ?? "https://singleton.unitynodes.com";
-const REFUSAL = "0xe6b94874151481ab7f52c0d73662028104358de9434a5c21eee4115803cb3eda";
+/* The standing refusal on deed 43, on the registry the site currently reads. */
+const REFUSAL = "0xba304959056622b3b27880f7d2211a0ecc703007a70de040f4c509849c7be8e2";
 const EXPLORER = "https://creditcoin-testnet.blockscout.com/tx";
 const outDir = process.argv[2] ?? "/tmp/rec/out";
 
@@ -166,12 +167,27 @@ await wait(2200);
 await page.getByText("Show revert reason").click();
 await wait(1200);
 await say("That is not a screenshot. It is a refusal in a block.");
-await wait(9200);
+await wait(7600);
 mark("5 refusal");
 
-/* 6. a lien ends more than one way */
 /*
- * 6. the other asset, whose lien ran its whole life.
+ * 6. what was standing behind the record.
+ *
+ * The chain of custody on this page is the only place a viewer can see that the
+ * registry wrote down its own trust assumption, so the shot is that block and
+ * not the state chip above it.
+ */
+await page.goto(`${SITE}/register`, { waitUntil: "domcontentloaded", timeout: 60000 });
+await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
+await say("Each record keeps the attestor set that stood behind it. Seven, bonded.");
+await page.evaluate(() => window.__scrollToText("inclusion proof"));
+await wait(7000);
+await say("Raise the floor above the live set and it refuses: QuorumTooThin, 0xaecd340d.");
+await wait(6600);
+mark("6 quorum");
+
+/*
+ * 7. the other asset, whose lien ran its whole life.
  *
  * The narration is about settlement and release, so the screen has to be the
  * asset that was settled and released. The register opens on deed 43, which is
@@ -184,22 +200,22 @@ await page.getByText("Demo deed #42").first().click();
 await page.getByText("Lien released, asset free again").first().waitFor({ timeout: 45000 });
 await page.evaluate(() => window.__scrollToText("history"));
 await wait(7200);
-mark("6 history");
+mark("7 history");
 
-/* 7. two protocols that never heard of us */
+/* 8. two protocols that never heard of us */
 await say("Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified.");
 await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }));
 await wait(900);
 await page.getByText("NFTfi collateral").first().click();
 await page.getByText("free to lend against").waitFor({ timeout: 45000 });
-await wait(9200);
-mark("7 mainnet");
+await wait(8200);
+mark("8 mainnet");
 
-/* 8. what it does not claim */
+/* 9. what it does not claim */
 await say("A positive record and a priority rule. Never proof of absence.");
 await page.mouse.move(880, 430, { steps: 20 });
 await wait(6800);
-mark("8 close");
+mark("9 close");
 
 await say("");
 await wait(600);

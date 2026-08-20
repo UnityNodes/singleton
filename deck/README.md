@@ -16,9 +16,12 @@ python3 <skill>/scripts/one_pager.py --html deck/one-pager.html \
   --out web/public/singleton-one-pager.pdf --logo /tmp/logo.png
 ```
 
-`build.py` inlines the brand fonts and one frame of the demo recording as base64,
+`build.py` inlines the brand fonts and the Blockscout screenshot as base64,
 because the renderer loads the page from a throwaway local server and a font that
-failed to load would silently fall back to a system face.
+failed to load would silently fall back to a system face. The sources are in
+`deck/assets`, read relative to `build.py`, so a clone rebuilds the deck without
+anything else on the machine. That was not true until 2026-08-20: the fonts came
+from a module in `/tmp`, which meant the deck was only rebuildable here.
 
 Both renderers refuse rather than ship something plausible. The deck one fails if
 the PDF page count does not match the slide count, and shrinks any slide that

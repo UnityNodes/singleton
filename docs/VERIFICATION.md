@@ -362,6 +362,27 @@ slower code paths would cost more than the 1,100 gas that saves. Left at 200.
 And the batch measurement above needed its explanation corrected, which is the
 paragraph that now sits under it.
 
+**Where the bytes are, now that they are a running cost.** Each area was removed
+in turn and the contract rebuilt, against a live size of 14,287:
+
+| Removed | Size | Delta |
+|---|---|---|
+| The batch entry point and its nullifier helper | 14,583 | **+296** |
+| The soulbound ERC-721 surface | 13,896 | -391 |
+| `getStatus`, `collisionAt`, `assetOfInstance`, `assetKeyOf` | 13,197 | -1,090 |
+| `reportCollision` | 13,143 | -1,144 |
+
+The first row is not a typo. Taking the batch entry point out makes the contract
+**larger**, because with one caller left the optimiser inlines the shared pledge
+path into `registerPledge` and duplicates it. The batch form pays for its own
+code and then some, which is a better argument for it than the gas figure was.
+
+Nothing else here is fat. The views are the product, a register nobody can read
+is not one; the refusal path is the point of the project; and the soulbound
+stubs revert by name rather than falling through to a nameless revert, which is
+worth 391 bytes. `via_ir` was retested too and turning it off costs 397 bytes.
+So this section ends with no change made, which is the honest outcome of looking.
+
 **One robustness fix came out of this run.** The SDK's proof builder defaults to
 a ten second timeout. A twelve kilobyte mainnet payload with eighty-four
 continuity roots takes the prover longer than that, and the timeout surfaces as

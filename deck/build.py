@@ -4,10 +4,25 @@
 Inlined rather than linked because the renderer loads this over a throwaway
 local server and a missing font would silently fall back to a system face, which
 is the one thing the wordmark cannot survive.
+
+The sources live in deck/assets and are read from there rather than from a
+module somewhere else on the machine, so that this file rebuilds the deck on any
+clone. It did not, once, and a deck nobody else can rebuild is a screenshot with
+extra steps.
 """
-import io, sys
-sys.path.insert(0, "/tmp/rec")
-from assets import ASSETS
+import base64, io, pathlib
+
+_HERE = pathlib.Path(__file__).resolve().parent
+
+def _b64(name):
+    return base64.b64encode((_HERE / "assets" / name).read_bytes()).decode()
+
+ASSETS = {
+    "ARCHIVO_WDTH": _b64("archivo-wdth.woff2"),
+    "ARCHIVO_WGHT": _b64("archivo-wght.woff2"),
+    "MONO": _b64("jetbrains-mono.woff2"),
+    "SHOT": _b64("refusal.png"),
+}
 
 SLIDES = []
 

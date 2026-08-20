@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CFG, short } from "@/lib/registry";
 
 const VIDEO = "/demo/singleton.mp4";
-const RUNTIME = 90;
+const RUNTIME = 105;
 
 /**
  * Timecodes are read off frames of the recording in script/record-demo.mjs, not
@@ -15,13 +15,14 @@ const RUNTIME = 90;
  */
 const CHAPTERS = [
   { at: 0, title: "one asset, one loan", line: "A borrower pledges a tokenised deed and takes a loan." },
-  { at: 8, title: "and the same deed again", line: "An hour later, a second lender, no shared anything." },
-  { at: 16, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
-  { at: 30, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
-  { at: 46, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
-  { at: 64, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
-  { at: 72, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
-  { at: 82, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
+  { at: 14, title: "and the same deed again", line: "An hour later, a second lender, no shared anything." },
+  { at: 22, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
+  { at: 32, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
+  { at: 48, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
+  { at: 62, title: "what stood behind the record", line: "The attestor set the registry believed, kept with the lien." },
+  { at: 78, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
+  { at: 90, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
+  { at: 99, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
 ];
 
 const STACK = [
@@ -97,7 +98,7 @@ export default function Demo() {
 
         <div className="relative mx-auto max-w-[1240px] px-6 pb-16 pt-14">
           <h1 className="display max-w-[16ch] text-[clamp(34px,5vw,60px)]">
-            Singleton, in ninety seconds.
+            Singleton, in under two minutes.
           </h1>
 
           <p className="mt-6 max-w-[62ch] text-[16px] leading-relaxed text-paper-2">
