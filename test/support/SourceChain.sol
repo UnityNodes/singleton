@@ -149,6 +149,45 @@ abstract contract SourceChain is Test {
         });
     }
 
+    /**
+     * Several captured logs as one batch proof.
+     *
+     * Each entry becomes its own single log transaction at its own height, which
+     * is what a relayer catching up on a range actually holds: many separate
+     * source transactions, one continuity proof covering the span.
+     */
+    function _relayBatch(Vm.Log[] memory entries)
+        internal
+        returns (SingletonRegistry.BatchProof memory b)
+    {
+        uint256 count = entries.length;
+        b.chainKey = SEPOLIA;
+        b.heights = new uint64[](count);
+        b.emitters = new address[](count);
+        b.logIndexes = new uint32[](count);
+        b.encodedTransactions = new bytes[](count);
+        b.merkleProofs = new IBlockProver.MerkleProof[](count);
+        b.sharedContinuityProof =
+            IBlockProver.ContinuityProof({lowerEndpointDigest: bytes32(0), roots: new bytes32[](0)});
+
+        for (uint256 i; i < count; i++) {
+            bytes memory encoded = _encode(entries[i], 1);
+            uint64 height = _nextHeight++;
+            prover.attest(SEPOLIA, height, encoded);
+
+            IBlockProver.MerkleProofEntry[] memory siblings = new IBlockProver.MerkleProofEntry[](1);
+            siblings[0] =
+                IBlockProver.MerkleProofEntry({hash: bytes32(_nextRoot++), isLeft: true});
+
+            b.heights[i] = height;
+            b.emitters[i] = entries[i].emitter;
+            b.logIndexes[i] = 0;
+            b.encodedTransactions[i] = encoded;
+            b.merkleProofs[i] =
+                IBlockProver.MerkleProof({root: siblings[0].hash, siblings: siblings});
+        }
+    }
+
     /// Packages a captured log as a proof the model prover will accept.
     function _relay(Vm.Log memory entry) internal returns (SingletonRegistry.Proof memory) {
         return _relay(entry, 1);

@@ -36,6 +36,22 @@ interface IBlockProver {
         ContinuityProof calldata continuityProof
     ) external view returns (bool);
 
+    /**
+     * The batch form: many transactions against one continuity proof.
+     *
+     * The shared proof is anchored at the lowest header it was built from, so a
+     * batch that omits an item at that header is refused. Every member is still
+     * checked individually: a forged transaction, a forged merkle root or a
+     * misstated height inside an otherwise honest batch all revert.
+     */
+    function verify(
+        uint64 chainKey,
+        uint64[] calldata heights,
+        bytes[] calldata encodedTransactions,
+        MerkleProof[] calldata merkleProofs,
+        ContinuityProof calldata sharedContinuityProof
+    ) external view returns (bool);
+
     function verifyAndEmit(
         uint64 chainKey,
         uint64 height,

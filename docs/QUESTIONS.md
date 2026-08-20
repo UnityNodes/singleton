@@ -171,7 +171,7 @@ two instances, made batch pledges work, and dropped mainnet gas from 716k to
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**
 
-Yes. The live registry `0x7F4A466E...` was deployed after both fixes and all twelve
+Yes. The live registry `0x25b0963E...` was deployed after both fixes and all twelve
 proofs were replayed onto it. The previous instance is left on chain and named
 in the verification log as predating the fix, rather than quietly removed.
 

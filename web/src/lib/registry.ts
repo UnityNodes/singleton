@@ -10,7 +10,7 @@ const params = new URLSearchParams(typeof location === "undefined" ? "" : locati
 
 export const CFG = {
   rpc: params.get("rpc") ?? "https://rpc.cc3-testnet.creditcoin.network",
-  registry: params.get("registry") ?? "0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950",
+  registry: params.get("registry") ?? "0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D",
   explorer: "https://creditcoin-testnet.blockscout.com",
   chainInfo: "0x0000000000000000000000000000000000000fD3",
   prover: "0x0FD2",

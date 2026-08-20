@@ -13,7 +13,7 @@ import { chromium } from "/root/cips/node_modules/playwright-core/index.mjs";
  *   node script/record-demo.mjs [outDir]
  */
 const SITE = process.env.SITE ?? "https://singleton.unitynodes.com";
-const REFUSAL = "0xf4d5622b3c60c140759e4f4f00a8de3ff91c484d6fc01b397f91d32258d22ef8";
+const REFUSAL = "0xe6b94874151481ab7f52c0d73662028104358de9434a5c21eee4115803cb3eda";
 const EXPLORER = "https://creditcoin-testnet.blockscout.com/tx";
 const outDir = process.argv[2] ?? "/tmp/rec/out";
 

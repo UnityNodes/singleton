@@ -1,7 +1,7 @@
 {
   "registryNetwork": "cc3-testnet",
   "registryChainId": 102031,
-  "registry": "0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950",
+  "registry": "0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D",
   "sourceNetwork": "sepolia",
   "sourceChainId": 11155111,
   "sourceChainKey": 1,

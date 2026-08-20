@@ -215,7 +215,7 @@ rather than one compromise.
 
 ## W2 live run: fifteen proofs on one registry
 
-Registry `0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950`, CC3 testnet, 2026-08-19.
+Registry `0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D`, CC3 testnet, 2026-08-19.
 Nine proofs against our own lenders on Sepolia across two assets, six against two
 real protocols on Ethereum mainnet. Replayable with `node worker/demo.mjs` against a freshly
 deployed registry, because a proof is spendable once per operation.
@@ -224,12 +224,25 @@ deployed registry, because a proof is spendable once per operation.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0xe790495d...` | 437,724 |
-| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0xf051edc5...` | reverted |
-| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0xb5d2670d...` | 438,900 |
-| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0xd445fb5d...` | 442,036 |
-| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0x895b7117...` | 465,108 |
-| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0x51dc255e...` | 437,276 |
+| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0x2e43d060...` | 405,286 |
+| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0x68505d90...` | reverted |
+| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0x57bcddfa...` | 406,462 |
+| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0x982f67a7...` | 409,598 |
+| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0xf4839908...` | 432,670 |
+| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0xf079c988...` | 404,838 |
+
+Deed 42 ends held by Meridian with no refusals on file, which is the point of
+the fix rather than a gap: the refusal belonged to Harbor's lien and went with
+it. A second asset carries the standing case.
+
+| Step | Source event | Result on CC3 | Gas |
+|---|---|---|---|
+| 7. Harbor lends 1,200 against deed 43 | `Pledged`, block 11,528,165 | PLEDGED, `0x14a445f8...` | 409,318 |
+| 8. Meridian lends against deed 43 | `Pledged`, block 11,528,166 | refused live, failed transaction `0xe6b94874...` | reverted |
+| 9. The refusal is kept | same log, `reportCollision` | on file and staying there, `0x5a1dacba...` | 411,390 |
+
+This lien is never released, so the refusal against it never expires. That is
+the state the register opens on, and the one a judge can click into.
 
 Three things this settles that the tests alone cannot.
 
@@ -248,19 +261,19 @@ burned in step 5, issued to Meridian in step 6.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 7. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0x9293b75d...` | 634,956 |
-| 8. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0x850b3514...` | 499,212 |
-| 9. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x007c8c0b...` | 486,654 |
-| 10. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0x9dc2f08f...` | 474,558 |
-| 11. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0x1e6b2488...` | 475,902 |
-| 12. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x666d8707...` | 500,990 |
+| 10. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0xd6f376dd...` | 602,518 |
+| 11. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0x6c7f48ec...` | 466,774 |
+| 12. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x1101d9aa...` | 454,216 |
+| 13. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0x9dec6792...` | 442,120 |
+| 14. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0x0d6d8c0a...` | 443,464 |
+| 15. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x2201a81d...` | 468,552 |
 
-Steps 11 and 12 exist because a lien ends in more than one way. Blend closes one
+Steps 14 and 15 exist because a lien ends in more than one way. Blend closes one
 with `Repay` when the borrower pays and with `Seize` when the auction fails and
 the lender takes the token. An adapter that knew only about repayment would leave
 seized liens on file forever, and a stale claim looks exactly like a live one.
 
-Mainnet proofs cost more than Sepolia ones, 475k to 635k against roughly 440k,
+Mainnet proofs cost more than Sepolia ones, 442k to 603k against roughly 408k,
 because those payloads are larger and carry more continuity roots. The spread
 across operations on one chain stays under five percent, so the lifecycle costs
 what the pledge costs.
@@ -290,8 +303,8 @@ Loan 16928, a real borrower against a real NFT:
 | Repaid | `LoanRepaid`, mainnet block 25,717,460, tx `0x34632ee5...` |
 | Collateral | `0xd774557b647330C91Bf44cfEAB205095f7E6c367` token 7819 |
 | Principal | 0.07 WETH |
-| Registered on CC3 | `0x9293b75d6b750b4f3ee340d16a175812a2e37054eb37e9606d7fd0f77edb9c58`, 634,956 gas |
-| Released on CC3 | `0x850b3514cedf5942947ac39e00d2ef722fbec4d94158ac00f4faafba37d6926c`, 499,212 gas |
+| Registered on CC3 | `0xd6f376dd4e71206cbf50c3abcf966f54204d0497f5dd3707ba784c0f172f4e95`, 602,518 gas |
+| Released on CC3 | `0x6c7f48ec6b14e922b66ad280f890040df103ace8220abfdd8de8d199de039f8f`, 466,774 gas |
 
 The adapter reads `LoanTerms` out of the log data, where NFTfi keeps the
 collateral contract, the token id, the borrower and the principal, and takes the
@@ -332,14 +345,14 @@ because an opening lien has to name what it claims.
 Lien 435829, a Pudgy Penguin, `0xBd3531dA5CF5857e7CfAA92426877b022e612cf8` token
 8189, for 3.29 ether. Taken in mainnet block 25,711,377, tx `0xb1de5da8...`,
 repaid in block 25,721,378, tx `0x568aae92...`. Recorded on CC3 as
-`0x007c8c0b...` and released as `0x9dc2f08f...`, the release carrying no token id
+`0x1101d9aa...` and released as `0x9dec6792...`, the release carrying no token id
 whatsoever.
 
 Seizure is proven too. A Blend lien also ends when an auction fails and the
 lender takes the token, through `Seize`, which is identical in shape to `Repay`
 and just as final. A transition may therefore name several events: lien 438956,
 Pudgy Penguin 4271 for 3.868 ether, taken in block 25,550,390 and seized in
-block 25,651,509, is recorded as `0x1e6b2488...` and closed as `0x666d8707...`.
+block 25,651,509, is recorded as `0x0d6d8c0a...` and closed as `0x2201a81d...`.
 
 An adapter that knew only about repayment would have left every seized lien on
 file, and a stale claim is indistinguishable from a live one.
@@ -362,7 +375,7 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950`, decoder linked to
+`0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D`, decoder linked to
 `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`, admin
 `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
 

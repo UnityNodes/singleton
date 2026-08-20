@@ -24,7 +24,7 @@ const ACTS = [
     party: "Harbor Credit",
     line: "lends 1,200 against deed 43",
     note: "Sepolia block 11,528,165. The proof lands and the asset is claimed.",
-    tx: "0x613b49b8e796e7df48c52f41f9cc00e87b43dfcf1db4bde3e0a1bb27e013a71d",
+    tx: "0x14a445f857bbb368923d7777b41f503aeeefe3480bbc402cf9143407ed55e6a1",
     on: "cc3" as const,
   },
   {
@@ -38,7 +38,7 @@ const ACTS = [
     party: "Singleton",
     line: "refuses the second claim",
     note: "A failed transaction decoding to AssetNotFree, with the asset key and the incumbent in it.",
-    tx: "0xf4d5622b3c60c140759e4f4f00a8de3ff91c484d6fc01b397f91d32258d22ef8",
+    tx: "0xe6b94874151481ab7f52c0d73662028104358de9434a5c21eee4115803cb3eda",
     on: "cc3" as const,
     refused: true,
   },

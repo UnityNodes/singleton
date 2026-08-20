@@ -19,7 +19,7 @@ registered at an address not probed here is not claimed either way.
 
 | Surface | Address | How it is used |
 |---|---|---|
-| BlockProver | `0x0FD2` | `verify` in its view form, inside the transaction that accepts a pledge, and `calculateTxIndex` for the replay nullifier |
+| BlockProver | `0x0FD2` | Both forms of `verify` in view: one transaction for a single pledge, an array against one shared continuity proof for a batch. Plus `calculateTxIndex` for the replay nullifier |
 | ChainInfo | `0x0fD3` | `get_latest_attestation_height_and_hash` on chain for the finality guard, `get_supported_chains` off chain to resolve a chain key from a chain id |
 | EvmV1Decoder | `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` | Receipt and log decoding, as a linked library rather than a copy |
 | `@gluwa/usc-sdk` 0.18.0 | | `ProofBuilder.getProof` in the relay |
@@ -28,6 +28,15 @@ registered at an address not probed here is not claimed either way.
 The last row is worth stating precisely, because it sounds smaller than it is.
 Creditcoin attests exactly two chains on CC3 testnet and one on mainnet. Both of
 the two are read here, six proofs against each. This is not a subset.
+
+One thing about the batch form that is in no document, because it was found by
+calling the precompile rather than by reading. The shared continuity proof is
+anchored at the lowest header the prover built it from, so a batch that does not
+contain a transaction at that header is refused outright with a continuity
+mismatch. And the batch does check every member: a corrupted transaction, a
+forged merkle root or a misstated height inside an otherwise honest batch each
+revert it. Both were established by deliberately breaking a real batch against
+CC3, which is the only way to know that a verification verifies.
 
 Two requirements the documentation puts in a danger block, both met:
 
@@ -56,23 +65,12 @@ Two requirements the documentation puts in a danger block, both met:
 
 ## Not built, and worth naming
 
-Three surfaces have a real argument and are absent. Saying so is cheaper than
+Two surfaces have a real argument and are absent. Saying so is cheaper than
 being asked.
 
-**Batch verification.** BlockProver's own ABI carries a second `verify`, taking
-arrays of heights, transactions and merkle proofs against a single continuity
-proof:
-
-```
-verify(uint64, uint64[], bytes[], tuple[], tuple)
-```
-
-One continuity proof for many transactions is the expensive part amortised, and
-a register that witnesses other protocols' pledges is a many-at-once workload by
-nature, so this is the natural shape of the thing rather than an optimisation.
-It is the omission a technical judge should raise. The honest answer is that
-correctness of the single path came first and two security reviews consumed the
-rest. The maximum batch size is not stated here because it was not measured.
+**`is_height_attested` and `get_attestation_bounds`.** The finality guard infers
+from the tip. These two would let the registry state precisely which attested
+interval a witnessed pledge falls inside, and record it with the lien.
 
 **`is_height_attested` and `get_attestation_bounds`.** The finality guard infers
 from the tip. These two would let the registry state precisely which attested

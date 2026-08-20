@@ -82,6 +82,23 @@ contract SingletonRegistry {
         IBlockProver.ContinuityProof continuityProof;
     }
 
+    /**
+     * Many proofs sharing one continuity proof.
+     *
+     * The arrays are parallel and every one of them is named by the relayer for
+     * the same reason the single form names its log: nothing here is searched
+     * for, so a receipt full of decoys cannot change which pledge gets filed.
+     */
+    struct BatchProof {
+        uint64 chainKey;
+        uint64[] heights;
+        address[] emitters;
+        uint32[] logIndexes;
+        bytes[] encodedTransactions;
+        IBlockProver.MerkleProof[] merkleProofs;
+        IBlockProver.ContinuityProof sharedContinuityProof;
+    }
+
     /// One lifecycle event read out of a source chain receipt.
     struct SourceEvent {
         address emitter;
@@ -202,6 +219,8 @@ contract SingletonRegistry {
     error WrongEventSignature(bytes32 topic0, uint8 kind);
     error EmitterNotAllowed(uint64 chainKey, address emitter);
     error StaleCollision(uint64 offered, uint64 incumbent);
+    error EmptyBatch();
+    error BatchLengthMismatch(uint256 expected);
     error ProofAlreadyConsumed(bytes32 nullifier);
     error AssetNotFree(bytes32 assetKey, address incumbent);
     error AssetNotPledged(bytes32 assetKey);
@@ -262,14 +281,72 @@ contract SingletonRegistry {
         _burnNullifier(p, KIND_PLEDGE);
         _requireAllowed(p);
         SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
+        assetKey = _recordPledge(p.chainKey, p.height, pledge);
+    }
 
+    /**
+     * Records many pledges from one continuity proof.
+     *
+     * A register that witnesses other protocols' lending is a many-at-once
+     * workload by nature: a relayer catching up on a block range holds a dozen
+     * pledges, not one. The precompile's batch form verifies an array of
+     * transactions against a single continuity proof, and that proof is the
+     * expensive part, so the saving grows with the batch rather than being a
+     * constant.
+     *
+     * All or nothing on purpose. If any pledge in the batch cannot be filed the
+     * whole transaction reverts, because partial success would leave a relayer
+     * unable to answer "did my pledge land" from the transaction alone, and in a
+     * first to file registry that question is the only one that matters.
+     *
+     * The shared continuity proof is anchored at the lowest header the prover
+     * built it from, so a batch has to contain an item at that header. Measured
+     * against the live precompile, not read from a document: a batch missing it
+     * is refused with a continuity mismatch, and every forged member of an
+     * otherwise honest batch is refused too.
+     */
+    function registerPledges(BatchProof calldata b)
+        external
+        returns (bytes32[] memory assetKeys)
+    {
+        uint256 count = b.heights.length;
+        if (count == 0) revert EmptyBatch();
+        if (
+            b.emitters.length != count || b.logIndexes.length != count
+                || b.encodedTransactions.length != count || b.merkleProofs.length != count
+        ) revert BatchLengthMismatch(count);
+
+        bool ok = PROVER.verify(
+            b.chainKey, b.heights, b.encodedTransactions, b.merkleProofs, b.sharedContinuityProof
+        );
+        if (!ok) revert ProofRejected();
+
+        assetKeys = new bytes32[](count);
+        for (uint256 i; i < count; i++) {
+            _requireFinal(b.chainKey, b.heights[i]);
+            if (!allowedEmitter[b.chainKey][b.emitters[i]]) {
+                revert EmitterNotAllowed(b.chainKey, b.emitters[i]);
+            }
+            _burnBatchNullifier(b, i, KIND_PLEDGE);
+
+            SourceEvent memory pledge = _readEvent(
+                b.chainKey, b.encodedTransactions[i], b.emitters[i], b.logIndexes[i], KIND_PLEDGE
+            );
+            assetKeys[i] = _recordPledge(b.chainKey, b.heights[i], pledge);
+        }
+    }
+
+    function _recordPledge(uint64 chainKey, uint64 height, SourceEvent memory pledge)
+        private
+        returns (bytes32 assetKey)
+    {
         if (pledge.token == address(0)) revert CollateralNotIdentified();
-        assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
+        assetKey = _assetKey(chainKey, pledge.token, pledge.tokenId);
 
         Record storage r = _records[assetKey];
         if (r.state != AssetState.FREE) revert AssetNotFree(assetKey, r.emitter);
 
-        bytes32 instanceKey = _instanceKey(p.chainKey, pledge.emitter, pledge.instanceId);
+        bytes32 instanceKey = _instanceKey(chainKey, pledge.emitter, pledge.instanceId);
         if (_assetByInstance[instanceKey] != bytes32(0)) {
             revert InstanceAlreadyOpen(pledge.emitter, pledge.instanceId);
         }
@@ -281,15 +358,15 @@ contract SingletonRegistry {
             borrower: pledge.borrower,
             amount: pledge.amount,
             instanceId: pledge.instanceId,
-            chainKey: p.chainKey,
-            sourceHeight: p.height,
+            chainKey: chainKey,
+            sourceHeight: height,
             recordedAt: uint64(block.timestamp)
         });
 
         _issueCertificate(pledge.emitter, uint256(assetKey));
 
         emit PledgeRecorded(
-            assetKey, pledge.emitter, pledge.borrower, p.chainKey, pledge.amount, pledge.instanceId
+            assetKey, pledge.emitter, pledge.borrower, chainKey, pledge.amount, pledge.instanceId
         );
     }
 
@@ -502,20 +579,38 @@ contract SingletonRegistry {
         _requireVerified(p);
         _requireFinal(p.chainKey, p.height);
 
+        found = _readEvent(p.chainKey, p.encodedTransaction, p.emitter, p.logIndex, kind);
+    }
+
+    /**
+     * The named log of a proven transaction, read as the named transition.
+     *
+     * Separate from proof verification because the batch form verifies every
+     * transaction in one precompile call and then reads each of them, while the
+     * single form verifies and reads one. What a log means must not depend on
+     * which of those two paths asked.
+     */
+    function _readEvent(
+        uint64 chainKey,
+        bytes calldata encodedTransaction,
+        address emitter,
+        uint32 logIndex,
+        uint8 kind
+    ) private view returns (SourceEvent memory found) {
         EvmV1Decoder.ReceiptFields memory receipt =
-            EvmV1Decoder.decodeReceiptFields(p.encodedTransaction);
+            EvmV1Decoder.decodeReceiptFields(encodedTransaction);
         if (receipt.receiptStatus != 1) revert SourceTransactionReverted();
 
-        if (p.logIndex >= receipt.receiptLogs.length) {
-            revert LogIndexOutOfRange(p.logIndex, receipt.receiptLogs.length);
+        if (logIndex >= receipt.receiptLogs.length) {
+            revert LogIndexOutOfRange(logIndex, receipt.receiptLogs.length);
         }
-        EvmV1Decoder.LogEntry memory log = receipt.receiptLogs[p.logIndex];
-        if (log.address_ != p.emitter) revert LogNotFromEmitter(p.emitter, log.address_);
+        EvmV1Decoder.LogEntry memory log = receipt.receiptLogs[logIndex];
+        if (log.address_ != emitter) revert LogNotFromEmitter(emitter, log.address_);
 
-        address adapter = adapterOf[p.chainKey][p.emitter];
-        _requireSignature(adapter, p.emitter, kind, log);
+        address adapter = adapterOf[chainKey][emitter];
+        _requireSignature(adapter, emitter, kind, log);
 
-        found.emitter = p.emitter;
+        found.emitter = emitter;
         if (adapter == address(0)) {
             found.token = address(uint160(uint256(log.topics[1])));
             found.tokenId = uint256(log.topics[2]);
@@ -619,9 +714,24 @@ contract SingletonRegistry {
      * would register the same pledge legitimately once the asset is released.
      */
     function _burnNullifier(Proof calldata p, uint8 domain) private {
-        uint64 txIndex = PROVER.calculateTxIndex(p.merkleProof);
-        bytes32 nullifier =
-            keccak256(abi.encode(domain, p.chainKey, p.height, txIndex, p.logIndex));
+        _burn(domain, p.chainKey, p.height, p.merkleProof, p.logIndex);
+    }
+
+    /// The same nullifier for one member of a batch, so a proof cannot be spent
+    /// once alone and once inside a batch.
+    function _burnBatchNullifier(BatchProof calldata b, uint256 i, uint8 domain) private {
+        _burn(domain, b.chainKey, b.heights[i], b.merkleProofs[i], b.logIndexes[i]);
+    }
+
+    function _burn(
+        uint8 domain,
+        uint64 chainKey,
+        uint64 height,
+        IBlockProver.MerkleProof calldata merkleProof,
+        uint32 logIndex
+    ) private {
+        uint64 txIndex = PROVER.calculateTxIndex(merkleProof);
+        bytes32 nullifier = keccak256(abi.encode(domain, chainKey, height, txIndex, logIndex));
         if (consumed[nullifier]) revert ProofAlreadyConsumed(nullifier);
         consumed[nullifier] = true;
     }

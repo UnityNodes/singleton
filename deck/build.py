@@ -23,7 +23,7 @@ slide('''
   <div class="chips">
     <span>BUIDL CTC 2026 &middot; RWA</span>
     <span>singleton.unitynodes.com</span>
-    <span>0x7F4A466E &middot; CC3 testnet, verified</span>
+    <span>0x25b0963E &middot; CC3 testnet, verified</span>
   </div>
 </div>''')
 
@@ -97,11 +97,13 @@ slide('''
 <div class="two">
   <div class="claim">
     <b>In use</b>
-    <p>BlockProver <code>0x0FD2</code>, view form, in the accepting transaction.
-    ChainInfo <code>0x0fD3</code> for the attested tip and for resolving a chain key from a chain id.
-    The deployed <code>EvmV1Decoder</code>. <code>@gluwa/usc-sdk</code> for proof assembly.</p>
+    <p>BlockProver <code>0x0FD2</code>, <b>both forms of verify</b>: one transaction for a single
+    pledge, and an array against one shared continuity proof for a batch. ChainInfo <code>0x0fD3</code>
+    for the attested tip and the chain key. The deployed <code>EvmV1Decoder</code>.</p>
     <p><b>Both</b> attested source chains: <code>get_supported_chains</code> reports two on CC3 testnet
-    and both are read. Six proofs each.</p>
+    and both are read.</p>
+    <p>The batch constraint is in no document. We found it by calling the precompile: the shared proof
+    is anchored at its lowest header, and every member is still checked individually.</p>
   </div>
   <div>
     <b>Refused, with reasons</b>
@@ -159,7 +161,7 @@ slide('''
   <span>singleton.unitynodes.com</span>
   <span>/demo, 1:25, captioned</span>
   <span>github.com/UnityNodes/singleton</span>
-  <span>0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950</span>
+  <span>0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D</span>
 </div>''')
 
 CSS = f'''

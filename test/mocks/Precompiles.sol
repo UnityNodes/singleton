@@ -15,6 +15,7 @@ import {IChainInfo} from "../../src/interfaces/IChainInfo.sol";
 contract ProverModel {
     mapping(bytes32 => bool) public attested;
 
+
     function attest(uint64 chainKey, uint64 height, bytes calldata encodedTransaction) external {
         attested[keccak256(abi.encode(chainKey, height, encodedTransaction))] = true;
     }
@@ -27,6 +28,29 @@ contract ProverModel {
         IBlockProver.ContinuityProof calldata
     ) external view returns (bool) {
         return attested[keccak256(abi.encode(chainKey, height, encodedTransaction))];
+    }
+
+    /**
+     * The batch form, modelled as every member having to be attested.
+     *
+     * The live precompile checks each transaction individually inside a batch,
+     * which was measured against it rather than assumed: a forged member of an
+     * otherwise honest batch is refused. A model that waved a batch through on
+     * the strength of its first member would let the registry's batch path pass
+     * tests the real one would fail.
+     */
+    function verify(
+        uint64 chainKey,
+        uint64[] calldata heights,
+        bytes[] calldata encodedTransactions,
+        IBlockProver.MerkleProof[] calldata,
+        IBlockProver.ContinuityProof calldata
+    ) external view returns (bool) {
+        for (uint256 i; i < heights.length; i++) {
+            bytes32 key = keccak256(abi.encode(chainKey, heights[i], encodedTransactions[i]));
+            if (!attested[key]) return false;
+        }
+        return heights.length > 0;
     }
 
     function calculateTxIndex(IBlockProver.MerkleProof calldata proof)
