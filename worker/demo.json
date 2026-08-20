@@ -1,5 +1,5 @@
 {
-  "asset": "RwaDeed token 42 on Sepolia",
+  "asset": "RwaDeed tokens 42 and 43 on Sepolia, plus three read from Ethereum mainnet",
   "steps": [
     {
       "operation": "pledge",
@@ -36,6 +36,25 @@
       "operation": "pledge",
       "tx": "0x8de34d47d39abdb46a05d1834964e1eb2ae4b3b3ce930f46259f8a1aae2e387b",
       "note": "Meridian's once refused lien now registers legitimately",
+      "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0x591155be5d626689bd0222474d5061ac60c786bd31bdf52de0c1456fd0132a18",
+      "note": "Harbor lends 1,200 against deed 43, a second asset",
+      "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0xe0c7e6a4252fbf5bab42f58ca1103df830b4ef81e7846a80e8bfbb3cf6471e85",
+      "note": "Meridian lends against deed 43 too, refused live",
+      "expect": "refused",
+      "force": true
+    },
+    {
+      "operation": "collision",
+      "tx": "0xe0c7e6a4252fbf5bab42f58ca1103df830b4ef81e7846a80e8bfbb3cf6471e85",
+      "note": "the refusal stays on file, because this lien is never released",
       "expect": "recorded"
     },
     {

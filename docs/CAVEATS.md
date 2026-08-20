@@ -75,6 +75,22 @@ So the registry's market is non-custodial liens and mixed cases. That is not a
 narrowing, it is a location: custody prevents the fraud mechanically, and
 everywhere custody is absent the fraud is live and unaddressed.
 
+The uncomfortable consequence, checked on chain rather than assumed. Both real
+protocols this submission reads take custody. A live Blend `borrow` transfers
+the token from the borrower to Blend, and NFTfi's own `LoanTerms` carries an
+`escrow` field naming the contract that holds it. So the six mainnet proofs
+demonstrate that the reader works against protocols that never heard of us, and
+they do not demonstrate that the fraud is possible in those protocols, because
+it is not. The collision is shown on Sepolia, between two non-custodial lenders
+written for this submission.
+
+That gap is the honest state of the beachhead, and it is worth stating plainly
+rather than leaving for somebody to find: on-chain, possession costs one
+transfer, so escrow is the default and non-custodial lending against tokenised
+collateral is a market that mostly has not been built yet. The primitive is
+proven and the market for it is thin. Anybody who tells you otherwise about a
+hackathon submission is selling something.
+
 It also means the dual-log transfer binding in caveat 5 and the collision demo
 cannot both apply to the same pledge. The binding is an optional stronger mode
 for custodial emitters; the demonstration is non-custodial.

@@ -85,8 +85,10 @@ slide('''
   <div>
     <p class="body">Creditcoin attests Ethereum, so an existing loan can simply be read. No mainnet
     deployment, no funds there, no cooperation from either protocol.</p>
-    <p class="body">That removes the staged demo objection: the two Sepolia lenders are ours, and six
-    of the twelve proofs are not.</p>
+    <p class="body"><b>And the part that does not flatter us.</b> Both of these escrow the collateral,
+    which we checked on chain rather than assumed. So they prove the reader works and they cannot
+    prove the fraud, because custody makes it impossible. The collision is on Sepolia, between two
+    non-custodial lenders we wrote.</p>
   </div>
 </div>''')
 
@@ -138,8 +140,11 @@ slide('''
   <div><b>The key is free here only</b><p><code>keccak(chainKey, token, tokenId)</code> names an on chain
   asset with no agreement between protocols. Off chain invoices are the larger market and the harder key.</p></div>
 </div>
-<p class="foot-note">UCC-9 has governed a trillion dollar lien market on exactly this basis for fifty years:
-prevention comes from priority and from the habit of checking, not from omniscience.</p>''')
+<p class="foot-note">And one we would rather say than have found: on chain, possession costs a single
+transfer, so escrow is the default and non-custodial lending against tokenised collateral is a market
+that has mostly not been built yet. The primitive is proven; the market for it is thin. The version with
+a payer is the alarm on top, where the lender's risk desk pays to be told the moment somebody files
+against collateral it already holds.</p>''')
 
 slide('''
 <h2 class="display">Running, and checkable without asking us for anything.</h2>

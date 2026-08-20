@@ -308,6 +308,7 @@ export const ENTRY_WORDS: Record<EntryKind, string> = {
 
 /** The register indexes by hash, so the assets it has handled are named here. */
 export const KNOWN_ASSETS = [
+  { chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", tokenId: "43" },
   { chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", tokenId: "42" },
   { chainId: 1, token: "0xd774557b647330C91Bf44cfEAB205095f7E6c367", tokenId: "7819" },
   { chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", tokenId: "8189" },

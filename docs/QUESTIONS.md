@@ -77,10 +77,27 @@ the authority, not the sender.
 **"A lender who does not want their book seen simply does not file. What forces
 adoption?"**
 
-Nothing forces it, and nothing forces a UCC-9 filing either. What makes lenders
-file there is that an unfiled lien loses to a filed one. The register is the
-same trade: publish the fact of the lien and get priority over anybody who did
-not. A lender who values secrecy over priority is free to keep both risks.
+Nothing forces it, and the UCC-9 answer only half transfers, so here is the
+whole of it.
+
+Off chain, an unfiled lien loses to a filed one because a court says so. On
+chain there is no court: the asset moves according to whoever can call
+`transferFrom`, and a register entry does not change that. So "filing buys
+priority" is weaker here than the analogy suggests, and pretending otherwise
+would be the kind of claim this document exists to avoid.
+
+What filing actually buys is narrower and real. It buys evidence, dated and
+witnessed by somebody with no stake, which is what a lender needs when the
+dispute is not about who can move the token but about who is owed. And the
+register's stronger product is not the filing at all, it is the reading: a
+lender's risk desk wants to be told the moment somebody else files against
+collateral it already holds. That flips who pays, from the filer, who gains
+least, to the reader, who gains most, and it needs no court and no mandate to be
+worth money.
+
+The version pitched here is the primitive. The version with a payer is the
+alarm on top of it, and it is named as a direction rather than claimed as
+built.
 
 **"What stops a lender watching the mempool and filing first against somebody
 else's borrower?"**
@@ -174,12 +191,21 @@ so two protocols that refuse to speak to each other still share a register.
 **"Non-custodial RWA lending on chain is small today. What is the market
 actually?"**
 
-Small today and named as such. The measurable part is NFT-collateralised lending,
-where NFTfi and Blend are read live in this submission. The claim being made is
-about the primitive, not about a trillion dollars arriving next quarter: the
-canonical key is free for on-chain RWA and expensive for off-chain invoices, and
-the invoice market is where the size is. That is caveat 8 and it is written as
-roadmap, not as a projection.
+Smaller than small, and the honest answer concedes it before being pushed.
+
+Both protocols read here take custody, which was checked on chain rather than
+assumed: a live Blend `borrow` moves the token to Blend, and NFTfi's loan terms
+name an escrow. Custody makes the fraud impossible, so those six proofs
+demonstrate the reader and not the problem. On chain, possession costs one
+transfer, so escrow is the default and non-custodial lending against tokenised
+collateral is mostly a market that has not been built.
+
+What that leaves is a working primitive and a thin market, said in that order.
+The size is in off-chain invoices, where possession is impossible and duplicate
+financing is a live loss category, and where the canonical key is the hard
+problem. That is caveat 8, written as roadmap rather than as a projection. A
+submission that claimed a trillion dollars was arriving would be easier to
+present and worse to trust.
 
 **"Who runs it, and who pays for it?"**
 
@@ -196,7 +222,7 @@ what has to stay free for the priority rule to work.
 | Objection | Likely | How it is answered |
 |---|---|---|
 | The adapter and allowlist reintroduce a trusted party | High | Bounded: proof decides existence, adapter decides meaning. Caveat 9, written first. |
-| Both demo lenders are yours, so the collision is staged | High | Six of the twelve proofs read NFTfi and Blur Blend on Ethereum mainnet, unmodified, unaware, nothing deployed there. |
+| Both demo lenders are yours, so the collision is staged | High | True, and conceded first. Six of the fifteen proofs read NFTfi and Blur Blend on mainnet, which shows the reader works on protocols that never heard of us. Both of those escrow, so they cannot show the collision. The collision is ours because the non-custodial market is thin, and caveat 6 says so. |
 | A positive record prevents nothing | High | Said first, on the landing page and in the demo. UCC-9 has governed on exactly that basis for fifty years. |
 | An indexer could do this off chain | Medium | It could, and then the register is a company. The point is the witness being a precompile. |
 | Adoption requires lenders to publish their book | Medium | Filing buys priority. That is the whole incentive UCC-9 runs on. |

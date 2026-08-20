@@ -91,11 +91,12 @@ proof of that log. The second exists through BlockProver <code>0x0FD2</code> and
 <div class="grid2" style="margin-top:12px">
   <div>
     <h2>The demonstration</h2>
-    <p>One tokenised deed, two unrelated Sepolia lenders. The first pledge is recorded; the second is refused on
-    chain as a <span class="hot">failed transaction</span> decoding to <code>AssetNotFree</code> with the asset key
-    and the incumbent lender in it. Then settled, released, and re-filed legitimately by the lender that lost the
-    race. Six more proofs read real NFTfi and Blur Blend loans on mainnet, including one that ended in seizure
-    after a failed auction rather than repayment.</p>
+    <p>Two tokenised deeds, two unrelated Sepolia lenders. On the first, a pledge is recorded, a second refused on
+    chain as a <span class="hot">failed transaction</span> decoding to <code>AssetNotFree</code>, then settled,
+    released and re-filed by the lender that lost the race. On the second, the refusal stays on file because that
+    lien is never released. Six more proofs read real NFTfi and Blur Blend loans on mainnet, one ending in seizure
+    after a failed auction. <b>Both mainnet protocols escrow</b>, checked on chain: they prove the reader works and
+    cannot prove the fraud, which is why the collision is ours and why caveat 6 says so.</p>
   </div>
   <div>
     <h2>What it does not claim</h2>
