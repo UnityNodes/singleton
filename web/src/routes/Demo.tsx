@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CFG, short } from "@/lib/registry";
 
 const VIDEO = "/demo/singleton.mp4";
-const RUNTIME = 85;
+const RUNTIME = 86;
 
 /**
  * Timecodes are read off frames of the recording in script/record-demo.mjs, not
@@ -17,10 +17,10 @@ const CHAPTERS = [
   { at: 0, title: "one asset, one loan", line: "A borrower pledges a tokenised deed and takes a loan." },
   { at: 8, title: "and the same deed again", line: "An hour later, a second lender, no shared anything." },
   { at: 16, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
-  { at: 30, title: "the register answers", line: "First to file, witnessed from outside, no integration." },
-  { at: 42, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
+  { at: 30, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
+  { at: 46, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
   { at: 60, title: "a lien ends more than one way", line: "Settled, released, then the loser re-files legitimately." },
-  { at: 67, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
+  { at: 70, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
   { at: 78, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
 ];
 
@@ -245,7 +245,7 @@ export default function Demo() {
               {
                 k: "read the refusal",
                 v: "The failed transaction from the video, on Blockscout, decoding to AssetNotFree with the asset key and the incumbent lender.",
-                href: `${CFG.explorer}/tx/0xe575aaf998bd2baaaee89629c7f9c2bab4faf5bc2eebd207cc0ee4a680e859f9`,
+                href: `${CFG.explorer}/tx/0xf051edc5611773a64ddf9d23218fc66da77c36cda8822cfdd63003b6da7fa40a`,
               },
               {
                 k: "read the contracts",

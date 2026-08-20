@@ -23,7 +23,7 @@ slide('''
   <div class="chips">
     <span>BUIDL CTC 2026 &middot; RWA</span>
     <span>singleton.unitynodes.com</span>
-    <span>0x8170B29e &middot; CC3 testnet, verified</span>
+    <span>0x7F4A466E &middot; CC3 testnet, verified</span>
   </div>
 </div>''')
 
@@ -140,11 +140,12 @@ slide('''
   <div><b>The key is free here only</b><p><code>keccak(chainKey, token, tokenId)</code> names an on chain
   asset with no agreement between protocols. Off chain invoices are the larger market and the harder key.</p></div>
 </div>
-<p class="foot-note">And one we would rather say than have found: on chain, possession costs a single
-transfer, so escrow is the default and non-custodial lending against tokenised collateral is a market
-that has mostly not been built yet. The primitive is proven; the market for it is thin. The version with
-a payer is the alarm on top, where the lender's risk desk pays to be told the moment somebody files
-against collateral it already holds.</p>''')
+<p class="foot-note">And the one we would rather say than have found. For unique collateral the
+non-custodial market is empty: the one protocol that shipped in-wallet encumbrance financed a single
+loan, and no lender uses any lockable token standard. We think that is a consequence rather than an
+objection. <b>Lenders take possession because there is no register to check</b>, so possession is the
+fallback a missing register forces, which makes this the piece that has to exist first. That is an
+argument and not a proof, which is why it sits on this slide.</p>''')
 
 slide('''
 <h2 class="display">Running, and checkable without asking us for anything.</h2>
@@ -158,7 +159,7 @@ slide('''
   <span>singleton.unitynodes.com</span>
   <span>/demo, 1:25, captioned</span>
   <span>github.com/UnityNodes/singleton</span>
-  <span>0x8170B29ee13Ee120952F44eb17F00e0B161dfde7</span>
+  <span>0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950</span>
 </div>''')
 
 CSS = f'''

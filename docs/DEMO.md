@@ -9,8 +9,8 @@ a demo mode: it is the product, because a register that had to be trusted with
 keys would not be neutral.
 
 **Live**: <https://singleton.unitynodes.com>
-**Registry**: `0x8170B29ee13Ee120952F44eb17F00e0B161dfde7` on CC3 testnet, verified
-**Evidence**: twelve inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
+**Registry**: `0x7F4A466E0bdAD924AaEa8b1f863F477Eb336A950` on CC3 testnet, verified
+**Evidence**: fifteen inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
 
 ---
 
@@ -40,9 +40,9 @@ Timecodes below are read off frames of the recording, not off this plan. Change
 | 5 | 0:35 to 0:53 | The red panel, then the failed transaction on Blockscout | "The second pledge was refused on chain. Open the failure yourself." |
 | 6 | 0:53 to 1:04 | Register history, five entries, pledge to release to re-pledge | "Settled, released, then the loser re-files legitimately. Four proofs." |
 | 7 | 1:04 to 1:17 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
-| 8 | 1:17 to 1:25 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
+| 8 | 1:17 to 1:26 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
 
-Total 1:25. Step 5 is the moment; it lands at 41 percent of the runtime.
+Total 1:26. Step 5 is the moment; it lands at 41 percent of the runtime.
 
 The chapter marks on `/demo` are not the same numbers. A chapter begins where its
 narration does, but seeking there can land on a register that is still reading

@@ -84,12 +84,54 @@ they do not demonstrate that the fraud is possible in those protocols, because
 it is not. The collision is shown on Sepolia, between two non-custodial lenders
 written for this submission.
 
-That gap is the honest state of the beachhead, and it is worth stating plainly
-rather than leaving for somebody to find: on-chain, possession costs one
-transfer, so escrow is the default and non-custodial lending against tokenised
-collateral is a market that mostly has not been built yet. The primitive is
-proven and the market for it is thin. Anybody who tells you otherwise about a
-hackathon submission is selling something.
+That gap is the honest state of the beachhead, and the reason for it is more
+interesting than the gap.
+
+On chain, possession costs one transfer, so escrow is the default. We went
+looking for a live non-custodial lender to read, and what came back is worth
+writing down.
+
+For **fungible** collateral the shape exists and is busy. Aave v3 and Euler v2
+both leave the collateral in the borrower's own wallet and record the lien as a
+registry entry. Checked rather than assumed: in Aave's Sepolia borrow
+`0x7c82d123...`, both transfers are inbound to the borrower, the debt token
+minted and the borrowed USDC paid out, and the collateral never moves. But their
+lien is keyed by `(reserve, account)`, because a share of a pool has no token
+id, and the key this registry is built on is `(chainKey, token, tokenId)` for a
+single, unique asset. Reading Aave here would mean either a different registry
+or a dishonest key, so it is named rather than bolted on.
+
+For **unique** collateral, the market is not thin, it is empty, and it could not
+have been otherwise. Every mechanism for encumbering a token in place needs the
+token contract to have opted in: a lockable ERC has to be implemented by the
+collection itself. So none of them can ever apply to collateral that is already
+deployed, which is all the collateral that exists. That is why every attempt at
+non-custodial NFT lending has reached for a proxy wallet instead, and a proxy
+wallet is possession wearing a different hat. A scan of roughly a month of
+Ethereum blocks for lockable-token lien events returned nothing from any lender.
+
+Two independent searches were run and agreed, which is worth saying because the
+numbers are small enough to look like a search that gave up. The one protocol
+that ever shipped in-wallet encumbrance for NFTs, PWN's Asset Transfer Rights,
+minted twelve tokens in its life and financed one loan; its registry holds zero
+today. Of the three lockable token standards, one has a live implementation
+whose lock is dormant, one has a live implementation with no lender, and one has
+no implementation found at all. Every product that markets itself as
+non-custodial NFT lending moves the asset into a smart wallet it co-signs, which
+is possession with a longer name.
+
+So the honest sentence is not "we serve this market". It is closer to the
+opposite, and it is the strongest thing in this file:
+
+**Non-custodial lending does not exist because there is no priority register.**
+Without one, a lender cannot see whether somebody already lent against the
+collateral, so the only safe move is to take it. Possession is not a preference
+here, it is the fallback that a missing register forces. That makes the empty
+market a consequence rather than an objection, and it makes this the piece that
+has to exist first rather than the piece that arrives after the demand.
+
+That is an argument, not a proof, and it is placed in the caveats rather than on
+the front page for exactly that reason. What is proven here is the primitive.
 
 It also means the dual-log transfer binding in caveat 5 and the collision demo
 cannot both apply to the same pledge. The binding is an optional stronger mode

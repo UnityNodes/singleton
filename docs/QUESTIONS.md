@@ -171,7 +171,7 @@ two instances, made batch pledges work, and dropped mainnet gas from 716k to
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**
 
-Yes. The live registry `0x8170B29e...` was deployed after both fixes and all twelve
+Yes. The live registry `0x7F4A466E...` was deployed after both fixes and all twelve
 proofs were replayed onto it. The previous instance is left on chain and named
 in the verification log as predating the fix, rather than quietly removed.
 
@@ -200,12 +200,34 @@ demonstrate the reader and not the problem. On chain, possession costs one
 transfer, so escrow is the default and non-custodial lending against tokenised
 collateral is mostly a market that has not been built.
 
-What that leaves is a working primitive and a thin market, said in that order.
-The size is in off-chain invoices, where possession is impossible and duplicate
-financing is a live loss category, and where the canonical key is the hard
-problem. That is caveat 8, written as roadmap rather than as a projection. A
-submission that claimed a trillion dollars was arriving would be easier to
-present and worse to trust.
+For unique collateral the market is not thin, it is empty, and two independent
+searches agreed on why. The one protocol that ever shipped in-wallet
+encumbrance financed a single loan on mainnet, in June 2023, and its frontend no
+longer resolves. The lockable token standards have two live implementations
+between them and no lender using either, because the lock has to be written into
+the collateral contract at deploy time, so none of them can ever apply to a
+token that already exists. Everything marketed as non-custodial moves the asset
+into a smart wallet the protocol co-signs.
+
+That is the interesting part rather than the embarrassing one. **Lenders take
+possession because there is no register to check.** A lender who cannot see
+whether somebody already lent against this collateral has exactly one safe move,
+which is to hold it. So the empty market is what a missing register produces,
+and a register is the piece that has to exist before the market can. That is an
+argument rather than a proof, and it is offered as one.
+
+The measurable size is in off-chain invoices, where possession is impossible and
+duplicate financing is a live loss category, and where the canonical key is the
+hard problem. That is caveat 8, roadmap rather than projection. A submission
+claiming a trillion dollars was arriving would be easier to present and worse to
+trust.
+
+Where the shape does exist today is fungible collateral: Aave and Euler both
+leave it in the borrower's wallet and record the lien in a registry. Checked
+rather than assumed, in Aave's Sepolia borrow `0x7c82d123...` every transfer is
+inbound to the borrower. Their key is `(reserve, account)` and this registry is
+built on `(chainKey, token, tokenId)` for one unique asset, so reading them would
+need a different registry or a dishonest key. Named rather than bolted on.
 
 **"Who runs it, and who pays for it?"**
 
