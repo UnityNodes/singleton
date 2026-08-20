@@ -104,8 +104,13 @@ slide('''
     <p><b>Both</b> attested source chains: <code>get_supported_chains</code> reports two on CC3 testnet
     and both are read.</p>
     <p><b>Measured, not estimated.</b> Four pledges filed one at a time cost 1,582,616 gas. The same
-    four as one batch cost 989,237, which is 37.5 percent less, because the continuity proof is paid
-    once instead of four times. The batch constraint is in no document; we found it by breaking one.</p>
+    four as one batch cost 989,237, which is 37.5 percent less. The batch constraint is in no document;
+    we found it by breaking one.</p>
+    <p><b>And the explanation we first gave for that was wrong.</b> On Creditcoin a contract's code size
+    is charged on every call: the same trivial call costs 22,318 gas against an account with no code and
+    189,996 against a 12.8 KB registry, about 13 gas per byte across three deployments. So 566,034 of the
+    saving is entering the contract three fewer times, and only 27,345 is the shared continuity proof.
+    We found this chasing 27,650 gas that appeared on an operation we had not touched.</p>
   </div>
   <div>
     <b>Refused, with reasons</b>
@@ -117,6 +122,29 @@ slide('''
     comparison the finality guard already makes: true up to the attested tip, false one block past it,
     no gaps below, genesis zero. Spending a call to be told what <code>height &lt;= tip</code> says is
     not depth. The full list with reasons is in <code>docs/SURFACES.md</code>.</p>
+  </div>
+</div>''')
+
+slide('''
+<h2 class="display">Every cross chain record inherits a quorum. Nobody writes it down.</h2>
+<div class="two">
+  <div class="claim">
+    <b>The set is not a constant</b>
+    <p>Creditcoin bonds seven attestors for Sepolia and four for Ethereum, a hundred CTC each, and any
+    contract on the chain can read both numbers. They move.</p>
+    <p>A record made while seven stood behind it and a record made while two did are stored identically
+    by every bridge, oracle and message layer shipped so far. After the fact there is no way to ask how
+    much was standing.</p>
+  </div>
+  <div>
+    <b>So the quorum is part of the record</b>
+    <p class="body">The count, the bond and the attested tip are read inside the transaction that accepts
+    a proof, stored with the lien and with every refusal, and emitted in a log that outlives the record
+    when the lien is released and the record is deleted.</p>
+    <p class="body"><b>And it is enforced.</b> Below a stated floor the registry stops filing anything for
+    that chain. Entry only, never exit, so no attestor rotation can strand an asset already on file. We
+    raised the floor above the live set on purpose and the chain refused a real proof:
+    <code>QuorumTooThin(1, 7, 8)</code>, transaction <code>0xaecd340d</code>, still there.</p>
   </div>
 </div>''')
 
@@ -165,7 +193,7 @@ slide('''
   <span>singleton.unitynodes.com</span>
   <span>/demo, 1:25, captioned</span>
   <span>github.com/UnityNodes/singleton</span>
-  <span>0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4</span>
+  <span>0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1</span>
 </div>''')
 
 CSS = f'''

@@ -286,17 +286,81 @@ four filed together, against the same registry with the same adapters.
 
 Per pledge that is 395,654 alone against 247,309 batched.
 
-The saving is not a constant and the reason matters. What the batch amortises is
-the continuity proof, and a continuity proof grows with the distance from the
-last attestation: this one carried eighteen roots for a span of nine blocks. A
-relayer catching up on a wider range carries a longer proof, pays for it once
-instead of once per pledge, and saves more. A relayer filing a single pledge
-saves nothing, which is why both paths exist.
+The total is right and the explanation given for it here was wrong, which was
+found on 2026-08-20 while measuring something else. It said the batch amortises
+the continuity proof. It mostly amortises something bigger, and the next section
+is how that turned up.
+
+**Corrected split.** On the registry that carried this test, 12,772 bytes of
+code, a bare call costs 189,996 gas before a single opcode of the pledge runs.
+Four separate transactions pay that four times; the batch pays it once. Three
+fewer entries into the contract, at 21,000 intrinsic plus 167,678 of code
+charge each, is 566,034 of the 593,379 saved, or 95 percent. The continuity
+proof accounts for the remaining 27,345.
+
+So the saving is real, large, and mostly a per transaction cost rather than a
+per proof one. Two consequences follow, and they point in opposite directions
+from the original claim. It does **not** grow much with the distance a relayer
+is catching up over, because the dominant term does not depend on that distance.
+It does grow with the number of pledges in the batch, linearly, which the
+original claim understated.
 
 Mainnet proofs cost more than Sepolia ones, 442k to 603k against roughly 408k,
 because those payloads are larger and carry more continuity roots. The spread
 across operations on one chain stays under five percent, so the lifecycle costs
 what the pledge costs.
+
+### Contract size is charged on every call, not only at deployment
+
+This was not looked for. The attestor quorum was measured against a control
+deployment of the previous code, and a settlement, which the change does not
+touch at all, came back 27,650 gas more expensive. The calldata was byte
+identical, checked rather than assumed. Chasing that number is what found this.
+
+`eth_estimateGas` for the same trivial view call, `admin()`, against an account
+with no code and against three deployments of this registry that differ only in
+how much code they carry:
+
+| Target | Code size | Gas |
+|---|---|---|
+| An account with no code | 0 | 22,318 |
+| Registry before the quorum, `0x4E75FA6b...` | 12,772 | 189,996 |
+| Registry with the quorum, second shape, `0x65F561a7...` | 14,287 | 210,827 |
+| Registry with the quorum, first shape, `0xF7C08bAE...` | 14,747 | 217,442 |
+
+Subtract the no-code baseline and divide by size: 13.13, 13.19 and 13.23 gas per
+byte. The three agree to within one percent, and `minConfirmations(uint64)`
+gives the same three numbers plus a constant 416, so the slope is a property of
+the code and not of the function called.
+
+Stated narrowly on purpose. Two much smaller contracts on the same chain, the
+NFTfi and Blend adapters at 1,156 and 1,445 bytes, do **not** sit on that line,
+so this is a measured relationship across three sizes of one contract rather
+than a chain wide constant this project can prove. The mechanism is not claimed
+either. A Substrate chain has to carry the code it executes in the block's proof
+of validity, and that is the obvious candidate, but no document consulted here
+says so.
+
+What it means in practice is not small. A 12.8 KB contract on CC3 spends about
+190,000 gas answering anything, and every byte added to it is roughly 13 gas on
+every call to it for as long as it is deployed. Three things followed
+immediately.
+
+The 27,650 that started this was not the quorum doing work. It was 1,975 bytes
+of extra code being charged on every call including the two that never look at
+an attestor set. Threading the attestor read out of the shared proof reader as a
+second return value was what inflated the code; moving it into the two entry
+points that actually need it gave back 460 bytes, and 6,440 gas on every single
+operation the registry performs. That shape is in the source with the number
+next to it, so nobody removes it later thinking it is a stylistic choice.
+
+`optimizer_runs` was retested against this, since the setting trades size for
+runtime gas and on this chain size **is** runtime gas. It does not help here:
+1 run gives 14,201 bytes against 14,287 at 200, which is 86 bytes, and the
+slower code paths would cost more than the 1,100 gas that saves. Left at 200.
+
+And the batch measurement above needed its explanation corrected, which is the
+paragraph that now sits under it.
 
 **One robustness fix came out of this run.** The SDK's proof builder defaults to
 a ten second timeout. A twelve kilobyte mainnet payload with eighty-four
@@ -305,6 +369,50 @@ continuity roots takes the prover longer than that, and the timeout surfaces as
 waits two minutes and retries.
 
 ---
+
+## W3 live run: the quorum on the record, and the floor refusing
+
+Registry `0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1`, CC3 testnet, 2026-08-20,
+verified on Blockscout. The same fifteen proofs as the run above, replayed with
+`node worker/demo.mjs` against a registry that now reads the attestor set inside
+the transaction that accepts each of them.
+
+What a lender sees afterwards, from `node worker/status.mjs`:
+
+```
+lien held by 0xfA72380654232c5538d1F17e2D8d6c261bd263AD
+  proven at   source height 11510077
+  attested by 7 bonded attestors, 100.0 CTC each, against an attested tip of 11529710
+```
+
+Those three numbers were true when the proof was accepted, not when the question
+was asked. They are in storage on the record and in the `AttestationWitnessed`
+log, which is the copy that survives the record being deleted on release.
+
+**The floor, shown refusing rather than described.** Creditcoin bonds seven
+attestors for Sepolia. The floor was raised to eight on purpose, a proof that is
+otherwise fine was submitted, and the chain refused it:
+
+| | |
+|---|---|
+| Floor raised to 8 | `0xf2e11a8729a209bb1317ce8f99f6d88f6e781ca1974c8ef62a9c606559fb033c` |
+| The refusal, status 0 | `0xaecd340dd30de64f82b63d56d834e67eebb1aafe4cd0d378d2fdc3012033c6b3`, `QuorumTooThin(1, 7, 8)` |
+| Floor restored to 3 | `0x99d2702ea76affdf56d890ef80eb3204417bd7843089f2351858da07e7706a3b` |
+
+The same proof, resubmitted with the floor back at three, is refused for a
+different reason: `StaleCollision(11510076, 11510077)`. Same registry, same
+bytes, only the floor moved, so the guard is what decided and not something
+incidental to that proof.
+
+`node worker/provision.mjs --check` reads the registry back against the plan and
+reports the floor next to the set that has to satisfy it, because a check that
+only says the guard is configured does not say it is being met:
+
+```
+chain id 11155111 -> chain key 1
+  minConfirmations 64
+  minAttestors 3  (7 bonded right now)
+```
 
 ## A real protocol, unmodified and unaware
 
@@ -395,7 +503,7 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4`, decoder linked to
+`0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1`, decoder linked to
 `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`,
 `minAttestors[1] = 3`, admin `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
 
@@ -419,6 +527,16 @@ Earlier deployments are left on chain rather than hidden:
 collision record and then by the instance index,
 `0xf6229779f67E9935c969f835Ca3DA1f67eA7ECCd` carries the first Blend release,
 `0x943BD86a4E3ec9F3e24aDBcd3049Fb8C571e9c36` predates seizure being provable.
+
+Three from 2026-08-20 exist only because this change was measured rather than
+assumed. `0x4E75FA6b0e83885A789938aD5B3512b08ad62b33` is the previous code
+redeployed the same day as a control, and it reproduced the earlier gas figures
+to the gas, which is what proved the environment had not moved.
+`0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4` carries a full fifteen proof run and
+the `QuorumTooThin` refusal in `0x733962b7...`, and was superseded within the
+hour by the smaller shape of the same feature.
+`0x65F561a73451E878327Cf3775dc21Ca9CBEF72e8` is that smaller shape, deployed to
+measure it before it went live.
 
 `0x25b0963E40536dF9519Da839cd7c36bc1A47bd8D` carries the fifteen proof W2 run and
 the batch measurement, and was superseded on 2026-08-20 by the attestor quorum:

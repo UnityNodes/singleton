@@ -340,8 +340,8 @@ contract SingletonRegistry {
     function registerPledge(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_PLEDGE);
         _requireAllowed(p);
-        (SourceEvent memory pledge, Security memory security) =
-            _readSourceEvent(p, KIND_PLEDGE, true);
+        Security memory security = _witness(p.chainKey);
+        SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
         assetKey = _recordPledge(p.chainKey, p.height, pledge, security);
     }
 
@@ -379,7 +379,7 @@ contract SingletonRegistry {
         );
         if (!ok) revert ProofRejected();
 
-        Security memory security = _witness(b.chainKey, true);
+        Security memory security = _witness(b.chainKey);
 
         assetKeys = new bytes32[](count);
         for (uint256 i; i < count; i++) {
@@ -447,8 +447,8 @@ contract SingletonRegistry {
     function reportCollision(Proof calldata p) external returns (uint256 index) {
         _burnNullifier(p, DOMAIN_COLLISION);
         _requireAllowed(p);
-        (SourceEvent memory pledge, Security memory security) =
-            _readSourceEvent(p, KIND_PLEDGE, true);
+        Security memory security = _witness(p.chainKey);
+        SourceEvent memory pledge = _readSourceEvent(p, KIND_PLEDGE);
 
         if (pledge.token == address(0)) revert CollateralNotIdentified();
         bytes32 assetKey = _assetKey(p.chainKey, pledge.token, pledge.tokenId);
@@ -502,7 +502,7 @@ contract SingletonRegistry {
      */
     function registerSettlement(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_SETTLE);
-        (SourceEvent memory ev,) = _readSourceEvent(p, KIND_SETTLE, false);
+        SourceEvent memory ev = _readSourceEvent(p, KIND_SETTLE);
 
         assetKey = _resolveAsset(p.chainKey, ev);
         Record storage r = _records[assetKey];
@@ -525,7 +525,7 @@ contract SingletonRegistry {
      */
     function registerRelease(Proof calldata p) external returns (bytes32 assetKey) {
         _burnNullifier(p, KIND_RELEASE);
-        (SourceEvent memory ev,) = _readSourceEvent(p, KIND_RELEASE, false);
+        SourceEvent memory ev = _readSourceEvent(p, KIND_RELEASE);
 
         assetKey = _resolveAsset(p.chainKey, ev);
         Record storage r = _records[assetKey];
@@ -642,14 +642,13 @@ contract SingletonRegistry {
 
     /// Verifies the proof, then reads exactly one log of the requested kind out
     /// of the receipt it carries.
-    function _readSourceEvent(Proof calldata p, uint8 kind, bool entering)
+    function _readSourceEvent(Proof calldata p, uint8 kind)
         private
         view
-        returns (SourceEvent memory found, Security memory security)
+        returns (SourceEvent memory found)
     {
         _requireVerified(p);
-        security = _witness(p.chainKey, entering);
-        _requireFinal(p.chainKey, p.height, security.attestedTip);
+        _requireFinal(p.chainKey, p.height, _attestedTip(p.chainKey));
 
         found = _readEvent(p.chainKey, p.encodedTransaction, p.emitter, p.logIndex, kind);
     }
@@ -764,10 +763,17 @@ contract SingletonRegistry {
     /**
      * Reads what the registry is about to trust, before it trusts it.
      *
-     * The attested tip is read once per transaction rather than once per proof.
-     * It cannot change inside a transaction, so a batch of twenty pledges asks
-     * the chain for it once, which is the second time the batch path turns a
-     * per item cost into a per transaction one.
+     * Called by the two entry points and by neither exit, rather than folded
+     * into the shared proof reader where it started. Threading a second return
+     * value out of that reader cost 27,650 gas on every operation on the live
+     * chain, including the two that never look at an attestor set, which a local
+     * measurement against a small mock receipt had put at 575. Measured both
+     * ways against CC3 before this shape was chosen; see docs/VERIFICATION.md.
+     *
+     * A batch calls it once for however many pledges it carries, because the
+     * attestor set and the attested tip cannot change inside a transaction. That
+     * is the second per item cost the batch path turns into a per transaction
+     * one, after the continuity proof itself.
      *
      * The quorum floor applies on the way in and not on the way out, which is
      * the same line the emitter allowlist draws and for the same reason. A
@@ -782,24 +788,25 @@ contract SingletonRegistry {
      * in, and if the chain's own precompile lied about either number then every
      * proof this registry rests on is already worthless.
      */
-    function _witness(uint64 chainKey, bool entering)
-        private
-        view
-        returns (Security memory security)
-    {
-        IChainInfo.HeightHashResult memory tip =
-            CHAIN_INFO.get_latest_attestation_height_and_hash(chainKey);
-        security.attestedTip = tip.exists ? tip.height : 0;
-        if (!entering) return security;
-
+    function _witness(uint64 chainKey) private view returns (Security memory security) {
         uint64 floor = minAttestors[chainKey];
         if (floor == 0) revert QuorumNotSet(chainKey);
 
         uint64 attestors = uint64(ATTESTOR_STASH.getAttestorsCount(chainKey));
         if (attestors < floor) revert QuorumTooThin(chainKey, attestors, floor);
 
-        security.attestors = attestors;
-        security.minBond = uint128(ATTESTOR_STASH.getMinBondRequirement(chainKey));
+        security = Security({
+            attestedTip: _attestedTip(chainKey),
+            attestors: attestors,
+            minBond: uint128(ATTESTOR_STASH.getMinBondRequirement(chainKey))
+        });
+    }
+
+    /// The attested tip for a chain, or zero if it has no attestation at all.
+    function _attestedTip(uint64 chainKey) private view returns (uint64) {
+        IChainInfo.HeightHashResult memory tip =
+            CHAIN_INFO.get_latest_attestation_height_and_hash(chainKey);
+        return tip.exists ? tip.height : 0;
     }
 
     /**

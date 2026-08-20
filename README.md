@@ -55,9 +55,9 @@ auction rather than a repayment. Fifteen proofs, every hash in
 |---|---|
 | The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
 | The demo, 1:30 | [/demo](https://singleton.unitynodes.com/demo), captioned, no wallet needed to follow it |
-| The deck | [singleton-deck.pdf](https://singleton.unitynodes.com/singleton-deck.pdf), ten slides |
+| The deck | [singleton-deck.pdf](https://singleton.unitynodes.com/singleton-deck.pdf), eleven slides |
 | The one pager | [singleton-one-pager.pdf](https://singleton.unitynodes.com/singleton-one-pager.pdf) |
-| Registry, CC3 testnet | `0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4`, verified on Blockscout |
+| Registry, CC3 testnet | `0xB537A4A267D5DB4AdA30722aeC04b3D4898A95e1`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
 | Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
@@ -65,10 +65,19 @@ auction rather than a repayment. Fifteen proofs, every hash in
 
 Many pledges can be filed from one continuity proof. Measured on chain, not
 estimated: four pledges filed one at a time cost 1,582,616 gas, and the same four
-as a single batch cost 989,237, which is 37.5 percent less. The saving is the
-continuity proof paid once instead of once per pledge, so it grows with the
-distance a relayer is catching up over. All or nothing on purpose: a batch that
-cannot file one of its members takes the whole transaction with it.
+as a single batch cost 989,237, which is 37.5 percent less. All or nothing on
+purpose: a batch that cannot file one of its members takes the whole transaction
+with it.
+
+The reason for that saving is not what this file said until 2026-08-20, and the
+correction is worth more than the original claim. On Creditcoin a contract's code
+size is charged on **every call**, not only at deployment: the same trivial call
+costs 22,318 gas against an account with no code and 189,996 against this
+registry, and three deployments at three sizes put it at roughly 13 gas per byte.
+So four separate pledges pay to enter a 12.8 KB contract four times, and a batch
+pays once. That accounts for 566,034 of the 593,379 saved. Sharing the continuity
+proof is the remaining 27,345. Measured, then written down, in
+[docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 85 tests cover it, including both suppression attacks that independent reviews
 found on 2026-08-19 and the regressions that keep them closed. The registry and both

@@ -113,14 +113,13 @@ proof of that log. The second exists through BlockProver <code>0x0FD2</code> and
 </div>
 
 <h2>Attestcoin protocol use, stated as calls</h2>
-<p>BlockProver <code>0x0FD2</code> in its view form inside the accepting transaction; ChainInfo <code>0x0fD3</code>
-for the attested tip and to resolve a chain key from a chain id; the deployed <code>EvmV1Decoder</code>;
-<code>@gluwa/usc-sdk</code> for proof assembly; and both attested source chains. The batch form of
-<code>verify</code> files many pledges from one continuity proof: measured on chain, four pledges cost
-1,582,616 gas filed singly and 989,237 filed together, 37.5 percent less. Replay protection
-is a nullifier per operation domain, keyed by chain, height, transaction index and log index. Every unused surface
-carries a written reason in <code>docs/SURFACES.md</code>, including the three worth naming: batch verification,
-the ChainInfo bounds queries, and AttestorStash.</p>
+<p>BlockProver <code>0x0FD2</code> in its view form inside the accepting transaction; ChainInfo <code>0x0fD3</code> for the attested tip; AttestorStash <code>0x0FD4</code> for the bonded set behind that
+attestation, kept with every record and enforced as a floor; <code>EvmV1Decoder</code>;
+<code>@gluwa/usc-sdk</code>; and both attested source chains. The batch form of <code>verify</code> files many
+pledges from one continuity proof: four cost 1,582,616 gas filed singly and 989,237 filed together, 37.5 percent
+less. Most of that is a Creditcoin fact we measured, not read: code size is charged on every call, about 13
+gas a byte. Replay protection is a nullifier per operation domain, keyed by chain, height, transaction
+index and log index. Every unused surface carries a written reason in <code>docs/SURFACES.md</code>.</p>
 
 <h2>Two independent reviews, one day, both found real bugs</h2>
 <p>The first: a borrower could attach a decoy log carrying the registry's own event signature and make their
