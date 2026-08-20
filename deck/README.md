@@ -37,3 +37,13 @@ Two things that cost time and are worth knowing:
   sloppy whether or not it is visible.
 - The footer mark only appears when both `--logo` and `--logo-mono` are passed.
   Passing only the mono one leaves the wordmark text with no mark beside it.
+
+Two more, found the same way:
+
+- In the left column of a two column slide, `<b>` is styled as a block label, so
+  a `<b>` inside a `<p>` there breaks the paragraph in half and strands the
+  punctuation on its own line. Bold reads as a heading in that column; in the
+  right column, inside `p.body`, it behaves as inline emphasis.
+- The one pager renders at exactly one A4 page with no slack. Any sentence added
+  to it has to be paid for by a sentence removed, and the renderer refuses
+  rather than silently spilling onto a second page.

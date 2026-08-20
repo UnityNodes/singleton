@@ -144,9 +144,10 @@ slide('''
 <h2 class="display">Every cross chain record inherits a quorum. Nobody writes it down.</h2>
 <div class="two">
   <div class="claim">
-    <b>The set is not a constant</b>
-    <p>Creditcoin bonds seven attestors for Sepolia and four for Ethereum, a hundred CTC each, and any
-    contract on the chain can read both numbers. They move.</p>
+    <b>The set is not a constant, and we checked rather than assumed</b>
+    <p>The precompile answers at historical heights, so this is the readable history and not an argument
+    for it. Sepolia went 0 to 1 to 6 to 7 between May and July. Ethereum went 0 to 1 to 3 to 4, and was
+    on the supported chain list for a month before a single attestor was bonded for it.</p>
     <p>A record made while seven stood behind it and a record made while two did are stored identically
     by every bridge, oracle and message layer shipped so far. After the fact there is no way to ask how
     much was standing.</p>
@@ -160,6 +161,9 @@ slide('''
     that chain. Entry only, never exit, so no attestor rotation can strand an asset already on file. We
     raised the floor above the live set on purpose and the chain refused a real proof:
     <code>QuorumTooThin(1, 7, 8)</code>, transaction <code>0xaecd340d</code>, still there.</p>
+    <p class="body"><b>It points at us too.</b> Ethereum carries four attestors against our floor of three.
+    One deregistration halts the mainnet half of this demo. We did not lower the floor to two to make that
+    go away, because three is the smallest set where no single attestor is a majority.</p>
   </div>
 </div>''')
 

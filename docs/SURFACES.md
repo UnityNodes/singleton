@@ -66,9 +66,15 @@ Two requirements the documentation puts in a danger block, both met:
 ## What the attestor set is for
 
 A cross chain record inherits the security of the set that attested the block it
-was read from. That set is not a constant. Creditcoin bonds seven attestors for
-Sepolia and four for Ethereum as this is written, a hundred CTC each, and those
-numbers are readable by any contract on the chain.
+was read from. That set is not a constant, which is a measurement here and not a
+turn of phrase: read at historical heights, Sepolia went 0 to 1 to 6 to 7
+between 2026-05-01 and 2026-07-09, and Ethereum went 0 to 1 to 3 to 4 between
+2026-05-01 and 2026-07-16. Creditcoin bonds seven and four respectively as this
+is written, a hundred CTC each, and any contract on the chain can read both.
+
+Ethereum also appeared on `get_supported_chains` before a single attestor was
+bonded for it. Being on the supported list is not the same as being backed, and
+this project uses that list everywhere to decide what is readable.
 
 Nothing that consumes an attestation writes them down. A record made while seven
 attestors stood behind it and a record made while two did are stored identically

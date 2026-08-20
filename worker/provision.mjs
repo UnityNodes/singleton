@@ -95,6 +95,15 @@ for (const chain of PLAN) {
     if (bonded < FLOOR) {
       console.log(`  the attestor set is below the floor, this chain records nothing`);
       wrong++;
+    } else if (bonded - FLOOR <= 1) {
+      /*
+        Not a misconfiguration, so not counted as wrong, but not silence either.
+        A check that prints "matches the plan" while one deregistration would
+        halt the chain has told the operator the less useful of two true things.
+        Both live sets have moved inside the window this node still answers
+        from: Sepolia 0 to 1 to 6 to 7, Ethereum 0 to 1 to 3 to 4.
+      */
+      console.log(`  margin ${bonded - FLOOR}: one deregistration from halting this chain`);
     }
   } else if (floor !== FLOOR) {
     const tx = await registry.setMinAttestors(chainKey, FLOOR);

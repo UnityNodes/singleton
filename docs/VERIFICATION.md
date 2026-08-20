@@ -435,6 +435,50 @@ chain id 11155111 -> chain key 1
   minAttestors 3  (7 bonded right now)
 ```
 
+## The attestor set, read at every block the node still keeps
+
+The quorum feature rests on one premise: that the set behind a chain changes.
+That premise was asserted before it was checked. It is checkable, because the
+precompile answers at historical heights, so this is the whole readable history
+rather than an argument for it.
+
+The public node prunes state below CC3 block **4,704,777**, dated
+2026-05-01. Below that, calls return empty; the decoder library at
+`0x731c345d...` reads back its 9,598 bytes at 4,728,443, which is how the
+horizon was told apart from a precompile that was not there yet.
+
+| Chain key | Block | Date | `getAttestorsCount` |
+|---|---|---|---|
+| 1, Sepolia | 4,704,777 | 2026-05-01 | 0 |
+| 1 | 4,722,160 | 2026-05-04 | 1 |
+| 1 | 4,728,443 | | 6 |
+| 1 | **5,101,929** | 2026-07-09 | **7**, and still 7 |
+| 3, Ethereum | 4,704,777 | 2026-05-01 | 0, and not a supported chain |
+| 3 | 4,858,940 | 2026-05-28 | 0, now a supported chain |
+| 3 | 4,858,941 | 2026-05-28 | 1 |
+| 3 | 4,900,000 | | 3 |
+| 3 | **5,143,082** | 2026-07-16 | **4**, and still 4 |
+
+Both sets moved twice inside the window. The premise holds, and it is now a
+measurement rather than a claim.
+
+**The row that matters most is Ethereum at 4,858,940.** On that block
+`get_supported_chains` reported two chains and `getAttestorsCount(3)` reported
+zero. Being on the supported list is not the same as being backed by anybody,
+and every other part of this project uses that list to decide what is readable.
+A registry that trusted it alone would have accepted Ethereum proofs during a
+window when one bonded attestor, and for a moment none, stood behind them. The
+floor of three would have refused those proofs until roughly block 4,900,000.
+
+**And the exposure runs the other way too, today.** Ethereum carries four
+attestors against a floor of three. One deregistration halts Ethereum reads on
+this registry, which would stop the mainnet half of the demo. That is the guard
+working, not a fault, and the floor was not lowered to two to make the number
+comfortable: three is the smallest set in which no single attestor is a
+majority, and picking the threshold to fit the outcome is the thing this file
+exists to prevent. `provision.mjs --check` prints the margin so nobody has to
+notice it the hard way.
+
 ## A real protocol, unmodified and unaware
 
 The demo lenders are ours, which is a fair objection. So the same registry was

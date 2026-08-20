@@ -236,6 +236,16 @@ guard, and it has a real cost: a chain whose attestor set thins stops being
 readable, so a lender that would have filed first loses the race for reasons
 that have nothing to do with the borrower or the asset.
 
+This is not hypothetical in either direction, which was established by reading
+the precompile at every block the public node still keeps. Sepolia went 0 to 1
+to 6 to 7 between 2026-05-01 and 2026-07-09; Ethereum went 0 to 1 to 3 to 4
+between 2026-05-01 and 2026-07-16, and spent part of that window on the
+supported chain list with no attestors behind it at all. The floor would have
+refused Ethereum proofs for most of May. It also sits one attestor below the
+current Ethereum set, so a single deregistration would halt the mainnet half of
+this project's own demo. The full table is in
+[VERIFICATION.md](VERIFICATION.md).
+
 That is the intended trade. A first to file register whose records are only as
 good as the quorum behind them should stop writing rather than write records
 nobody can weigh. But it is a trade, not a free improvement, and it means the

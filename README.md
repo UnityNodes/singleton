@@ -87,7 +87,10 @@ hex.
 
 **A record is only as good as the quorum that attested it, so the quorum is part
 of the record.** Creditcoin bonds seven attestors for Sepolia and four for
-Ethereum, a hundred CTC each, and those numbers move. Every bridge and oracle
+Ethereum, a hundred CTC each, and those numbers move: read at historical
+heights, Sepolia went 0 to 1 to 6 to 7 between 2026-05-01 and 2026-07-09, and
+Ethereum went 0 to 1 to 3 to 4, having appeared on the supported chain list a
+month before a single attestor was bonded for it. Every bridge and oracle
 shipped so far stores a record made under seven the same way as one made under
 two. This registry reads the count and the bond inside the transaction that
 accepts a proof, keeps both with the lien and with every refusal, emits them in a
