@@ -177,7 +177,8 @@ Naming the log removes the inference and the whole class with it. A receipt full
 of decoys changes nothing about what a relayer can file, and a batch pledge of
 several assets in one transaction is now supported rather than refused, because
 each log is filed on its own and the replay nullifier is keyed by log as well as
-by transaction. `test/Suppression.t.sol` carries both attacks as regression
+by transaction. `test_aDecoyWithTheSameSignatureChangesNothing` and
+`test_anUnrelatedAllowlistedLogDoesNotSuppressAPledge` carry both attacks as regression
 tests.
 
 ## 8. Canonicalisation is solved here and not in general
@@ -205,7 +206,7 @@ decides what a real log means, and an adapter that ignores its argument can file
 a lien against an asset whose owner was never involved. Removing the adapter
 afterwards does not undo what it wrote. The test that used to back the old claim
 only proved that de-allowlisting a lender blocks that lender's pledge; it never
-attempted fabrication. `test/AdminPower.t.sol` attempts it, and it succeeds.
+attempted fabrication. `test_theAdminCanFabricateThroughAnAdapter` attempts it, and it succeeds.
 
 So the honest statement is narrower. The adapter is trusted for interpretation
 of something already proven to exist, which is auditable in the fifty to a

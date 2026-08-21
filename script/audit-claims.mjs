@@ -277,6 +277,120 @@ if (known.size === 0) {
   }
 }
 
+/*
+  Stage five: the counts that drift.
+ 
+  A test count, a proof count, a slide count and a running time are each stated
+  in several files and computed in none of them, so every redeploy and every
+  re release updates some of the places and misses others. Three of these have
+  already been wrong in public. The truth is computable from what is in the
+  repository, so it is computed and the prose is checked against it.
+*/
+const WORDS = {
+  nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+  fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+};
+const numberOf = (t) => (/^\d+$/.test(t) ? Number(t) : WORDS[t.toLowerCase()] ?? null);
+const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
+
+const tests = execSync("cat test/*.t.sol | grep -c 'function test_'", { cwd: root, encoding: "utf8" }).trim();
+const steps = JSON.parse(read("worker/demo.json")).steps.length;
+const slides = (read("deck/pitch.html").match(/class="slide slide-accent"/g) ?? []).length;
+const runtime = Number(read("web/src/routes/Demo.tsx").match(/const RUNTIME = (\d+)/)?.[1]);
+const chapters = (read("web/src/routes/Demo.tsx").match(/^\s*\{ at: \d+,/gm) ?? []).length;
+let seconds = null;
+try {
+  seconds = Number(execSync(
+    "ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 web/public/demo/singleton.mp4",
+    { cwd: root, encoding: "utf8" },
+  ).trim());
+} catch {}
+
+const counts = [
+  { what: "tests", truth: Number(tests), re: /\b(\d+) tests\b/g,
+    where: ["README.md", "deck/build.py", "web/src/routes/Demo.tsx"] },
+  { what: "proofs", truth: steps, re: /\b(\w+|\d+) (?:inclusion )?proofs\b/g,
+    where: ["README.md", "docs/DEMO.md", "docs/QUESTIONS.md"],
+    /* A count under ten is a part of the run, not the run. Only totals are checked. */
+    skip: (n) => n === null || n < 10 },
+  { what: "slides", truth: slides, re: /\b(\w+|\d+) slides\b/g, where: ["README.md"] },
+  { what: "chapters", truth: chapters, re: /^\| (\d) \| \d:\d\d to/gm, where: ["docs/DEMO.md"],
+    last: true },
+];
+
+let checkedCounts = 0;
+for (const c of counts) {
+  for (const rel of c.where) {
+    const text = read(rel);
+    const hits = [...text.matchAll(c.re)].map((m) => numberOf(m[1])).filter((n) => n !== null);
+    const values = c.last ? hits.slice(-1) : hits;
+    for (const n of values) {
+      if (c.skip?.(n)) continue;
+      checkedCounts++;
+      if (n !== c.truth) {
+        findings.push(`${rel} says ${n} ${c.what}, and the repository has ${c.truth}`);
+      }
+    }
+  }
+}
+
+if (seconds !== null) {
+  checkedCounts++;
+  if (Math.abs(runtime - seconds) > 1.5) {
+    findings.push(`web/src/routes/Demo.tsx sets RUNTIME ${runtime}, and the video is ${seconds.toFixed(1)}s`);
+  }
+  /*
+    Named patterns rather than the largest time in the file. Taking the maximum
+    passed a mutation that changed "Total 1:45" while a table row further up
+    still said 1:47, which is the failure this stage exists to catch: one place
+    updated, another not. Both the statements of the total and the end of the
+    last row have to agree with the file on disk.
+  */
+  const totals = [
+    { rel: "docs/DEMO.md", re: /^Total (\d:\d\d)\./m, what: "a total" },
+    { rel: "docs/DEMO.md", re: /^\| \d \| \d:\d\d to (\d:\d\d) \|/gm, what: "a last chapter ending" },
+    { rel: "README.md", re: /\| The demo, (\d:\d\d) \|/, what: "a running time" },
+  ];
+  for (const t of totals) {
+    const text = read(t.rel);
+    const hits = t.re.global ? [...text.matchAll(t.re)].map((m) => m[1]) : [text.match(t.re)?.[1]];
+    const stated = t.re.global ? hits.slice(-1) : hits;
+    for (const v of stated.filter(Boolean)) {
+      checkedCounts++;
+      if (v !== clock(seconds)) {
+        findings.push(`${t.rel} states ${t.what} of ${v}, and the video is ${clock(seconds)}`);
+      }
+    }
+  }
+}
+
+console.log(`\n${checkedCounts} stated counts checked against what the repository actually holds`);
+console.log(`  ${tests} tests, ${steps} proofs, ${slides} slides, ${chapters} chapters, ${seconds === null ? "video not measured" : clock(seconds) + " of video"}`);
+
+/*
+  Stage six: the tests the prose names.
+ 
+  Several documents defend a claim by naming the test that would fail if the
+  claim stopped being true, which is the strongest form of citation this project
+  has and the easiest to break: renaming a test is a refactor nothing warns you
+  about, and the sentence keeps its confident shape while pointing at nothing.
+*/
+const suite = execSync("cat test/*.t.sol", { cwd: root, encoding: "utf8" });
+const cited = new Map();
+for (const rel of ["README.md", ...execSync("git ls-files 'docs/*.md'", { cwd: root, encoding: "utf8" }).trim().split("\n")]) {
+  for (const m of read(rel).matchAll(/\btest_[A-Za-z0-9_]+/g)) {
+    if (!cited.has(m[0])) cited.set(m[0], new Set());
+    cited.get(m[0]).add(rel);
+  }
+}
+for (const [name, where] of cited) {
+  if (!suite.includes(`function ${name}(`)) {
+    findings.push(`${name} is cited in ${[...where].join(", ")},\n    and no test in test/ has that name`);
+  }
+}
+console.log(`  ${cited.size} tests named in prose, each looked for in test/`);
+
 if (findings.length === 0) {
   console.log(`\nevery cited Creditcoin transaction and registry address is the live one`);
   process.exit(0);

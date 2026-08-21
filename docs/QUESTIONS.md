@@ -121,7 +121,7 @@ to. This page previously said an adapter cannot fabricate a pledge that never
 happened. That was wrong, and a review proved it: an adapter that ignores the
 log it is handed can file a lien against an asset whose owner was never
 involved, and removing the adapter afterwards does not undo what it wrote.
-`test/AdminPower.t.sol` performs that attack rather than asserting it cannot
+`test_theAdminCanFabricateThroughAnAdapter` performs that attack rather than asserting it cannot
 happen.
 
 So the boundary is narrower than the sentence it replaced. What no adapter can
@@ -166,7 +166,8 @@ Both were the same mistake: the registry inferred something from data the
 attacker controls. It now infers nothing. The relayer names the emitter and the
 log index and the registry only checks, which closed the class rather than the
 two instances, made batch pledges work, and dropped mainnet gas from 716k to
-634k. `test/Suppression.t.sol` keeps both attacks as regressions.
+634k. `test_aDecoyWithTheSameSignatureChangesNothing` and
+`test_anUnrelatedAllowlistedLogDoesNotSuppressAPledge` keep both attacks as regressions.
 
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**

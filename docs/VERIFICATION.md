@@ -514,6 +514,32 @@ though the chain had given it. Each one is checked against `methodIdentifiers`
 in the compiled artifacts, which is where the compiler already wrote the right
 answer down.
 
+**Five, the counts that drift.** A test count, a proof count, a slide count and
+a running time are each stated in several files and computed in none of them, so
+every release updates some of the places and misses others. Three of them have
+already been wrong in public. All four are computable from the repository, so
+they are computed and the prose is checked against them.
+
+The first shape of this check passed a mutation it should have caught. It took
+the largest running time in a file, so changing `Total 1:45` while a table row
+still said 1:47 looked fine, and one place updated with another left behind is
+the exact failure the stage is for. It now names the statements it checks rather
+than taking a maximum, and each of the three is proven by its own mutation.
+
+**Six, the tests the prose names.** Several documents defend a claim by naming
+the test that would fail if the claim stopped being true. That is the strongest
+citation this project has and the easiest to break, because renaming a test is a
+refactor nothing warns you about while the sentence keeps its confident shape.
+Every `test_` name in the documents has to exist in `test/`.
+
+Stage six paid for itself before it was finished. `docs/SURFACES.md` cited a
+test by an abbreviated name ending in an ellipsis, in a project that had just
+written a section about references nobody can resolve. The name was truthful and
+the test existed; a reader still had to guess which one. It is written out in
+full now, and the abbreviation is not repeated here, because this stage would
+flag it and be right to. Four claims that named only a file were upgraded to name the test, which
+turns a citation a reader has to trust into one this script checks.
+
 It was written after the audit, not before, and the first thing it did was fail:
 
 ```

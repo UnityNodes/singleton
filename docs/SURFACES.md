@@ -42,7 +42,7 @@ CC3, which is the only way to know that a verification verifies.
 Two requirements the documentation puts in a danger block, both met:
 
 - **BlockProver does not check whether the source transaction succeeded.** The
-  registry checks `receiptStatus == 1` itself, and `test_reverted...` in
+  registry checks `receiptStatus == 1` itself, and `test_revertedSourceTransactionIsRejected` in
   `test/SingletonRegistry.t.sol` fails the build if that check is removed.
 - **Replay protection.** A nullifier per operation domain, keyed by chain,
   height, transaction index and log index, so the same proof cannot be spent
