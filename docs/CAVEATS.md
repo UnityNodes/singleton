@@ -15,6 +15,19 @@ This is exactly how UCC-9 works, and UCC-9 governs a trillion dollar lien market
 Prevention comes from priority plus the habit of checking before lending, not
 from omniscience.
 
+**And the answer is about a key, not about an asset.** Found by using the
+register rather than by reading it: type an address that is not a contract and a
+token id that was never minted, and it answers `free to lend against`, because
+nothing is on file against that key and nothing is what there is to report. The
+register cannot tell an unencumbered asset from one that does not exist.
+
+That is a limit rather than a bug, and closing it would cost the property the
+page is built on. Whether a token exists is one call to its own contract on its
+own chain, and every number on `/register` is an `eth_call` against a single
+Creditcoin node, which is what makes it repeatable by anybody with no
+infrastructure. A lender integrating this already holds the collateral contract
+in hand and can ask it directly. The page now says so where it answers.
+
 ## 2. The novelty is the mechanism, not the concept
 
 MonetaGo already runs a secure financing registry that solves this problem. It is

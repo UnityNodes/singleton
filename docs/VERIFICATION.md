@@ -479,6 +479,36 @@ majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
 
+## Using the product rather than reading it
+
+Every stage of the audit reads. On 2026-08-21 the register was **used** instead,
+with assets it had never seen: an unrelated Ethereum NFT, a Sepolia token id
+nobody minted, and an address that is not a contract. All three answer, none
+errors, and the third is the interesting one. It reports `free to lend against`,
+because nothing is on file against that key and nothing is what there is to
+report. The register cannot tell an unencumbered asset from one that does not
+exist, which is now caveat 1 and is now said on the page where it answers.
+
+Closing it would cost the property the page is built on. Whether a token exists
+is one call to its own contract on its own chain, and every number on `/register`
+is an `eth_call` against a single Creditcoin node, which is what makes it
+repeatable by anybody with no infrastructure.
+
+The same pass nearly produced a false finding, which is worth more than the
+finding. On a 390px viewport the lookup form measures 0 by 0, present in the
+document and impossible to touch, which reads exactly like a broken layout. It is
+a two pane switcher: the form is behind the `register` tab and the record is
+shown first. Tapping the tab and running the whole lookup on a phone works, with
+no overflow and no errors. The checks that had been run until then measured
+horizontal overflow and console errors, and neither says anything about whether
+the primary control can be reached.
+
+Looking for absolute paths afterwards, on the theory that a fault found once has
+siblings, turned up one more: `script/record-demo.mjs` imported playwright from
+`/root/cips/node_modules`, a different project on one machine. The recorder could
+not run on a clone. It resolves the module now, and says how to point at one if
+it is missing.
+
 ## Auditing our own claims, mechanically
 
 Three redeploys in one day produced the same class of error three times: a

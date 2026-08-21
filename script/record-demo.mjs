@@ -1,6 +1,32 @@
 import fs from "node:fs";
 import path from "node:path";
-import { chromium } from "/root/cips/node_modules/playwright-core/index.mjs";
+import { createRequire } from "node:module";
+
+/*
+  Resolved rather than hardcoded. This line used to be an absolute path into a
+  different project's node_modules on one machine, which meant the recorder could
+  not run on a clone: the same fault the deck build had, found the same way, by
+  looking for absolute paths after fixing the first one.
+
+  PLAYWRIGHT is there because playwright-core is not a dependency of this
+  repository and should not become one. It is needed to re-record a video, not to
+  build, test or verify anything, and adding a browser to the install for that
+  would be the wrong trade.
+*/
+const require = createRequire(import.meta.url);
+const chromium = await (async () => {
+  const from = process.env.PLAYWRIGHT;
+  const specifier = from ? `${from}/index.mjs` : "playwright-core";
+  try {
+    return (await import(from ? specifier : require.resolve(specifier))).chromium;
+  } catch {
+    throw new Error(
+      "playwright-core was not found. Install it, or point PLAYWRIGHT at a checkout of it:\n" +
+        "  npm i -g playwright-core && node script/record-demo.mjs\n" +
+        "  PLAYWRIGHT=/path/to/node_modules/playwright-core node script/record-demo.mjs",
+    );
+  }
+})();
 
 /**
  * Records the demo against the live site, a little under two minutes.

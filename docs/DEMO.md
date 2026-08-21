@@ -27,6 +27,18 @@ nothing deployed there and nothing asked of either protocol.
 
 ## The flow
 
+`script/record-demo.mjs` needs a browser, which is not a dependency of this
+repository and should not become one: it is needed to re-record the video, not to
+build, test or verify anything.
+
+```bash
+PLAYWRIGHT=/path/to/node_modules/playwright-core node script/record-demo.mjs
+```
+
+Without the variable it resolves `playwright-core` normally and says so plainly
+if it is missing. It used to import an absolute path into a different project on
+one machine, so the recorder could not run on a clone at all.
+
 Timecodes below are read off frames of the recording, not off this plan. Change
 `script/record-demo.mjs` and every number here and in the chapter list on
 `/demo` has to be checked again.

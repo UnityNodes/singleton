@@ -585,7 +585,13 @@ export default function Register() {
                     ? "It carried one before and the lender released it, which is the history below."
                     : "No entry for it in the blocks this page swept."}{" "}
                   That is a positive record and a priority rule, not proof of absence: Attestcoin
-                  proves that a transaction happened, never that one did not.
+                  proves that a transaction happened, never that one did not. This page answers
+                  about a key, not about an asset, so it reads the same for a token that is
+                  unencumbered and for one that was never minted.</p>
+                <p className="mt-2 max-w-[76ch] text-[13.5px] leading-relaxed text-paper-2">
+                  Checking that the asset exists is one call to its own contract on its own chain,
+                  and deliberately not made here: every number on this page is an eth_call against
+                  one Creditcoin node, which is the property that makes it repeatable.
                 </p>
               </div>
             )}
