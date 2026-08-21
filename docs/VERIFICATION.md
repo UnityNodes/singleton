@@ -532,13 +532,30 @@ citation this project has and the easiest to break, because renaming a test is a
 refactor nothing warns you about while the sentence keeps its confident shape.
 Every `test_` name in the documents has to exist in `test/`.
 
+**Seven, links between documents.** External links are deliberately left alone:
+the hackathon's own host answers 405 to anything that is not a browser, and the
+Creditcoin RPC answers 405 to a GET because it is a JSON-RPC endpoint. A checker
+that followed them would report two failures that are not failures, and a tool
+with false alarms in it is one people learn to ignore. Links to files in this
+repository have no such excuse and are resolved.
+
+**Eight, the claim itself.** Every stage above checks what the repository says.
+This one checks what it is for. The whole argument is that a lien can be on
+record while the asset stays in the borrower's own wallet, and that is two calls
+to settle: the registry says claimed, and the collateral contract on Sepolia
+says the borrower still owns it. Both demo deeds pass. If that ever stopped
+being true the demo would have become quietly custodial and every document here
+would still read exactly the same, which is the reason this is a check and not a
+sentence.
+
 Stage six paid for itself before it was finished. `docs/SURFACES.md` cited a
 test by an abbreviated name ending in an ellipsis, in a project that had just
 written a section about references nobody can resolve. The name was truthful and
 the test existed; a reader still had to guess which one. It is written out in
 full now, and the abbreviation is not repeated here, because this stage would
-flag it and be right to. Four claims that named only a file were upgraded to name the test, which
-turns a citation a reader has to trust into one this script checks.
+flag it and be right to. Four claims that named only a file were upgraded to
+name the test, which turns a citation a reader has to trust into one this script
+checks.
 
 It was written after the audit, not before, and the first thing it did was fail:
 

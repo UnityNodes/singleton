@@ -102,7 +102,10 @@ Every hash, address and hand written selector this repository states is checked
 by `node script/audit-claims.mjs`: transactions resolved against three chains,
 addresses asked whether they behave like a registry, abbreviations looked up in
 what the first two stages resolved, and the four byte selectors in the web app
-matched against the compiler's own `methodIdentifiers`. It was written after the
+matched against the compiler's own `methodIdentifiers`, the counts that drift
+recomputed from the repository, the tests the prose names looked for in `test/`,
+and the claim itself settled with two calls: the registry says claimed, and the
+collateral contract says the borrower still holds it. It was written after the
 third redeploy produced the same stale reference, and it failed on its first
 run. What it found second was worse than a stale link: an unopenable citation
 under the words "checked rather than assumed", holding up a claim about Aave

@@ -391,6 +391,87 @@ for (const [name, where] of cited) {
 }
 console.log(`  ${cited.size} tests named in prose, each looked for in test/`);
 
+/*
+  Stage seven: links between documents.
+ 
+  External links are deliberately not checked. The hackathon's own host answers
+  405 to anything that is not a browser, and the Creditcoin RPC answers 405 to a
+  GET because it is a JSON-RPC endpoint, so a checker that followed them would
+  report two failures that are not failures and teach everyone to ignore it.
+  Links to files in this repository have no such excuse.
+*/
+let links = 0;
+for (const rel of ["README.md", ...execSync("git ls-files 'docs/*.md' 'deck/*.md'", { cwd: root, encoding: "utf8" }).trim().split("\n")]) {
+  const dir = path.dirname(rel);
+  for (const m of read(rel).matchAll(/\]\(([^)#][^)]*)\)/g)) {
+    const target = m[1].split("#")[0];
+    if (!target || target.startsWith("http")) continue;
+    links++;
+    const direct = path.join(root, target);
+    const relative = path.join(root, dir, target);
+    if (!fs.existsSync(direct) && !fs.existsSync(relative)) {
+      findings.push(`${rel} links to ${target}, which is not a file in this repository`);
+    }
+  }
+}
+console.log(`  ${links} links between documents, each resolved to a file`);
+
+/*
+  Stage eight: the claim itself.
+ 
+  Everything above checks what the repository says. This checks what it is for.
+  The whole argument is that a lien can be on record while the asset stays in
+  the borrower's own wallet, and that is two calls to verify: the registry says
+  claimed, and the collateral contract on the source chain says the borrower
+  still owns it. If that ever stopped being true the demo would have become
+  quietly custodial and every document here would still read the same.
+*/
+const PLEDGED_SIG = "0xbfb86e5d7136ec550644fc6d0fcc8e6504e3dc19aacdeec2dec3d459854b4823";
+const demo = JSON.parse(read("worker/demo.json"));
+const registryOf = (sel, arg) => call(deployed.registry, sel + arg);
+/* Several steps move the same asset, so the count is of assets and not of steps. */
+const checkedAssets = new Set();
+for (const step of demo.steps.filter((x) => x.operation === "pledge")) {
+  const r = await receipt(SEPOLIA, step.tx);
+  const log = r?.logs?.find((l) => l.topics[0]?.toLowerCase() === PLEDGED_SIG);
+  if (!log) continue;
+  const token = "0x" + log.topics[1].slice(26);
+  const tokenId = BigInt(log.topics[2]);
+  const pad = (v) => v.toString(16).padStart(64, "0");
+  const assetKey = await registryOf("0xa5fa9d70", pad(1n) + pad(BigInt(token)) + pad(tokenId));
+  if (!assetKey) continue;
+  if (checkedAssets.has(assetKey)) continue;
+  const status = await registryOf("0x5de28ae0", assetKey.slice(2));
+  const state = Number(BigInt("0x" + status.slice(2, 66)));
+  if (state !== 1) continue;
+  checkedAssets.add(assetKey);
+  const owner = "0x" + (await (async () => {
+    for (const url of SEPOLIA) {
+      try {
+        const res = await fetch(url, {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method: "eth_call",
+            params: [{ to: token, data: "0x6352211e" + pad(tokenId) }, "latest"] }),
+        });
+        const { result } = await res.json();
+        if (result && result !== "0x") return result.slice(26);
+      } catch {}
+    }
+    return null;
+  })());
+  const borrower = "0x" + log.topics[3].slice(26);
+  if (owner.toLowerCase() !== borrower.toLowerCase()) {
+    findings.push(
+      `token ${token} #${tokenId} is on record as claimed,\n` +
+        `    but it is held by ${owner}, not by the borrower ${borrower}`,
+    );
+  }
+}
+console.log(
+  `  ${checkedAssets.size} asset${checkedAssets.size === 1 ? "" : "s"} on record as claimed, ` +
+    `each still in the borrower's own wallet`,
+);
+
 if (findings.length === 0) {
   console.log(`\nevery cited Creditcoin transaction and registry address is the live one`);
   process.exit(0);
