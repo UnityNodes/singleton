@@ -3,9 +3,15 @@
 BUIDL CTC 2026 Fall, Creditcoin. Submission deadline 2026-09-06.
 Track: RWA primary, DeFi secondary.
 
-This is the version to build from. It carries the three API corrections that
-came out of testing against live CC3, and it resolves the conflict between the
-anti-griefing binding and the collision demo.
+This is the version that was built from. It carries the three API corrections
+that came out of testing against live CC3, and it resolves the conflict between
+the anti-griefing binding and the collision demo.
+
+It is kept as the plan it was, and reviewed against the built system on
+2026-08-21. Where it described something that then changed, it says so in place
+rather than being quietly rewritten, because a plan edited to match the outcome
+stops being evidence of anything. What is running now is in
+[VERIFICATION.md](VERIFICATION.md), and the limits are in [CAVEATS.md](CAVEATS.md).
 
 ---
 
@@ -137,7 +143,11 @@ So:
 - double pledging is only possible when at least the second leg is
   non-custodial, which locates the product in non-custodial liens and mixed
   cases
-- the dual-log binding is an optional stronger mode for custodial emitters
+- the dual-log binding was to be an optional stronger mode for custodial
+  emitters, and **was not built**. Nothing in `src/` requires a `Transfer` in the
+  same receipt. It stayed unbuilt because the demonstration is non-custodial and
+  the mode only helps emitters that take the asset, which are the ones where
+  there is no collision to catch
 - the demonstration is non-custodial
 
 Custody prevents this fraud mechanically. Everywhere custody is absent the fraud
@@ -147,15 +157,26 @@ is live and unaddressed, and that is the market.
 
 Act 1, collision. Two independent lenders on Sepolia. The borrower pledges token
 42 to A, the proof lands, the decode is shown on screen, the key is recorded.
-The borrower pledges the same 42 to B, the proof lands, the same key derives, and
-`DoublePledge` reverts live.
+The borrower pledges the same 42 to B, the proof lands, the same key derives,
+and the registry refuses it live.
+
+That last clause said `DoublePledge` reverts, which is wrong twice over and is
+corrected here rather than deleted. An event cannot revert, and the refusal is
+`AssetNotFree(bytes32 assetKey, address incumbent)`. `DoublePledge` is emitted by
+`reportCollision`, the separate call that keeps the losing pledge on file,
+because a revert discards its own logs and the evidence would vanish with it.
 
 Act 2, lifecycle. SETTLEMENT proof, then RELEASE proof, then a legitimate
 re-pledge passes. Four proofs, one asset.
 
-Worth the extra effort: run it against a real third-party emitter, a public
-testnet lending protocol, not only our own mocks, with publicly checkable
-transaction hashes. That removes the staged-demo objection entirely.
+Worth the extra effort: run it against a real third-party emitter, not only our
+own mocks, with publicly checkable transaction hashes. That removes the staged
+demo objection entirely.
+
+Done, and further than planned. Rather than a testnet protocol, six of the
+fifteen proofs read real NFTfi v3 and Blur Blend loans on Ethereum mainnet,
+unmodified and unaware, including a lien that ended in a failed auction rather
+than a repayment.
 
 Close on the honesty slide: caveats out loud, invoices as roadmap.
 
@@ -173,8 +194,14 @@ W3. Record the two-act demo including a real third-party emitter, thin UI showin
 the key, the state and the revert in the explorer, one-pager with caveats at the
 front, scripted pitch.
 
-Out of scope and stated as vision: chains beyond Sepolia, e-invoice identifier
-piggyback, LEI and VAT resolution, fuzzy multi-key registry, batch pledges.
+Out of scope and stated as vision: e-invoice identifier piggyback, LEI and VAT
+resolution, fuzzy multi-key registry.
+
+Two items were on that list and then shipped. **Chains beyond Sepolia**: the
+registry reads Ethereum mainnet through the same code path, which is both chains
+Creditcoin attests rather than a subset. **Batch pledges**: `registerPledges`
+files many proofs against one continuity proof, measured on chain at 37.5 percent
+less gas for four.
 
 ## 10. Pitch, four pre-emptions
 

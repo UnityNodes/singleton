@@ -417,6 +417,58 @@ for (const rel of ["README.md", ...execSync("git ls-files 'docs/*.md' 'deck/*.md
 console.log(`  ${links} links between documents, each resolved to a file`);
 
 /*
+  Stage nine: the word offsets the web app decodes by.
+ 
+  The same file that writes selectors by hand also reads return values by word
+  index, and an index is even quieter than a selector when it is wrong: the call
+  succeeds, a word comes back, and the page renders a real number from the wrong
+  field. Adding one member to a struct is all it takes. `Record` and `Collision`
+  both gained one on 2026-08-20, and nothing but a person looking at a screen
+  said the offsets still lined up. The compiler knows the order, so it is asked.
+*/
+if (known.size > 0) {
+  const abi = JSON.parse(read("out/SingletonRegistry.sol/SingletonRegistry.json")).abi;
+  const layoutOf = (fn) => {
+    const e = abi.find((x) => x.name === fn && x.type === "function");
+    const flat = [];
+    for (const c of e?.outputs?.[0]?.components ?? []) {
+      if (c.components) for (const n of c.components) flat.push(`${c.name}.${n.name}`);
+      else flat.push(c.name);
+    }
+    return flat;
+  };
+  const text = read("web/src/lib/registry.ts");
+  let offsets = 0;
+  for (const [fn, varName] of [["getStatus", "status"], ["collisionAt", "c"]]) {
+    const layout = layoutOf(fn);
+    const re = new RegExp(`(\\w+):[^\n]*word\\(${varName}, (\\d+)\\)`, "g");
+    for (const m of text.matchAll(re)) {
+      const [, field, at] = m;
+      offsets++;
+      const actual = layout[Number(at)];
+      if (actual !== field) {
+        findings.push(
+          `web/src/lib/registry.ts reads ${field} from word ${at} of ${fn},\n` +
+            `    and the compiled layout has ${actual ?? "nothing"} there`,
+        );
+      }
+    }
+    const sec = new RegExp(`security: security\\(${varName}, (\\d+)\\)`).exec(text);
+    if (sec) {
+      offsets++;
+      const at = Number(sec[1]);
+      if (layout[at] !== "security.attestedTip") {
+        findings.push(
+          `web/src/lib/registry.ts reads the attestor block from word ${at} of ${fn},\n` +
+            `    and the compiled layout has ${layout[at] ?? "nothing"} there`,
+        );
+      }
+    }
+  }
+  console.log(`  ${offsets} decode offsets checked against the compiled struct layout`);
+}
+
+/*
   Stage eight: the claim itself.
  
   Everything above checks what the repository says. This checks what it is for.

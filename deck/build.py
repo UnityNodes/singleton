@@ -76,7 +76,8 @@ slide('''
   on Ethereum mainnet, unmodified and unaware. Nothing is deployed there and nothing is asked of them.</p></li>
   <li><b>BlockProver <code>0x0FD2</code></b><p>The precompile verifies the inclusion proof inside the
   accepting transaction, past a stated confirmation depth read from ChainInfo <code>0x0fD3</code>.
-  The registry checks the source receipt status itself, because the precompile does not.</p></li>
+  The registry checks the source receipt status itself, because the precompile does not, and reads from
+  AttestorStash <code>0x0FD4</code> how many bonded attestors that answer is worth.</p></li>
   <li><b>The register</b><p>First to file is recorded and given a soulbound certificate.
   Anything second reverts. A nullifier per operation makes each proof spendable once.</p></li>
 </ol>''')

@@ -539,6 +539,15 @@ that followed them would report two failures that are not failures, and a tool
 with false alarms in it is one people learn to ignore. Links to files in this
 repository have no such excuse and are resolved.
 
+**Nine, the word offsets the web app decodes by.** The file that writes
+selectors by hand also reads return values by word index, and a wrong index is
+quieter than a wrong selector: the call succeeds, a word comes back, and the page
+renders a real number from the wrong field. Adding one member to a struct is all
+it takes, and `Record` and `Collision` both gained one on 2026-08-20 with nothing
+but a person looking at a screen to say the offsets still lined up. Sixteen of
+them are now checked against the compiled struct layout, and a mutation that
+moves one field reports which field is really there.
+
 **Eight, the claim itself.** Every stage above checks what the repository says.
 This one checks what it is for. The whole argument is that a lien can be on
 record while the asset stays in the borrower's own wallet, and that is two calls
