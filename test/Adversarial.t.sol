@@ -148,6 +148,75 @@ contract AdversarialTest is SourceChain {
         vm.expectRevert(SingletonRegistry.NotAdmin.selector);
         registry.setAdapter(SEPOLIA, address(harbor), ATTACKER);
     }
+
+    /**
+     * A pile of refusals does not trap the asset under them.
+     *
+     * Releasing a lien deletes the refusals filed against it, and that array has
+     * no bound: anybody may keep reporting, each report needing a real pledge log
+     * on the source chain and a transaction here. If the cost of releasing grew
+     * faster than the cost of filing, a griefer could bury an asset under
+     * refusals nobody could afford to clear.
+     *
+     * Measured rather than assumed: 752 gas per refusal on release, flat and
+     * linear to two hundred with no bend where the refund cap would show one. At
+     * that rate a griefer needs tens of thousands of refusals to make a release
+     * unaffordable, each one costing them a source chain transaction and a
+     * transaction here, so the arithmetic runs against the griefer and not the
+     * borrower.
+     *
+     * Each refusal is one slot larger than it was before the attestor quorum was
+     * recorded with it, which is why this test exists at all: the change was
+     * cheap, and nothing would have said so if it had not been.
+     */
+    function test_refusalsPileUpWithoutMakingTheReleaseUnaffordable() public {
+        uint256 few = _releaseCostAfter(2);
+        uint256 many = _releaseCostAfter(42);
+
+        uint256 perRefusal = (many - few) / 40;
+        /*
+          752 as this is written. The bound is 900 rather than a round number
+          several times larger, because a loose bound is not a test: four extra
+          words per refusal takes it to 1,176, and a limit of 1,500 waved that
+          through when it was tried.
+        */
+        assertLt(perRefusal, 900, "clearing one refusal has to stay flat");
+        assertLt(many, few * 3, "and forty of them must not multiply the cost of the release");
+    }
+
+    function _releaseCostAfter(uint256 refusals) private returns (uint256 releaseGas) {
+        uint256 id = ++_griefId;
+        deed.mint(BORROWER, id);
+
+        vm.recordLogs();
+        vm.prank(BORROWER);
+        harbor.openLien(address(deed), id, 100 ether);
+        registry.registerPledge(_relay(_log(registry.PLEDGED_SIG())));
+
+        for (uint256 i; i < refusals; i++) {
+            vm.recordLogs();
+            vm.prank(BORROWER);
+            uint256 position = meridian.drawAgainst(address(deed), id, (i + 1) * 1 ether);
+            registry.reportCollision(_relay(_log(registry.PLEDGED_SIG())));
+            vm.prank(BORROWER);
+            meridian.repay(position);
+        }
+
+        vm.recordLogs();
+        vm.prank(BORROWER);
+        harbor.repayLien(address(deed), id);
+        registry.registerSettlement(_relay(_log(registry.SETTLED_SIG())));
+
+        vm.recordLogs();
+        harbor.dischargeLien(address(deed), id);
+        SingletonRegistry.Proof memory release = _relay(_log(registry.RELEASED_SIG()));
+
+        uint256 before = gasleft();
+        registry.registerRelease(release);
+        releaseGas = before - gasleft();
+    }
+
+    uint256 private _griefId = 900;
 }
 
 /// Emits the registry's event shape from a contract nobody allowlisted.

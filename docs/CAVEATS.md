@@ -75,6 +75,20 @@ limit. What softens it:
   That converts the mitigation into cryptographic prevention, at the cost of
   requiring the protocol to opt in
 
+**A related question, asked and measured rather than left open.** Refusals are
+unbounded: anybody may keep filing them against a live lien, and releasing that
+lien deletes them all in one transaction. If clearing them cost more than filing
+them, a griefer could bury an asset under refusals nobody could afford to lift.
+
+It does not. Clearing one costs 752 gas on release, flat and linear to two
+hundred filed with no bend, while filing one costs a source chain transaction
+and a transaction here. The arithmetic runs against the griefer. That number is
+now a test rather than a paragraph, in
+`test_refusalsPileUpWithoutMakingTheReleaseUnaffordable`, with a bound close
+enough to the measurement to notice a change: a first attempt at it used a limit
+several times larger and waved through a deliberate regression that made each
+refusal half again as dear.
+
 ## 6. Custody and collision are in tension
 
 Worth stating plainly, because it shapes what the product is for.

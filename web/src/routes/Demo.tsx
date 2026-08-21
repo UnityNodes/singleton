@@ -250,7 +250,7 @@ export default function Demo() {
               },
               {
                 k: "read the contracts",
-                v: "The registry, the adapters, 87 tests, and the caveats written before anybody had to ask for them.",
+                v: "The registry, the adapters, 88 tests, and the caveats written before anybody had to ask for them.",
                 href: "https://github.com/UnityNodes/singleton",
               },
             ].map((door) => {
