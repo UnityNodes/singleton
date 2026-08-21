@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 
@@ -42,7 +43,7 @@ const SITE = process.env.SITE ?? "https://singleton.unitynodes.com";
 /* The standing refusal on deed 43, on the registry the site currently reads. */
 const REFUSAL = "0x9f3c0067f084e0fb5a512d2ba6f8cc8c2e41c6ba371f7ae836c984a72e73297b";
 const EXPLORER = "https://creditcoin-testnet.blockscout.com/tx";
-const outDir = process.argv[2] ?? "/tmp/rec/out";
+const outDir = process.argv[2] ?? path.join(os.tmpdir(), "singleton-demo");
 
 const CAPTION_CSS = `
 #cap-bar {

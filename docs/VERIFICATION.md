@@ -479,6 +479,34 @@ majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
 
+## What a clone can do
+
+Two faults of the same shape had already been found by accident: `deck/build.py`
+imported its fonts from a module in `/tmp`, and `script/record-demo.mjs`
+imported a browser from a different project's `node_modules`. Both ran perfectly
+here and nowhere else, and nothing in the repository could tell, because
+everything that ran ran in a directory that already had what was missing.
+
+`./script/from-a-clone.sh` clones the repository into a temporary directory and
+runs the whole thing there. On 2026-08-21, from a clean clone with the submodule
+fetched: 87 tests pass, the deck builds, the audit passes all of its stages, the
+web app installs and builds from its lockfile, and `provision.mjs --check` reads
+the live chain and reports the configuration matching the plan. Nothing borrowed.
+
+**And the check had a hole, found by trying to fool it.** An absolute path was
+put back into `deck/build.py` on purpose, and every step still passed: a clone on
+the same machine as the original resolves a path into the original perfectly
+well. Cloning cannot see this class at all, which is exactly why the class
+survived twice.
+
+So the script reads the source before it clones. No tracked file may name a
+directory under `/root`, `/home`, `/Users` or `/tmp`, and the same mutation is
+now caught before the clone starts. One honest consequence: the recorder's output
+directory used to default to `/tmp/rec/out`, which was harmless and would have
+forced an exception into the rule. It derives the directory from `os.tmpdir()`
+now, so the rule needs no exceptions and nobody has to remember which ones were
+fine.
+
 ## Using the product rather than reading it
 
 Every stage of the audit reads. On 2026-08-21 the register was **used** instead,

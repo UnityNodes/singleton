@@ -111,6 +111,13 @@ run. What it found second was worse than a stale link: an unopenable citation
 under the words "checked rather than assumed", holding up a claim about Aave
 that turned out to be false. Caveat 6 carries the correction.
 
+`./script/from-a-clone.sh` answers the other half of that: it clones this
+repository into a temporary directory and runs the tests, the deck build, the
+audit, the web build and a live configuration read there, with nothing borrowed
+from the machine it was cloned on. It reads the source for absolute paths first,
+because a clone on the same machine still resolves them and that is how the same
+fault survived twice.
+
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
 readable on-chain inside the accepting transaction, and the whole Sepolia read
