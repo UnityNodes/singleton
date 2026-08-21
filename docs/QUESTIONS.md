@@ -224,12 +224,18 @@ hard problem. That is caveat 8, roadmap rather than projection. A submission
 claiming a trillion dollars was arriving would be easier to present and worse to
 trust.
 
-Where the shape does exist today is fungible collateral: Aave and Euler both
-leave it in the borrower's wallet and record the lien in a registry. Checked
-rather than assumed, in Aave's Sepolia borrow `0x7c82d123...` every transfer is
-inbound to the borrower. Their key is `(reserve, account)` and this registry is
-built on `(chainKey, token, tokenId)` for one unique asset, so reading them would
-need a different registry or a dishonest key. Named rather than bolted on.
+Where the shape does exist today is fungible collateral, and the honest version
+is narrower than the one this file gave until 2026-08-21. Aave does **not** leave
+the collateral in the borrower's wallet: supplying moves the underlying out and
+mints a receipt token back, which is on chain in
+`0x7cd6a3537c4d302bb3013ef631f9068dfb600058e1ad7890aaedad583e7950cf`. What is
+true is that the **borrow** moves nothing, in
+`0x1dcf21883efc829c745f29d6081b189c448737feaef086dfbb4f09917f53a68b`, and the
+lien is a registry entry rather than a per asset escrow. Their key is
+`(reserve, account)` and this registry is built on `(chainKey, token, tokenId)`
+for one unique asset, so reading them would need a different registry or a
+dishonest key. Named rather than bolted on. Caveat 6 carries the correction and
+how it was found.
 
 **"Who runs it, and who pays for it?"**
 
@@ -260,7 +266,7 @@ what has to stay free for the priority rule to work.
 
 **"Recording a number nobody checks is theatre."** It is checked. The same read
 that stores the count enforces a floor against it, and the floor has refused a
-real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0xaecd340d...`,
+real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0xe19625fe...`,
 status 0, on a verified contract so the error decodes. The register also exposes
 the count publicly, so a lending protocol reading it can apply a stricter
 standard than ours without asking us to change anything.

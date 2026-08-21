@@ -487,11 +487,32 @@ looks right in a browser, because it belongs to a registry the project no longer
 runs. Reading the page cannot catch that. Only something that knows which
 registry is current can.
 
-`node script/audit-claims.mjs` collects every 32 byte value this repository
-states, resolves each against Creditcoin, Sepolia and Ethereum, and fails if a
-Creditcoin transaction cited anywhere outside this file belongs to a registry
-that is not the live one. This file is exempt because naming superseded
-deployments is its job.
+`node script/audit-claims.mjs` runs four stages, each written after the previous
+one let something through. This file is exempt from all of them, because naming
+superseded deployments is its job.
+
+**One, full length hashes.** Every 32 byte value the repository states, resolved
+against Creditcoin, Sepolia and Ethereum. A Creditcoin transaction cited outside
+this file has to belong to the live registry.
+
+**Two, addresses that behave like a registry.** Not matched against a list of
+past deployments, which would need maintaining, but asked: any cited address
+that answers `admin()` and `minAttestors(uint64)` is a SingletonRegistry, and
+only one of those is live.
+
+**Three, the abbreviations.** Stages one and two match full length values, and
+the reference that survived longest was neither. It was an address shortened to
+eight characters on a slide, which no search for forty two characters finds. The
+values already resolved become a dictionary and every shortened reference is
+looked up in it. What resolves to nothing is listed rather than passed over,
+because an abbreviation nothing accounts for is exactly where the last one hid.
+
+**Four, the hand written selectors.** `web/src/lib/registry.ts` encodes calls as
+four bytes of hex by hand. A typo there does not fail to compile: it asks the
+chain a question no contract answers, and the page renders the empty answer as
+though the chain had given it. Each one is checked against `methodIdentifiers`
+in the compiled artifacts, which is where the compiler already wrote the right
+answer down.
 
 It was written after the audit, not before, and the first thing it did was fail:
 
@@ -508,12 +529,34 @@ registry three deployments old while the video showed a different one. All three
 now point at the current run, and the check runs before publishing rather than
 after somebody notices.
 
-One thing it found that was **not** a fault, and is worth keeping. Two Sepolia
-transactions this project cites return null from
+Stage three then found the one stage one could not: `0xaecd340d...` in
+`docs/QUESTIONS.md`, the `QuorumTooThin` refusal, still pointing at the registry
+replaced hours earlier. Eight characters, in a file the deck update did not
+touch.
+
+**And it found a sentence that was wrong rather than stale.** In the same pass,
+`0x7c82d123...` in `docs/CAVEATS.md` resolved to nothing: eight characters is
+not a transaction anybody can open, under a sentence that began "Checked rather
+than assumed". Checking it properly showed the claim it supported was also
+false. Aave v3 does **not** leave the collateral in the borrower's wallet;
+supplying moves the underlying out and mints a receipt token back, which is
+`0x7cd6a3537c4d302bb3013ef631f9068dfb600058e1ad7890aaedad583e7950cf` at Sepolia
+block 11,534,505. What is true is that the borrow moves nothing, which is
+`0x1dcf21883efc829c745f29d6081b189c448737feaef086dfbb4f09917f53a68b`. Caveat 6
+carries the corrected version and says which half was wrong.
+
+That is the finding worth generalising. An unopenable citation is not only a
+broken link, it is where an unchecked claim goes to look checked.
+
+Two things the audit reported that were **not** faults, and both are worth
+keeping. Two Sepolia transactions this project cites return null from
 `ethereum-sepolia-rpc.publicnode.com` and resolve normally from
-`sepolia.gateway.tenderly.co`. A single endpoint audit would have reported them
-as missing. `worker/config.mjs` already tries several endpoints in order for
-exactly this reason, and the audit does the same.
+`sepolia.gateway.tenderly.co`; a single endpoint audit would have called them
+missing, and `worker/config.mjs` already tries several in order for that reason.
+And four of the hand written selectors are named locally for what they do rather
+than for what they are called on chain, because ChainInfo is snake_case and
+AttestorStash is camelCase; the audit prints the mapping instead of failing on
+it.
 
 ## A real protocol, unmodified and unaware
 

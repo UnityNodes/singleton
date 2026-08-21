@@ -91,15 +91,35 @@ On chain, possession costs one transfer, so escrow is the default. We went
 looking for a live non-custodial lender to read, and what came back is worth
 writing down.
 
-For **fungible** collateral the shape exists and is busy. Aave v3 and Euler v2
-both leave the collateral in the borrower's own wallet and record the lien as a
-registry entry. Checked rather than assumed: in Aave's Sepolia borrow
-`0x7c82d123...`, both transfers are inbound to the borrower, the debt token
-minted and the borrowed USDC paid out, and the collateral never moves. But their
-lien is keyed by `(reserve, account)`, because a share of a pool has no token
-id, and the key this registry is built on is `(chainKey, token, tokenId)` for a
-single, unique asset. Reading Aave here would mean either a different registry
-or a dishonest key, so it is named rather than bolted on.
+For **fungible** collateral the shape exists and is busy, though not in the
+shape this file claimed until 2026-08-21.
+
+It used to say that Aave v3 and Euler v2 leave the collateral in the borrower's
+own wallet. That is false, and the transaction cited as proof of it could not be
+opened: eight hex characters is not a transaction anybody can look up. Both
+faults were found by `script/audit-claims.mjs` and the sentence was checked
+properly rather than repaired.
+
+What the chain says. In Aave v3 on Sepolia, supplying **moves the underlying
+out**. In `0x7cd6a3537c4d302bb3013ef631f9068dfb600058e1ad7890aaedad583e7950cf`,
+block 11,534,505, WETH leaves the supplier for the aToken contract
+`0x5b071b590a59395fe4025a0ccc1fcc931aac1830` and `aEthWETH` is minted back. The
+borrower ends up holding a receipt, not the asset. Euler v2 was not checked and
+no claim is made about it here.
+
+What is true is narrower and still the point. The **borrow** moves nothing: in
+`0x1dcf21883efc829c745f29d6081b189c448737feaef086dfbb4f09917f53a68b`, block
+11,534,036, both transfers are inbound to the borrower, a variable debt token
+minted from the zero address and the borrowed USDC paid out. The lien is a
+registry entry rather than a per asset escrow, and the borrower's claim stays
+fungible and composable. That is the property worth having, and it is not the
+same as the collateral staying put.
+
+Either way the key does not fit. Their lien is keyed by `(reserve, account)`,
+because a share of a pool has no token id, and this registry is built on
+`(chainKey, token, tokenId)` for a single unique asset. Reading Aave here would
+mean either a different registry or a dishonest key, so it is named rather than
+bolted on.
 
 For **unique** collateral, the market is not thin, it is empty, and it could not
 have been otherwise. Every mechanism for encumbering a token in place needs the
