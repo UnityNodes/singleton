@@ -302,7 +302,7 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
   found that, not reading the files the checks already knew about.
 */
 const prose = (rel) =>
-  rel.endsWith(".html")
+  rel.endsWith(".html") || rel.endsWith("build.py")
     ? read(rel)
         .replace(/<style[\s\S]*?<\/style>/g, "")
         .replace(/<[^>]+>/g, " ")
@@ -327,7 +327,7 @@ const counts = [
   { what: "tests", truth: Number(tests), re: /\b(\d+) tests\b/g,
     where: ["README.md", "deck/build.py", "web/src/routes/Demo.tsx", "deck/one-pager.html"] },
   { what: "proofs", truth: steps, re: /\b(\w+|\d+) (?:inclusion )?proofs\b/g,
-    where: ["README.md", "docs/DEMO.md", "docs/QUESTIONS.md", "deck/one-pager.html"],
+    where: ["README.md", "docs/DEMO.md", "docs/QUESTIONS.md", "deck/one-pager.html", "deck/build.py"],
     /* A count under ten is a part of the run, not the run. Only totals are checked. */
     skip: (n) => n === null || n < 10 },
   { what: "slides", truth: slides, re: /\b(\w+|\d+) slides\b/g, where: ["README.md"] },
@@ -368,6 +368,7 @@ if (seconds !== null) {
     { rel: "docs/DEMO.md", re: /^\| \d \| \d:\d\d to (\d:\d\d) \|/gm, what: "a last chapter ending" },
     { rel: "README.md", re: /\| The demo, (\d:\d\d) \|/, what: "a running time" },
     { rel: "deck/one-pager.html", re: /\/demo, (\d:\d\d), captioned/, what: "a running time" },
+    { rel: "deck/build.py", re: /\/demo, (\d:\d\d), captioned/, what: "a running time" },
   ];
   /*
     The site says the running time in words rather than digits, and said "ninety

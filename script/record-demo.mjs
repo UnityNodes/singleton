@@ -222,7 +222,7 @@ mark("6 quorum");
  */
 await page.goto(`${SITE}/register`, { waitUntil: "domcontentloaded", timeout: 60000 });
 await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
-await say("Settled, released, then the loser re-files legitimately. Four proofs.");
+await say("Settled, released, then the loser re-files legitimately. Five proofs, one asset.");
 await page.getByText("Demo deed #42").first().click();
 await page.getByText("Lien released, asset free again").first().waitFor({ timeout: 45000 });
 await page.evaluate(() => window.__scrollToText("history"));

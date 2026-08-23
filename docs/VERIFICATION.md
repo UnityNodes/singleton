@@ -481,31 +481,41 @@ notice it the hard way.
 
 ## Reading the submission the way it is received
 
-On 2026-08-21 the submission was walked in the order a judge meets it, looking
-at rendered pages and pages of PDF rather than at the files the checks already
-knew about. Four things were wrong, and none of the nine audit stages could have
-found any of them, because every stage read a file it had been pointed at.
+Done twice on 2026-08-21, and the second pass was the one that mattered: the
+first read the site, the second read the deck, the one pager and the video
+frame by frame against the product they describe. Six things were wrong. No
+audit stage could have found any of them, because every stage read a file it had
+been pointed at, and none had ever been pointed at these.
 
-**The first screen promised ninety seconds** for a video that runs 1:47. It is
-the first sentence on the site with a number in it, and the number was three
-weeks old.
+**The site promised ninety seconds** for a video that had grown past it.
 
-**The one pager was worse, and it is the artefact most likely to be read whole.**
-It said 12 inclusion proofs, 61 tests and a running time of 1:25, against 15, 88
-and 1:47. The 61 predates the batch work entirely. It survived because it states
-its numbers as markup, `<span class="big">61</span><p>tests`, so a pattern that
-expects the number beside the noun sees nothing, and because no check had ever
-opened that file.
+**The one pager and the closing slide of the deck carried the same three stale
+numbers**, 12 inclusion proofs, 61 tests and a running time of 1:25, against 15,
+88 and the real length. The 61 predates the batch work entirely. Both survived
+because they state numbers as markup, `<span class="big">61</span><p>tests`, so
+a pattern expecting the number beside the noun sees nothing, and because no check
+had opened either file.
 
-All four are corrected, and the counts stage now strips tags before matching and
-reads the one pager and both site routes as well. Put the shipped numbers back
-and it reports all three, which is the test that the fix is a fix.
+**Both claimed the adapter is eighty lines.** It is 106, 57 and 130 in the three
+that exist, so the figure understated the largest by fifty and did so in the
+project's own favour. `docs/CAVEATS.md` had the honest range the whole time.
+
+**And the video's own arithmetic disagreed with its own screen.** The lifecycle
+caption said "Four proofs" while the register behind it read "5 entries", each
+one a separate inclusion proof. A judge who counts the rows finds it in the one
+place where the lifecycle claim lands. The caption now says five, which is both
+correct and the stronger number.
+
+All six are corrected. The counts stage strips tags before matching and now reads
+the one pager, the deck source and both site routes; the site says its running
+time in words, so "ninety seconds" and "under two minutes" are parsed too. Put
+the shipped numbers back and every one is reported.
 
 The lesson is narrower than "check everything". Every stage was written after a
 specific failure and pointed at the files that had failed. A file that had never
-failed was never added, and stayed unread while it went stale. Looking at the
-work as it is received is the only thing that finds that, and it is not
-something a script can be asked to do on its own.
+failed was never added, and stayed unread while it went stale. The artefacts a
+judge actually receives had the worst drift in the repository, and looking at
+them is the only thing that finds that.
 
 ## What a clone can do
 

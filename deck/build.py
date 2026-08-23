@@ -189,8 +189,8 @@ slide('''
   <div><b>A positive record</b><p>An asset the register calls free is one nobody registered here, not one
   nobody pledged. Attestcoin proves a transaction happened, never that one did not.</p></div>
   <div><b>The adapter is trusted</b><p>The proof decides whether a log exists; the adapter decides what it
-  means. Bounded interpretation of a proven fact, in eighty lines of pure code, not unbounded trust in
-  existence.</p></div>
+  means. Bounded interpretation of a proven fact, in under a hundred and thirty lines of pure code each,
+  not unbounded trust in existence.</p></div>
   <div><b>The key is free here only</b><p><code>keccak(chainKey, token, tokenId)</code> names an on chain
   asset with no agreement between protocols. Off chain invoices are the larger market and the harder key.</p></div>
 </div>
@@ -204,14 +204,14 @@ argument and not a proof, which is why it sits on this slide.</p>''')
 slide('''
 <h2 class="display">Running, and checkable without asking us for anything.</h2>
 <div class="stats">
-  <div><span class="big">12</span><p>inclusion proofs on CC3 testnet, every hash published</p></div>
+  <div><span class="big">15</span><p>inclusion proofs on CC3 testnet, every hash published</p></div>
   <div><span class="big">2 / 2</span><p>attested source chains read, Sepolia and Ethereum mainnet</p></div>
-  <div><span class="big">61</span><p>tests, including both reviews kept as regressions</p></div>
+  <div><span class="big">88</span><p>tests, including both reviews kept as regressions</p></div>
   <div><span class="big">0</span><p>wallets, backends and indexers between the page and the chain</p></div>
 </div>
 <div class="chips wide">
   <span>singleton.unitynodes.com</span>
-  <span>/demo, 1:25, captioned</span>
+  <span>/demo, 1:54, captioned</span>
   <span>github.com/UnityNodes/singleton</span>
   <span>0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7</span>
 </div>''')
