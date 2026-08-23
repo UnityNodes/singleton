@@ -292,6 +292,22 @@ const WORDS = {
 };
 const numberOf = (t) => (/^\d+$/.test(t) ? Number(t) : WORDS[t.toLowerCase()] ?? null);
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
+
+/*
+  The one pager states its numbers as markup, `<span class="big">15</span><p>
+  inclusion proofs`, so a pattern expecting the number beside the noun sees
+  nothing there. It went out for weeks saying 12 proofs, 61 tests and a running
+  time of 1:25 while the repository held 15, 88 and 1:47, and every check here
+  passed the whole time because none of them opened it. Reading the artefact
+  found that, not reading the files the checks already knew about.
+*/
+const prose = (rel) =>
+  rel.endsWith(".html")
+    ? read(rel)
+        .replace(/<style[\s\S]*?<\/style>/g, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+    : read(rel);
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
 
 const tests = execSync("cat test/*.t.sol | grep -c 'function test_'", { cwd: root, encoding: "utf8" }).trim();
@@ -309,9 +325,9 @@ try {
 
 const counts = [
   { what: "tests", truth: Number(tests), re: /\b(\d+) tests\b/g,
-    where: ["README.md", "deck/build.py", "web/src/routes/Demo.tsx"] },
+    where: ["README.md", "deck/build.py", "web/src/routes/Demo.tsx", "deck/one-pager.html"] },
   { what: "proofs", truth: steps, re: /\b(\w+|\d+) (?:inclusion )?proofs\b/g,
-    where: ["README.md", "docs/DEMO.md", "docs/QUESTIONS.md"],
+    where: ["README.md", "docs/DEMO.md", "docs/QUESTIONS.md", "deck/one-pager.html"],
     /* A count under ten is a part of the run, not the run. Only totals are checked. */
     skip: (n) => n === null || n < 10 },
   { what: "slides", truth: slides, re: /\b(\w+|\d+) slides\b/g, where: ["README.md"] },
@@ -322,7 +338,7 @@ const counts = [
 let checkedCounts = 0;
 for (const c of counts) {
   for (const rel of c.where) {
-    const text = read(rel);
+    const text = prose(rel);
     const hits = [...text.matchAll(c.re)].map((m) => numberOf(m[1])).filter((n) => n !== null);
     const values = c.last ? hits.slice(-1) : hits;
     for (const n of values) {
@@ -351,7 +367,29 @@ if (seconds !== null) {
     { rel: "docs/DEMO.md", re: /^Total (\d:\d\d)\./m, what: "a total" },
     { rel: "docs/DEMO.md", re: /^\| \d \| \d:\d\d to (\d:\d\d) \|/gm, what: "a last chapter ending" },
     { rel: "README.md", re: /\| The demo, (\d:\d\d) \|/, what: "a running time" },
+    { rel: "deck/one-pager.html", re: /\/demo, (\d:\d\d), captioned/, what: "a running time" },
   ];
+  /*
+    The site says the running time in words rather than digits, and said "ninety
+    seconds" for a video that had grown to 1:47. Reading the pages found it; none
+    of the checks above could, because they only ever looked at two files.
+  */
+  const spoken = { "ninety seconds": 90, "two minutes": 120, "a minute": 60 };
+  for (const rel of ["web/src/routes/Landing.tsx", "web/src/routes/Demo.tsx"]) {
+    const text = read(rel);
+    for (const [phrase, claimed] of Object.entries(spoken)) {
+      if (!text.includes(phrase)) continue;
+      checkedCounts++;
+      const under = new RegExp(`under (a few )?${phrase.replace(/[a-z]+ /, "\\w+ ")}`).test(text)
+        || text.includes(`under ${phrase}`);
+      const ok = under ? seconds < claimed : Math.abs(seconds - claimed) <= 3;
+      if (!ok) {
+        findings.push(
+          `${rel} says the demo runs ${under ? "under " : ""}${phrase}, and the video is ${clock(seconds)}`,
+        );
+      }
+    }
+  }
   for (const t of totals) {
     const text = read(t.rel);
     const hits = t.re.global ? [...text.matchAll(t.re)].map((m) => m[1]) : [text.match(t.re)?.[1]];

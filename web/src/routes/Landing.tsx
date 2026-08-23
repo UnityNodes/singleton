@@ -165,7 +165,7 @@ export default function Landing() {
               to="/demo"
               className="rounded-sm border border-line-2 px-6 py-3 text-[14px] font-medium transition-colors hover:border-paper-3 hover:bg-surface"
             >
-              watch it in ninety seconds
+              watch it in under two minutes
             </Link>
           </div>
 

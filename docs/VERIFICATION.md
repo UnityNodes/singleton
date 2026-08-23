@@ -479,6 +479,34 @@ majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
 
+## Reading the submission the way it is received
+
+On 2026-08-21 the submission was walked in the order a judge meets it, looking
+at rendered pages and pages of PDF rather than at the files the checks already
+knew about. Four things were wrong, and none of the nine audit stages could have
+found any of them, because every stage read a file it had been pointed at.
+
+**The first screen promised ninety seconds** for a video that runs 1:47. It is
+the first sentence on the site with a number in it, and the number was three
+weeks old.
+
+**The one pager was worse, and it is the artefact most likely to be read whole.**
+It said 12 inclusion proofs, 61 tests and a running time of 1:25, against 15, 88
+and 1:47. The 61 predates the batch work entirely. It survived because it states
+its numbers as markup, `<span class="big">61</span><p>tests`, so a pattern that
+expects the number beside the noun sees nothing, and because no check had ever
+opened that file.
+
+All four are corrected, and the counts stage now strips tags before matching and
+reads the one pager and both site routes as well. Put the shipped numbers back
+and it reports all three, which is the test that the fix is a fix.
+
+The lesson is narrower than "check everything". Every stage was written after a
+specific failure and pointed at the files that had failed. A file that had never
+failed was never added, and stayed unread while it went stale. Looking at the
+work as it is received is the only thing that finds that, and it is not
+something a script can be asked to do on its own.
+
 ## What a clone can do
 
 Two faults of the same shape had already been found by accident: `deck/build.py`
