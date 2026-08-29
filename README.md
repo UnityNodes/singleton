@@ -200,6 +200,12 @@ run. What it found second was worse than a stale link: an unopenable citation
 under the words "checked rather than assumed", holding up a claim about Aave
 that turned out to be false. Caveat 6 carries the correction.
 
+`./script/before-judging.sh` is the one to run before submitting or presenting.
+It is read only and needs no key: the tests, the audit, the configuration on
+chain, the six links a judge opens, and the attestor margin behind the source
+chains. Nothing it checks lives in this repository, which is the point. The
+submission sits untouched for days and the world underneath it moves.
+
 `./script/from-a-clone.sh` answers the other half of that: it clones this
 repository into a temporary directory and runs the tests, the deck build, the
 audit, the web build and a live configuration read there, with nothing borrowed

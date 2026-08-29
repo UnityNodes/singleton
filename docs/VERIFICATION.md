@@ -480,6 +480,17 @@ majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
 
+## Before judging
+
+`./script/before-judging.sh` runs what can go stale while nobody is looking: the
+tests, the audit, the configuration on chain, the six links a judge opens, and
+the attestor margin behind both source chains. Read only, no key.
+
+It exists because none of the things it checks live in this repository. A public
+RPC that starts pruning, an attestor that deregisters, a web server that restarts
+into a bad state, a certificate that lapses: every one of those decides whether a
+judge sees the product or a spinner, and not one of them shows up in a diff.
+
 ## Six days later, the check said something we had written down wrongly
 
 Run on 2026-08-29 after a week of not touching it. Everything held: the attestor
