@@ -491,6 +491,13 @@ RPC that starts pruning, an attestor that deregisters, a web server that restart
 into a bad state, a certificate that lapses: every one of those decides whether a
 judge sees the product or a spinner, and not one of them shows up in a diff.
 
+Its first version checked status codes and was worthless. The site is a single
+page app, so a path nobody defined answers 200 with `index.html`, and pointing
+the whole script at a nonsense prefix passed every line. It reads content now:
+the routes for markup only the app serves, the two PDFs for `%PDF`, the video for
+its `ftyp` box. The same nonsense prefix reports three failures, which is the
+test that the check is a check.
+
 ## Six days later, the check said something we had written down wrongly
 
 Run on 2026-08-29 after a week of not touching it. Everything held: the attestor
