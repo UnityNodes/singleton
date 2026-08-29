@@ -223,22 +223,24 @@ fault survived twice.
 ```
 src/            registry and interfaces
   emitters/     the two Sepolia lenders and the demo RWA deed
-  adapters/     reference adapter for a foreign event schema
+  adapters/     NFTfi v3, Blur Blend, and a reference for a locked schema
   vendor/       EvmV1Decoder, vendored from @gluwa/usc-contracts
 worker/         off-chain relay: proofs, lifecycle, admin
-web/            the site: landing page and the register, React and Vite
+web/            the site: landing page, register and demo, React and Vite
+deck/           the pitch deck and the one pager, built to PDF
 gates/          the probes that cleared the technical unknowns
   src/          probe contracts, run inside a constructor via eth_call
   run/          scripts that execute them against live CC3
 test/           Foundry tests
-script/         deployment
+script/         deploy, publish, record the demo, and the checks that
+                hold this repository to what it says
 docs/           brief, verification log, caveats
 ```
 
 ## Honest limits
 
 Read [docs/CAVEATS.md](docs/CAVEATS.md) before reading anything else. The design
-has nine real limitations and none of them are hidden. The most important one:
+has thirteen real limitations and none of them are hidden. The most important one:
 this is a positive record and a priority rule, not prevention. Attestcoin proves
 that something happened. It cannot prove that something did not.
 

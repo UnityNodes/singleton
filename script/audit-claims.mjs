@@ -331,6 +331,14 @@ const counts = [
     /* A count under ten is a part of the run, not the run. Only totals are checked. */
     skip: (n) => n === null || n < 10 },
   { what: "slides", truth: slides, re: /\b(\w+|\d+) slides\b/g, where: ["README.md"] },
+  /*
+    The caveat count is the one number in this repository that only ever grows,
+    which is exactly why the prose about it goes stale without anyone noticing:
+    nothing breaks when a page still says nine and the file holds thirteen.
+  */
+  { what: "limitations", truth: (read("docs/CAVEATS.md").match(/^## \d+\./gm) ?? []).length,
+    re: /\b(\w+|\d+) (?:real )?limitations\b/g,
+    where: ["README.md", "docs/CAVEATS.md", "docs/QUESTIONS.md", "deck/build.py"] },
   { what: "chapters", truth: chapters, re: /^\| (\d) \| \d:\d\d to/gm, where: ["docs/DEMO.md"],
     last: true },
 ];
