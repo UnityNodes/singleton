@@ -5,6 +5,7 @@ import { ArrowRight, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   CFG,
+  GENESIS,
   COLLATERAL,
   ENTRY_WORDS,
   KNOWN_ASSETS,
@@ -107,6 +108,9 @@ export default function Register() {
   const [rail, setRail] = useState<RailAsset[] | null>(null);
   const [record, setRecord] = useState<Record_ | null>(null);
   const [logs, setLogs] = useState<RegistryLog[]>([]);
+  const [swept, setSwept] = useState<
+    { from: number; head: number; missed: number } | "reading" | "unreadable"
+  >("reading");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pane, setPane] = useState<"register" | "record">("record");
@@ -122,16 +126,31 @@ export default function Register() {
       setError(null);
       setPane("record");
       setForm({ chainId: String(chainId), token, tokenId });
+      setLogs([]);
+      setSwept("reading");
+      let next;
       try {
-        const next = await readAsset(chain, chainId, token, tokenId);
+        next = await readAsset(chain, chainId, token, tokenId);
         setRecord(next);
-        const { logs: found } = await readLogs([null, next.assetKey]);
-        setLogs(found);
       } catch (e) {
         setError((e as Error).message);
         setRecord(null);
+        return;
       } finally {
         setLoading(false);
+      }
+      /*
+        The state of the asset is four eth_calls and the history behind it is a
+        sweep of the register's whole life, which is an order of magnitude
+        slower. Holding the answer back until the trail is assembled would put
+        the reader in front of a spinner for the part they came for.
+      */
+      try {
+        const { logs: found, from, head, missed } = await readLogs([null, next.assetKey]);
+        setLogs(found);
+        setSwept({ from, head, missed });
+      } catch {
+        setSwept("unreadable");
       }
     },
     [chains],
@@ -675,9 +694,23 @@ export default function Register() {
               <span className="label shrink-0">history</span>
               <div className="h-px flex-1 bg-line" />
               <span className="label shrink-0">
-                {logs.length} {logs.length === 1 ? "entry" : "entries"}
+                {swept === "reading"
+                  ? "reading"
+                  : `${logs.length} ${logs.length === 1 ? "entry" : "entries"}`}
               </span>
             </div>
+
+            {typeof swept === "object" && (
+              <p className="mt-2 text-[12px] text-paper-2">
+                Swept blocks {swept.from.toLocaleString()} to {swept.head.toLocaleString()}
+                {GENESIS
+                  ? ", the whole life of this register"
+                  : ", a lookback rather than the whole register, because this address was named in the URL"}
+                {swept.missed > 0 &&
+                  `. ${swept.missed} ${swept.missed === 1 ? "window" : "windows"} went unanswered by the public node, so this table may be short`}
+                .
+              </p>
+            )}
 
             {logs.length ? (
               <table className="mt-3 w-full border-collapse text-[13px]">
@@ -733,6 +766,16 @@ export default function Register() {
                   })}
                 </tbody>
               </table>
+            ) : swept === "reading" ? (
+              <p className="mt-1 max-w-[70ch] text-[13px] text-paper-2">
+                Sweeping the register for this asset. The state above is already read; this is the
+                trail of proofs behind it.
+              </p>
+            ) : swept === "unreadable" ? (
+              <p className="mt-1 max-w-[70ch] text-[13px] text-paper-2">
+                The public node would not answer the log queries behind this table. That says nothing
+                about the record above, which is a direct call and is already read.
+              </p>
             ) : (
               <p className="mt-1 max-w-[70ch] text-[13px] text-paper-2">
                 No entry for this asset in the blocks this page swept, which is not the same as never

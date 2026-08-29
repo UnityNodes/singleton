@@ -563,6 +563,57 @@ console.log(
     `each still in the borrower's own wallet`,
 );
 
+/*
+  Stage ten: the block the register was born in.
+
+  The page sweeps logs down to this block rather than a fixed number back from
+  the head, so it is the one number that decides whether a judge sees the demo's
+  history or an empty table. A recorded block is only as good as its proof, so
+  it is not read back from the file that states it: the chain is asked whether
+  the address has code there and none in the block before, which is true of
+  exactly one block.
+*/
+const genesisSources = {
+  "worker/deployed.json": deployed.registryBlock,
+  "web/src/lib/registry.ts": Number(
+    read("web/src/lib/registry.ts").match(/genesis: ([\d_]+)/)?.[1].replaceAll("_", "") ??
+      NaN,
+  ),
+};
+
+const codeAt = async (block) => {
+  const r = await fetch(CC3, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0", id: ++id, method: "eth_getCode",
+      params: [deployed.registry, "0x" + block.toString(16)],
+    }),
+  });
+  const { result } = await r.json();
+  return result && result !== "0x";
+};
+
+const stated = new Set(Object.values(genesisSources));
+if (stated.size !== 1) {
+  findings.push(
+    `the register's first block is stated more than one way:\n` +
+      Object.entries(genesisSources).map(([f, b]) => `    ${b} in ${f}`).join("\n"),
+  );
+} else {
+  const block = [...stated][0];
+  const [here, before] = [await codeAt(block), await codeAt(block - 1)];
+  if (!here || before) {
+    findings.push(
+      `${deployed.registry} is recorded as created in block ${block},\n` +
+        `    but the chain says code ${here ? "is" : "is not"} there and ` +
+        `${before ? "was already there" : "was not there"} in ${block - 1}`,
+    );
+  } else {
+    console.log(`  the register was created in block ${block}, and the log sweep floors there`);
+  }
+}
+
 if (findings.length === 0) {
   console.log(`\nevery cited Creditcoin transaction and registry address is the live one`);
   process.exit(0);

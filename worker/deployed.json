@@ -2,6 +2,7 @@
   "registryNetwork": "cc3-testnet",
   "registryChainId": 102031,
   "registry": "0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7",
+  "registryBlock": 5344289,
   "sourceNetwork": "sepolia",
   "sourceChainId": 11155111,
   "sourceChainKey": 1,

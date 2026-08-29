@@ -8,14 +8,38 @@
 
 const params = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
 
+const DEPLOYED = "0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7";
+
 export const CFG = {
   rpc: params.get("rpc") ?? "https://rpc.cc3-testnet.creditcoin.network",
-  registry: params.get("registry") ?? "0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7",
+  registry: params.get("registry") ?? DEPLOYED,
   explorer: "https://creditcoin-testnet.blockscout.com",
   chainInfo: "0x0000000000000000000000000000000000000fD3",
   stash: "0x0000000000000000000000000000000000000fd4",
   prover: "0x0FD2",
 };
+
+/**
+ * How the register's logs are swept, in one object.
+ *
+ * `genesis` is the Creditcoin block the register was created in. A sweep needs a
+ * floor, and a fixed lookback is the wrong one: it is correct on the day it is
+ * written and silently blind afterwards, because the chain moves and the records
+ * do not. This floor cannot go stale, and `script/audit-claims.mjs` holds it to
+ * the chain by asserting the address has code here and none in the block before.
+ *
+ * The numbers live together in an object so that the built bundle still states
+ * them where a script can read them: property names survive minification, and a
+ * standalone constant does not. `script/history-still-visible.mjs` pulls these
+ * out of the JavaScript the site is actually serving and repeats the sweep,
+ * which is the only way to catch a floor that has gone blind. Every other check
+ * in this repository stayed green through three days of exactly that.
+ */
+export const SWEEP = { genesis: 5_344_289, size: 16_000, lanes: 4 };
+
+/// Null when the page was pointed at a register whose first block it cannot know.
+export const GENESIS: number | null =
+  CFG.registry.toLowerCase() === DEPLOYED.toLowerCase() ? SWEEP.genesis : null;
 
 export const SOURCES: Record<number, { name: string; explorer: string }> = {
   11155111: { name: "Sepolia", explorer: "https://sepolia.etherscan.io" },
@@ -257,40 +281,73 @@ export async function readAsset(
 
 /**
  * The public node abandons a log query it cannot answer inside ten seconds, so
- * the register is read in narrow windows at once. A window that fails costs its
- * own slice and nothing else, which is why this degrades to fewer entries
- * rather than to an error.
+ * the register is read in windows. A window that fails costs its own slice and
+ * nothing else, which is why this degrades to fewer entries rather than to an
+ * error, and why the count of slices that went unanswered comes back with the
+ * logs instead of being swallowed.
+ *
+ * The sweep runs down to the block the register was created in. It used to run
+ * a fixed eight windows back from the head, which was the whole of its life on
+ * the day that was written and, by the time a judge opened the page, twenty
+ * thousand blocks short of every record in it. The floor has to be attached to
+ * the register, not to the head, because only one of the two stands still.
+ *
+ * The width and the lane count are measured rather than guessed, and the
+ * measurement is counterintuitive: the node scans linearly and serves these
+ * queries more or less one at a time, so widening the window pays and widening
+ * the concurrency does not. Against this register, 13 slices of 4,000 across 4
+ * lanes took 20 seconds, 4 slices of 16,000 took 6, and 8 lanes lost 3 slices to
+ * timeouts while going slower than 4. A slice that does fail is retried once,
+ * split in half, because half the range is half the work the node timed out on.
  */
 export async function readLogs(
   topics: (string | null)[],
-  { windows = 8, size = 4000 } = {},
-): Promise<{ head: number; logs: RegistryLog[] }> {
+  { size = SWEEP.size, lanes = SWEEP.lanes, fallbackWindows = 2 } = {},
+): Promise<{ head: number; logs: RegistryLog[]; from: number; missed: number }> {
   const head = Number(big((await rpc<string>("eth_blockNumber", [])).slice(2).padStart(64, "0")));
-  const slices = Array.from({ length: windows }, (_, i) => {
-    const to = head - i * size;
-    return { from: Math.max(0, to - size + 1), to };
-  }).filter((w) => w.to >= 0);
+  const floor = Math.max(0, GENESIS ?? head - fallbackWindows * size);
 
-  const answers = await Promise.all(
-    slices.map(({ from, to }) =>
-      rpc<RegistryLog[]>("eth_getLogs", [
-        {
-          address: CFG.registry,
-          topics,
-          fromBlock: "0x" + from.toString(16),
-          toBlock: "0x" + to.toString(16),
-        },
-      ]).catch(() => [] as RegistryLog[]),
-    ),
-  );
+  const window = ({ from, to }: { from: number; to: number }) =>
+    rpc<RegistryLog[]>("eth_getLogs", [
+      {
+        address: CFG.registry,
+        topics,
+        fromBlock: "0x" + from.toString(16),
+        toBlock: "0x" + to.toString(16),
+      },
+    ]);
 
-  const logs = answers.flat().filter((l) => TOPIC[l.topics[0]]);
+  const slices = [];
+  for (let to = head; to >= floor; to -= size) {
+    slices.push({ from: Math.max(floor, to - size + 1), to });
+  }
+
+  const answers: (RegistryLog[] | null)[] = [];
+  for (let i = 0; i < slices.length; i += lanes) {
+    answers.push(
+      ...(await Promise.all(
+        slices.slice(i, i + lanes).map((slice) =>
+          window(slice).catch(async () => {
+            const mid = Math.floor((slice.from + slice.to) / 2);
+            const halves = await Promise.all([
+              window({ from: slice.from, to: mid }).catch(() => null),
+              window({ from: mid + 1, to: slice.to }).catch(() => null),
+            ]);
+            return halves.some((h) => h === null) ? null : halves.flat() as RegistryLog[];
+          }),
+        ),
+      )),
+    );
+  }
+
+  const missed = answers.filter((a) => a === null).length;
+  const logs = answers.flatMap((a) => a ?? []).filter((l) => TOPIC[l.topics[0]]);
   logs.sort(
     (a, b) =>
       Number(BigInt(b.blockNumber) - BigInt(a.blockNumber)) ||
       Number(BigInt(b.logIndex) - BigInt(a.logIndex)),
   );
-  return { head, logs };
+  return { head, logs, from: floor, missed };
 }
 
 export async function readState(assetKey: string) {

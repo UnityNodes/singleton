@@ -32,7 +32,7 @@ step () {
 }
 
 echo "the repository"
-step "88 or more tests pass"        bash -c 'forge test'
+step "the suite passes"             bash -c 'forge test'
 step "every claim resolves"         bash -c 'node script/audit-claims.mjs'
 
 echo "the chain"
@@ -55,6 +55,13 @@ step "$SITE/demo serves the app"      bash -c "$(declare -f served); served '$SI
 step "the deck is a PDF"              bash -c "$(declare -f served); served '$SITE/singleton-deck.pdf' '%PDF'"
 step "the one pager is a PDF"         bash -c "$(declare -f served); served '$SITE/singleton-one-pager.pdf' '%PDF'"
 step "the video is an mp4"            bash -c "$(declare -f served); served '$SITE/demo/singleton.mp4' 'ftyp'"
+
+# Serving the app is not the same as the app answering. The register's history
+# comes from a log sweep with a floor, and a floor goes blind quietly: the page
+# once spent three days rendering an empty trail for every asset while every
+# check above it stayed green. This one reads the bundle the site is serving and
+# repeats its sweep against the chain.
+step "the register still shows a trail" bash -c "SITE='$SITE' node script/history-still-visible.mjs"
 
 # The margin is not a pass or a fail, it is the number worth seeing before a
 # judging window. The floor refuses below itself and not at it, so a chain sitting
