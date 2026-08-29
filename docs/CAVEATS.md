@@ -375,3 +375,69 @@ that file changes the metadata hash embedded in the bytecode, so the deployed
 registry would no longer match the source in this repository. Tested rather than
 assumed. Correcting a comment there costs a redeploy, a fifteen proof replay and
 a re-recorded video, which buys no truth that this caveat does not already carry.
+
+## 12. Repaying a debt does not free the asset, and the borrower cannot free it
+
+A settled lien still blocks the asset. `_recordPledge` refuses anything that is
+not `FREE`, so `SETTLED` is as much of a block as `PLEDGED`, and only a proven
+release clears it. That much is deliberate: the source chain decides when a lien
+is over, not this registry, and
+`test_aSettledLienBlocksTheAssetWithoutAccusingTheNextBorrower` pins it.
+
+What is easy to miss is who holds the key to that release. Both demo lenders here
+separate repayment from discharge, and in both the discharge belongs to the
+lender: Harbor's `dischargeLien` is desk only, Meridian's `closePosition` is
+underwriter only. So a borrower who has repaid in full cannot produce the log
+that frees their own collateral, and neither can this registry, and neither can
+anybody else. A lender who stops operating leaves every asset it settled blocked
+for as long as the registry runs. `test_theBorrowerCannotFreeTheirOwnAssetAfterRepaying`
+is that case.
+
+Three things bound it, and none of them removes it.
+
+The two shipped mainnet adapters do not have this shape. `NftfiV3Adapter` maps
+`LOAN_REPAID` straight to a release and returns an empty signature list for the
+settlement step; `BlendAdapter` maps both `Repay` and `Seize` to a release. In a
+protocol where repayment is itself the closing event there is no second log to
+wait for, which is why those two are the ones read on mainnet.
+
+The block is on the asset, not on the borrower, and it is visible. A lender
+looking at a `SETTLED` record can see the debt was repaid and who owes the
+discharge, which is a different negotiation from a lien nobody can account for.
+
+And this is an argument for the roadmap item already named in caveat 5: an
+owner-signed consent carried in the pledge would let the same signature schema
+carry a release. It is named as a direction, not claimed as built.
+
+## 13. A batch can be griefed by spending one of its members first
+
+`registerPledges` is all or nothing, and the reason is in the contract: partial
+success would leave a relayer unable to answer "did my pledge land" from the
+transaction alone. The cost of that choice is a denial of service that needs no
+capital.
+
+Nullifiers key on the source event, `keccak256(domain, chainKey, height, txIndex,
+logIndex)`, and carry no `msg.sender`. `registerPledge` is permissionless. So
+anybody watching the mempool, which on the default RPC for this project answers
+`txpool_content` in the clear, can take one member out of a pending batch,
+file it alone, and the batch then reverts `ProofAlreadyConsumed` for every member.
+`test_aProofCannotBeSpentAloneAndThenInABatch` is that sequence.
+
+The victim pays more than gas for a refused transaction. The quorum read and the
+whole batch `verify` are paid before the loop that discovers the collision, which
+on a four item batch is most of the 989,237 gas measured in
+[VERIFICATION.md](VERIFICATION.md).
+
+The griefer's own filing is real and it lands, which is what makes this cheap:
+the pledge is recorded to the emitter named in the source event, not to
+`msg.sender`, so a griefer spends one CC3 transaction and files somebody else's
+pledge for them. Nothing is stolen. The registry's state ends up correct for that
+one member and wrong for the relayer's expectations about the other three, which
+is precisely the ambiguity the all-or-nothing rule was argued to prevent: a
+revert now means either nothing landed, or one thing landed inside a stranger's
+transaction.
+
+What bounds it: the loss is bounded by gas, is repairable by refiling the
+remaining members, and cannot produce a false record, because the griefer can
+only replay a proof that was already valid. What would remove it is binding the
+nullifier or the batch to a submitter, which costs a redeploy and is not built.

@@ -227,6 +227,64 @@ contract LienModelTest is SourceChain {
      * emitter is then limited to a single open lien across the whole registry:
      * every further pledge it makes is refused as an instance already open.
      */
+    /**
+     * Who holds the key to the exit, in the schema both demo lenders use.
+     *
+     * A settled lien still blocks the asset, which is pinned above. What is not
+     * obvious is who can unblock it. Both emitters here separate repayment from
+     * discharge, and in both the discharge is the lender's to give: Harbor's
+     * `dischargeLien` is desk only and Meridian's `closePosition` is underwriter
+     * only. A borrower who has repaid in full cannot produce the log that frees
+     * their own asset, and neither can the registry. That is not a bug in the
+     * registry, which is reading a chain and cannot be more available than what
+     * it reads, but it is the shape of the risk, and it is the reason the two
+     * shipped mainnet adapters map repayment itself to a release rather than
+     * waiting for a second event that may never come.
+     */
+    function test_theBorrowerCannotFreeTheirOwnAssetAfterRepaying() public {
+        registry.registerPledge(_meridianPledge(750 ether));
+
+        vm.recordLogs();
+        vm.prank(BORROWER);
+        meridian.repay(0);
+        registry.registerSettlement(_relay(_log(registry.SETTLED_SIG())));
+
+        assertEq(
+            uint8(registry.getStatus(assetKey).state),
+            uint8(SingletonRegistry.AssetState.SETTLED),
+            "repaid in full, and still not free"
+        );
+
+        vm.expectRevert();
+        vm.prank(BORROWER);
+        meridian.closePosition(0);
+
+        vm.recordLogs();
+        meridian.closePosition(0);
+        registry.registerRelease(_relay(_log(registry.RELEASED_SIG())));
+
+        assertEq(
+            uint8(registry.getStatus(assetKey).state),
+            uint8(SingletonRegistry.AssetState.FREE),
+            "only the underwriter could produce the log that frees it"
+        );
+
+        registry.registerPledge(_harborPledge(1000 ether));
+        registry.registerSettlement(_harborSettle());
+
+        vm.expectRevert(HarborCredit.NotDesk.selector);
+        vm.prank(BORROWER);
+        harbor.dischargeLien(address(deed), TOKEN_ID);
+
+        registry.registerRelease(_harborRelease());
+
+        assertEq(
+            uint8(registry.getStatus(assetKey).state),
+            uint8(SingletonRegistry.AssetState.FREE),
+            "the other lender's desk held the same key"
+        );
+    }
+
     function test_anEmitterWhoseInstanceIdRepeatsCanHoldOnlyOneLienAtATime() public {
         FlatInstanceAdapter flat = new FlatInstanceAdapter();
         registry.setAdapter(SEPOLIA, address(atlas), address(flat));

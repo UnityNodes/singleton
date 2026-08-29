@@ -304,6 +304,54 @@ standing, never whether it is truthful. If the set is compromised rather than
 merely small, the count reads high and the proofs are worthless, and nothing a
 contract on this chain can read would say otherwise.
 
+## What a second hostile panel asked, 2026-08-29
+
+Five personas, thirty-nine questions, every answer then checked by an agent told
+to refute it. The finding that mattered has its own caveat. These four had no
+answer written anywhere, and the honest ones are short.
+
+**"What happens to an attestor who signs a false header?"** Nothing this project
+can point at. `AttestorStash` exposes a minimum bond requirement, and the word
+"slash" does not appear anywhere in this repository or in anything found on the
+chain about that pallet. So the bond is a cost of entry and a sybil price, not a
+stake at risk, and the floor in this registry counts how many are standing rather
+than how much any of them would lose by lying. Caveat 10 already said the floor
+measures security standing and never honesty; this is the same limit stated at
+the level of one attestor. A registry that wanted a real economic guarantee here
+would have to name the slashing condition it depends on, and there is none to
+name.
+
+**"The admin is one EOA and there is no way to rotate it."** True, and stronger
+than a grep: the deployed runtime at `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7`
+contains no `setAdmin`, `transferAdmin`, `acceptAdmin`, `transferOwnership` or
+`renounceOwnership` selector, so rotation is impossible on this instance rather
+than merely unwritten. What that does and does not mean is worth being precise
+about, because the tempting concession is wrong. Every write path is
+permissionless: pledges, batches, collisions, settlements and releases carry no
+`onlyAdmin`. Both live chains are already configured. So a lost key freezes
+configuration, not the register: no new emitter, no new chain, no change of depth
+or floor, while filings and reads carry on. A **compromised** key is the serious
+case, and caveat 9 is where it lives, because the adapter is the reach that
+matters, not the setters.
+
+**"Who consumes this on-chain?"** Nobody, today, and the design says so out loud:
+the two demo lenders agree only on the shape of the log they emit, and neither
+imports the registry. `getStatus` is called by tests, by the relay in Node and by
+the web page in the browser, and by no contract in `src/`. That is the honest
+state of a first-to-file register whose first job is to be readable. The demo is
+built around the gap rather than around hiding it: Meridian's second draw
+completes on the source chain and is refused here, which is exactly what "nobody
+checks before lending" looks like.
+
+**"Where do junior liens go?"** Nowhere. `_recordPledge` refuses anything that is
+not `FREE`, on one shared write path, so the model is one asset one lien and a
+second claim is a collision by construction. The words senior, junior,
+subordinated and intercreditor appear nowhere in this repository, which is
+accurate rather than an oversight: ranked claims need a priority ordering and a
+consent rule, and this register has neither. Filing order is recorded, so the
+data a ranking would need is there, but nothing reads it that way and no document
+should suggest otherwise.
+
 ## What this changed in the pitch
 
 - The unused-surface question needed a document, not a sentence. It got one.
