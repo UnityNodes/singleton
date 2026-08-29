@@ -60,8 +60,21 @@ auction rather than a repayment. Fifteen proofs, every hash in
 | Registry, CC3 testnet | `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
-| Demo asset | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64` token 42 |
+| Demo assets | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64`, token 43 claimed with a refusal on file, token 42 through its whole life |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
+
+**A record is only as good as the quorum that attested it, so the quorum is part
+of the record.** Creditcoin bonds seven attestors for Sepolia and four for
+Ethereum, a hundred CTC each, and those numbers move: read at historical
+heights, Sepolia went 0 to 1 to 6 to 7 between 2026-05-01 and 2026-07-09, and
+Ethereum went 0 to 1 to 3 to 4, having appeared on the supported chain list a
+month before a single attestor was bonded for it. Every bridge and oracle
+shipped so far stores a record made under seven the same way as one made under
+two. This registry reads the count and the bond inside the transaction that
+accepts a proof, keeps both with the lien and with every refusal, emits them in a
+log that outlives the record itself, and refuses to file anything at all once the
+set has fallen below a stated floor. The floor gates entry and never exit, so no
+attestor rotation can strand an asset already on file.
 
 Many pledges can be filed from one continuity proof. Measured on chain, not
 estimated: four pledges filed one at a time cost 1,582,616 gas, and the same four
@@ -84,39 +97,6 @@ found on 2026-08-19 and the regressions that keep them closed. The registry and 
 adapters are verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
 hex.
-
-**A record is only as good as the quorum that attested it, so the quorum is part
-of the record.** Creditcoin bonds seven attestors for Sepolia and four for
-Ethereum, a hundred CTC each, and those numbers move: read at historical
-heights, Sepolia went 0 to 1 to 6 to 7 between 2026-05-01 and 2026-07-09, and
-Ethereum went 0 to 1 to 3 to 4, having appeared on the supported chain list a
-month before a single attestor was bonded for it. Every bridge and oracle
-shipped so far stores a record made under seven the same way as one made under
-two. This registry reads the count and the bond inside the transaction that
-accepts a proof, keeps both with the lien and with every refusal, emits them in a
-log that outlives the record itself, and refuses to file anything at all once the
-set has fallen below a stated floor. The floor gates entry and never exit, so no
-attestor rotation can strand an asset already on file.
-
-Every hash, address and hand written selector this repository states is checked
-by `node script/audit-claims.mjs`: transactions resolved against three chains,
-addresses asked whether they behave like a registry, abbreviations looked up in
-what the first two stages resolved, and the four byte selectors in the web app
-matched against the compiler's own `methodIdentifiers`, the counts that drift
-recomputed from the repository, the tests the prose names looked for in `test/`,
-and the claim itself settled with two calls: the registry says claimed, and the
-collateral contract says the borrower still holds it. It was written after the
-third redeploy produced the same stale reference, and it failed on its first
-run. What it found second was worse than a stale link: an unopenable citation
-under the words "checked rather than assumed", holding up a claim about Aave
-that turned out to be false. Caveat 6 carries the correction.
-
-`./script/from-a-clone.sh` answers the other half of that: it clones this
-repository into a temporary directory and runs the tests, the deck build, the
-audit, the web build and a live configuration read there, with nothing borrowed
-from the machine it was cloned on. It reads the source for absolute paths first,
-because a clone on the same machine still resolves them and that is how the same
-fault survived twice.
 
 Three technical gates were cleared against the live chain before any of it was
 built: a custom multi-field event decodes byte for byte, the attested tip is
@@ -199,6 +179,33 @@ both are proven.
 
 Nothing was deployed on mainnet and nothing was asked of either protocol.
 Creditcoin attests Ethereum, so an existing loan can simply be read.
+
+---
+
+## How this is kept honest
+
+The claims in this repository are checked by machine, and each check exists
+because the failure it looks for already happened once.
+
+Every hash, address and hand written selector this repository states is checked
+by `node script/audit-claims.mjs`: transactions resolved against three chains,
+addresses asked whether they behave like a registry, abbreviations looked up in
+what the first two stages resolved, and the four byte selectors in the web app
+matched against the compiler's own `methodIdentifiers`, the counts that drift
+recomputed from the repository, the tests the prose names looked for in `test/`,
+and the claim itself settled with two calls: the registry says claimed, and the
+collateral contract says the borrower still holds it. It was written after the
+third redeploy produced the same stale reference, and it failed on its first
+run. What it found second was worse than a stale link: an unopenable citation
+under the words "checked rather than assumed", holding up a claim about Aave
+that turned out to be false. Caveat 6 carries the correction.
+
+`./script/from-a-clone.sh` answers the other half of that: it clones this
+repository into a temporary directory and runs the tests, the deck build, the
+audit, the web build and a live configuration read there, with nothing borrowed
+from the machine it was cloned on. It reads the source for absolute paths first,
+because a clone on the same machine still resolves them and that is how the same
+fault survived twice.
 
 ---
 
