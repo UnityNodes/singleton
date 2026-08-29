@@ -193,7 +193,16 @@ console.log(
   over, because an abbreviation nothing accounts for is exactly where the last
   one hid.
 */
-const SHORT_EXEMPT = new Set([...ADDRESS_EXEMPT, "script/audit-claims.mjs"]);
+/*
+  Keeping a superseded address and abbreviating one are different faults, and
+  they used to share an exemption. docs/VERIFICATION.md is a history, so a stale
+  address in it is the point; an eight character prefix in it is not, and 28 of
+  them sat there under a rule this project states in CAVEATS.md caveat 6 as
+  "eight hex characters is not a transaction anybody can look up". Only the file
+  that names the rule and this file, which has to quote prefixes to test for
+  them, are exempt now.
+*/
+const SHORT_EXEMPT = new Set(["worker/deployed.json", "docs/CAVEATS.md", "script/audit-claims.mjs"]);
 
 const unknown = [];
 for (const rel of files) {
@@ -215,6 +224,23 @@ for (const rel of files) {
           `    which belongs to a registry that is no longer live`,
       );
     }
+  }
+}
+
+/*
+  The rule CAVEATS caveat 6 states, enforced where it was being broken. An
+  ellipsis after a hex prefix is what marks it as a truncated identifier rather
+  than a four byte selector, and a truncated identifier is not something a reader
+  can look up. Twenty eight of them sat in the verification log, which is the one
+  document whose whole job is to be checkable.
+*/
+for (const rel of files) {
+  if (SHORT_EXEMPT.has(rel) || !rel.endsWith(".md")) continue;
+  const text = fs.readFileSync(path.join(root, rel), "utf8");
+  for (const m of text.matchAll(/0x[0-9a-fA-F]{4,63}(?:\.\.\.|\u2026)/g)) {
+    findings.push(
+      `${m[0]} in ${rel}\n    is a truncated identifier, which caveat 6 says nobody can look up`,
+    );
   }
 }
 

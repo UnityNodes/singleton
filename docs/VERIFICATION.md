@@ -19,20 +19,28 @@ a custom event with several indexed arguments and several non-indexed words. Doe
 precompile. No deployment, no funds. The constructor returns its results in place
 of runtime code.
 
-**Input.** A real Ethereum mainnet transaction, block 25,775,287, carrying a real
-non-`Transfer` event: topic0 `0x9a853a2b...`, emitter `0x5C328f3B...`, three
-topics (two indexed arguments) and 224 bytes of data (seven non-indexed words).
+**Input.** A real Ethereum mainnet transaction carrying a real non-`Transfer`
+event. The probe hunts for one rather than pinning a hash, so the run below is
+from 2026-08-29 and a rerun today will name a different transaction. Its
+`GATE: PASS` line is the assertion; the identifiers are what that run happened to
+land on.
+
+Transaction `0x5b9d22c64b2b918d9674cb0272409065985902ffdbad2f20d24b911701cc8bad`,
+block 25,862,369: a Uniswap v3 `Swap`, topic0
+`0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67`, emitter
+`0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640`, three topics (two indexed
+arguments) and 160 bytes of data (five non-indexed words).
 
 **Result.**
 
 ```
 BlockProver verified        true
 receiptStatus               1        (live RPC: 1)
-total logs in receipt       11       (live RPC: 11)
+total logs in receipt       3        (live RPC: 3)
 getLogsByEventSignature     1 match by signature
 emitter                     matched live RPC exactly
 topic[0..2]                 all three matched byte for byte
-data                        224 bytes, identical to live RPC
+data                        160 bytes, identical to live RPC
 ```
 
 **Verdict.** PASS. The kill branch in the brief is not needed.
@@ -232,12 +240,12 @@ deployed registry, because a proof is spendable once per operation.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0x2e43d060...` | 405,286 |
-| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0x68505d90...` | reverted |
-| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0x57bcddfa...` | 406,462 |
-| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0x982f67a7...` | 409,598 |
-| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0xf4839908...` | 432,670 |
-| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0xf079c988...` | 404,838 |
+| 1. Harbor lends against deed 42 | `Pledged`, block 11,510,076 | PLEDGED, certificate to Harbor, `0x2e43d060033bd4ae6919a4c14a7a15d7a05fe1c229530941fb7d2d597a45c56b` | 405,286 |
+| 2. Meridian lends against the same deed | `Pledged`, block 11,510,077 | refused live with `AssetNotFree`, failed transaction `0x68505d902d3e807a344cbed340d6deaa14e1f4bf2ece9270997000a98bb0de76` | reverted |
+| 3. The refusal is kept | same log, `reportCollision` | recorded against the asset, `0x57bcddfa786e0adc19bfcb15d198932e557e917e5d1c9c58159916435f80aba8` | 406,462 |
+| 4. Harbor is repaid | `Settled`, block 11,513,436 | SETTLED, `0x982f67a7920d68e6b2ccfd1b94cc763899f514b190afc9a25b20753ced6a9f4a` | 409,598 |
+| 5. Harbor discharges the lien | `Released`, block 11,513,437 | FREE, certificate burned, `0xf483990830adfbcaa310d1168a15dc6733776a4208be7a2e9068e0b61b05b67e` | 432,670 |
+| 6. Meridian re-files the same lien | the step 2 log again | PLEDGED by Meridian, `0xf079c988446d0f1a230b44c53a6887484ec1c9bdb41fab371e01a11c648819ba` | 404,838 |
 
 Deed 42 ends held by Meridian with no refusals on file, which is the point of
 the fix rather than a gap: the refusal belonged to Harbor's lien and went with
@@ -245,9 +253,9 @@ it. A second asset carries the standing case.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 7. Harbor lends 1,200 against deed 43 | `Pledged`, block 11,528,165 | PLEDGED, `0x14a445f8...` | 409,318 |
-| 8. Meridian lends against deed 43 | `Pledged`, block 11,528,166 | refused live, failed transaction `0xe6b94874...` | reverted |
-| 9. The refusal is kept | same log, `reportCollision` | on file and staying there, `0x5a1dacba...` | 411,390 |
+| 7. Harbor lends 1,200 against deed 43 | `Pledged`, block 11,528,165 | PLEDGED, `0x14a445f857bbb368923d7777b41f503aeeefe3480bbc402cf9143407ed55e6a1` | 409,318 |
+| 8. Meridian lends against deed 43 | `Pledged`, block 11,528,166 | refused live, failed transaction `0xe6b94874151481ab7f52c0d73662028104358de9434a5c21eee4115803cb3eda` | reverted |
+| 9. The refusal is kept | same log, `reportCollision` | on file and staying there, `0x5a1dacbabe03c8aa98e20e367c8e2516853909c62b4604ed8238e1154e70ec94` | 411,390 |
 
 This lien is never released, so the refusal against it never expires. That is
 the state the register opens on, and the one a judge can click into.
@@ -269,12 +277,12 @@ burned in step 5, issued to Meridian in step 6.
 
 | Step | Source event | Result on CC3 | Gas |
 |---|---|---|---|
-| 10. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0xd6f376dd...` | 602,518 |
-| 11. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0x6c7f48ec...` | 466,774 |
-| 12. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x1101d9aa...` | 454,216 |
-| 13. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0x9dec6792...` | 442,120 |
-| 14. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0x0d6d8c0a...` | 443,464 |
-| 15. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x2201a81d...` | 468,552 |
+| 10. NFTfi loan 16928 taken | `LoanStarted`, block 25,506,517 | PLEDGED, `0xd6f376dd4e71206cbf50c3abcf966f54204d0497f5dd3707ba784c0f172f4e95` | 602,518 |
+| 11. The same loan repaid | `LoanRepaid`, block 25,717,460 | FREE, `0x6c7f48ec6b14e922b66ad280f890040df103ace8220abfdd8de8d199de039f8f` | 466,774 |
+| 12. Blend lien 435829 taken | `LoanOfferTaken`, block 25,711,377 | PLEDGED, `0x1101d9aa983c1bfce1429d0e19714c14b76a726a59c2d2461208dd07dd15809b` | 454,216 |
+| 13. The same lien repaid | `Repay`, block 25,721,378 | FREE, `0x9dec679284568aa04b8114678bd6b2dc8e517d11a3c547392747e7a1b229550d` | 442,120 |
+| 14. Blend lien 438956 taken | `LoanOfferTaken`, block 25,550,390 | PLEDGED, `0x0d6d8c0a3dcdf9af8ff72c4db605095d7189afe50898b6826aafee68fa338e67` | 443,464 |
+| 15. That lien seized after a failed auction | `Seize`, block 25,651,509 | FREE, `0x2201a81dba74b3593140eb07f5524e662de411ce745d8863a4438953ce5c91b0` | 468,552 |
 
 Steps 14 and 15 exist because a lien ends in more than one way. Blend closes one
 with `Repay` when the borrower pays and with `Seize` when the auction fails and
@@ -289,7 +297,7 @@ four filed together, against the same registry with the same adapters.
 | | Gas |
 |---|---|
 | Four pledges, one transaction each | 397,222 + 395,878 + 394,982 + 394,534 = **1,582,616** |
-| The same four as one batch, `0x94f2484e...` | **989,237** |
+| The same four as one batch, `0x94f2484ead075b54521aed92a88c6f4d802518fa700ef53ea5dc6e6185bdc321` | **989,237** |
 | Saved | **593,379, or 37.5 percent** |
 
 Per pledge that is 395,654 alone against 247,309 batched.
@@ -332,9 +340,9 @@ how much code they carry:
 | Target | Code size | Gas |
 |---|---|---|
 | An account with no code | 0 | 22,318 |
-| Registry before the quorum, `0x4E75FA6b...` | 12,772 | 189,996 |
-| Registry with the quorum, second shape, `0x65F561a7...` | 14,287 | 210,827 |
-| Registry with the quorum, first shape, `0xF7C08bAE...` | 14,747 | 217,442 |
+| Registry before the quorum, `0x4e75fa6b0e83885a789938ad5b3512b08ad62b33` | 12,772 | 189,996 |
+| Registry with the quorum, second shape, `0x65f561a73451e878327cf3775dc21ca9cbef72e8` | 14,287 | 210,827 |
+| Registry with the quorum, first shape, `0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4` | 14,747 | 217,442 |
 
 Subtract the no-code baseline and divide by size: 13.13, 13.19 and 13.23 gas per
 byte. The three agree to within one percent, and `minConfirmations(uint64)`
@@ -452,7 +460,7 @@ rather than an argument for it.
 
 The public node prunes state below CC3 block **4,704,777**, dated
 2026-05-01. Below that, calls return empty; the decoder library at
-`0x731c345d...` reads back its 9,598 bytes at 4,728,443, which is how the
+`0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f` reads back its 9,598 bytes at 4,728,443, which is how the
 horizon was told apart from a precompile that was not there yet.
 
 | Chain key | Block | Date | `getAttestorsCount` |
@@ -511,7 +519,7 @@ submission leads with they differ:
 | NFTfi loan 16928, source | Ethereum block 25,506,517 |
 | First CC3 block whose attested tip covers it | 5,110,417, where `getAttestorsCount(3)` is **3** |
 | Earliest block satisfying the 64 confirmation rule | about 5,110,478, still **3** |
-| What the record stored | **4**, in the log of `0x0b54c68f...` |
+| What the record stored | **4**, in the log of `0x0b54c68f65649096bb124eed889f728f68ae6affcb70e101de9d7807253145a1` |
 | The tip it recorded | 25,798,240, which is 291,723 Ethereum blocks above the source |
 
 Five plausible height-taking selectors on `AttestorStash` were tried and all five
@@ -830,9 +838,9 @@ It was written after the audit, not before, and the first thing it did was fail:
 
 ```
 3 stale references:
-  0x68505d90...  cited in: web/src/routes/Demo.tsx
-  0x14a445f8...  cited in: web/src/routes/Landing.tsx
-  0xe6b94874...  cited in: web/src/routes/Landing.tsx
+  0x68505d902d3e807a344cbed340d6deaa14e1f4bf2ece9270997000a98bb0de76  cited in: web/src/routes/Demo.tsx
+  0x14a445f857bbb368923d7777b41f503aeeefe3480bbc402cf9143407ed55e6a1  cited in: web/src/routes/Landing.tsx
+  0xe6b94874151481ab7f52c0d73662028104358de9434a5c21eee4115803cb3eda  cited in: web/src/routes/Landing.tsx
 ```
 
 The first is worse than the other two. `web/src/routes/Demo.tsx` offered it under
@@ -841,13 +849,13 @@ registry three deployments old while the video showed a different one. All three
 now point at the current run, and the check runs before publishing rather than
 after somebody notices.
 
-Stage three then found the one stage one could not: `0xaecd340d...` in
+Stage three then found the one stage one could not: `0xaecd340dd30de64f82b63d56d834e67eebb1aafe4cd0d378d2fdc3012033c6b3` in
 `docs/QUESTIONS.md`, the `QuorumTooThin` refusal, still pointing at the registry
 replaced hours earlier. Eight characters, in a file the deck update did not
 touch.
 
 **And it found a sentence that was wrong rather than stale.** In the same pass,
-`0x7c82d123...` in `docs/CAVEATS.md` resolved to nothing: eight characters is
+`0x7c82d123` in `docs/CAVEATS.md` resolved to nothing: eight characters is
 not a transaction anybody can open, under a sentence that began "Checked rather
 than assumed". Checking it properly showed the claim it supported was also
 false. Aave v3 does **not** leave the collateral in the borrower's wallet;
@@ -883,8 +891,8 @@ Loan 16928, a real borrower against a real NFT:
 
 | | |
 |---|---|
-| Taken | `LoanStarted`, mainnet block 25,506,517, tx `0xa089fd28...` |
-| Repaid | `LoanRepaid`, mainnet block 25,717,460, tx `0x34632ee5...` |
+| Taken | `LoanStarted`, mainnet block 25,506,517, tx `0xa089fd2817f18f845ce04b550edab846badc6ecacfa7db8808b09f4be89b6c36` |
+| Repaid | `LoanRepaid`, mainnet block 25,717,460, tx `0x34632ee55588a9968385a0c8646700ed31cfc6d7e40430752db29b77e0ab4960` |
 | Collateral | `0xd774557b647330C91Bf44cfEAB205095f7E6c367` token 7819 |
 | Principal | 0.07 WETH |
 | Registered on CC3 | `0xd6f376dd4e71206cbf50c3abcf966f54204d0497f5dd3707ba784c0f172f4e95`, 602,518 gas |
@@ -927,16 +935,16 @@ by the emitter as well as the instance. A pledge never gets that fallback,
 because an opening lien has to name what it claims.
 
 Lien 435829, a Pudgy Penguin, `0xBd3531dA5CF5857e7CfAA92426877b022e612cf8` token
-8189, for 3.29 ether. Taken in mainnet block 25,711,377, tx `0xb1de5da8...`,
-repaid in block 25,721,378, tx `0x568aae92...`. Recorded on CC3 as
-`0x1101d9aa...` and released as `0x9dec6792...`, the release carrying no token id
+8189, for 3.29 ether. Taken in mainnet block 25,711,377, tx `0xb1de5da8a64d1f0791799712c2fd9378a483e68a5c83ccaa71801692cb7acb14`,
+repaid in block 25,721,378, tx `0x568aae92f2a4052fc516d0e2260cc0d157f35fcf22646a7e1de3c2906dfe21e4`. Recorded on CC3 as
+`0x1101d9aa983c1bfce1429d0e19714c14b76a726a59c2d2461208dd07dd15809b` and released as `0x9dec679284568aa04b8114678bd6b2dc8e517d11a3c547392747e7a1b229550d`, the release carrying no token id
 whatsoever.
 
 Seizure is proven too. A Blend lien also ends when an auction fails and the
 lender takes the token, through `Seize`, which is identical in shape to `Repay`
 and just as final. A transition may therefore name several events: lien 438956,
 Pudgy Penguin 4271 for 3.868 ether, taken in block 25,550,390 and seized in
-block 25,651,509, is recorded as `0x0d6d8c0a...` and closed as `0x2201a81d...`.
+block 25,651,509, is recorded as `0x0d6d8c0a3dcdf9af8ff72c4db605095d7189afe50898b6826aafee68fa338e67` and closed as `0x2201a81dba74b3593140eb07f5524e662de411ce745d8863a4438953ce5c91b0`.
 
 An adapter that knew only about repayment would have left every seized lien on
 file, and a stale claim is indistinguishable from a live one.
@@ -989,7 +997,7 @@ assumed. `0x4E75FA6b0e83885A789938aD5B3512b08ad62b33` is the previous code
 redeployed the same day as a control, and it reproduced the earlier gas figures
 to the gas, which is what proved the environment had not moved.
 `0xF7C08bAE1dAb1A3f96144114345ABbFd4079e3B4` carries a full fifteen proof run and
-the `QuorumTooThin` refusal in `0x733962b7...`, and was superseded within the
+the `QuorumTooThin` refusal in `0x733962b700b704463249dcd6b1720376e3f8165adf895c557e472cd214415577`, and was superseded within the
 hour by the smaller shape of the same feature.
 `0x65F561a73451E878327Cf3775dc21Ca9CBEF72e8` is that smaller shape, deployed to
 measure it before it went live.

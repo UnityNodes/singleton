@@ -172,7 +172,7 @@ two instances, made batch pledges work, and dropped mainnet gas from 716k to
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**
 
-Yes. The live registry `0xcccE8847...` was deployed after both fixes and all
+Yes. The live registry `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7` was deployed after both fixes and all
 fifteen proofs were replayed onto it. Every previous instance is left on chain
 and named in the verification log with the reason it was superseded, rather than
 quietly removed. There are several, because each measurement that changed the
@@ -281,7 +281,7 @@ wording was wrong in four places and is now caveat 11, with the worked case.
 
 **"Recording a number nobody checks is theatre."** It is checked. The same read
 that stores the count enforces a floor against it, and the floor has refused a
-real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0xe19625fe...`,
+real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0xe19625fe701992994240bc6db4695669172558da26fddde694e27b25642be6ef`,
 status 0, on a verified contract so the error decodes. The register also exposes
 the count publicly, so a lending protocol reading it can apply a stricter
 standard than ours without asking us to change anything.
