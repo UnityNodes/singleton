@@ -1,0 +1,11 @@
+{
+  "name": "singleton-gates",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "The probes that cleared the technical unknowns, kept runnable",
+  "dependencies": {
+    "@gluwa/usc-sdk": "^0.18.0",
+    "ethers": "^6.17.0"
+  }
+}

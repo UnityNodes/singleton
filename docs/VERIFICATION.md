@@ -566,6 +566,37 @@ allowed "exactly one connection target". The served header allows the testnet RP
 and the mainnet RPC, so that `?rpc=` has somewhere legitimate to point. Nothing
 else is reachable, which was the part that mattered, but the count was wrong.
 
+Three more came out of the same triage, and all three are the same shape: a
+thing this repository offered a judge that a judge could not actually do.
+
+**The gate probes had never run from a clone.** `gates/` is presented in the
+README as the probes that cleared the technical unknowns, with `run/` described
+as scripts that execute them against live CC3. `GateProbe.sol` imported
+`./VerifierInterface.sol`, a file that was never committed to this repository at
+all, so it had not compiled since the first commit. Both runners read their
+Foundry artifact as a bare filename out of the current working directory. Neither
+had a `package.json`, so `ethers` could not resolve. Nothing here ever ran them,
+which is why none of it showed. The probe now imports the interfaces the registry
+itself uses, the artifacts resolve from the script's own location, `gates/` has
+its dependencies, and `from-a-clone.sh` builds both probes and runs both against
+the live chain. The custom event gate still passes: an NFTfi log decoded through
+`EvmV1Decoder` on CC3 matches what the Ethereum RPC returns, all four topics and
+all 480 data bytes.
+
+**The demo recording was not reproducible in the way it was described.**
+`docs/DEMO.md` said the script writes a webm and "the encode line in that file"
+produces the mp4. There was no encode line, no `ffmpeg` anywhere in the
+repository and none in its history: the shipped mp4 had been made by hand. The
+encode is now the last thing `script/record-demo.mjs` does, and it exits non-zero
+rather than leaving a webm behind.
+
+**The history shot filmed a race it could now lose.** Once the log sweep covered
+the register's whole life it took about ten seconds, and step 7 of the recorder
+waited on the state chip and then held a timer, so the shot would have caught the
+word "reading" rather than the trail. It now waits on the swept line, which only
+renders when the sweep has returned. The video was re-recorded against the
+current site: 1:46, nine chapters, each mark checked against its frame.
+
 ## Before judging
 
 `./script/before-judging.sh` runs what can go stale while nobody is looking: the

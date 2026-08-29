@@ -1,6 +1,29 @@
+/*
+  Run it with:
+
+    FOUNDRY_PROFILE=gates forge build --skip GateProbe.sol
+    cd gates && npm ci && node run/gate-finality.mjs
+
+  The artifact is resolved from this file rather than from the working
+  directory. It used to be read as a bare "FinalityProbe.json", which only ever
+  worked from whichever directory somebody happened to be standing in, and made
+  the probe unrunnable from a clone.
+*/
 import { ethers } from "ethers";
 import fs from "fs";
-const CREATION = JSON.parse(fs.readFileSync("FinalityProbe.json","utf8")).bytecode.object;
+import path from "path";
+import { fileURLToPath } from "url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const artifact = path.join(here, "..", "..", "out", "FinalityProbe.sol", "FinalityProbe.json");
+if (!fs.existsSync(artifact)) {
+  console.error(
+    `no build at ${artifact}\n` +
+      `build it first: FOUNDRY_PROFILE=gates forge build --skip GateProbe.sol`,
+  );
+  process.exit(1);
+}
+const CREATION = JSON.parse(fs.readFileSync(artifact, "utf8")).bytecode.object;
 const cc = new ethers.JsonRpcProvider("https://rpc.cc3-testnet.creditcoin.network");
 const abi = ethers.AbiCoder.defaultAbiCoder();
 const OUT = ["uint64","bool","bool","uint64","bool","bool"];

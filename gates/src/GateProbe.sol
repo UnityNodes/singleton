@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {INativeQueryVerifier, NativeQueryVerifierLib} from "./VerifierInterface.sol";
-import {EvmV1Decoder} from "./vendor/EvmV1Decoder.sol";
+import {IBlockProver, BlockProverLib} from "../../src/interfaces/IBlockProver.sol";
+import {EvmV1Decoder} from "../../src/vendor/EvmV1Decoder.sol";
 
 /**
  * Singleton Day-1 Gate.
@@ -13,6 +13,12 @@ import {EvmV1Decoder} from "./vendor/EvmV1Decoder.sol";
  *
  * Runs entirely inside a constructor so it executes on a live Creditcoin node
  * against the real BlockProver precompile, with no deployment and no funds.
+ *
+ * The two imports were `./VerifierInterface.sol` and `./vendor/EvmV1Decoder.sol`
+ * when this was written, and neither file was ever committed here, so this probe
+ * had not compiled from a clone since the first commit. Both now point at the
+ * interfaces the registry itself uses. The shapes are the same ones the probe
+ * was written against; only the file they live in moved.
  */
 contract GateProbe {
     constructor(
@@ -20,19 +26,19 @@ contract GateProbe {
         uint64 blockHeight,
         bytes memory encodedTransaction,
         bytes32 merkleRoot,
-        INativeQueryVerifier.MerkleProofEntry[] memory siblings,
+        IBlockProver.MerkleProofEntry[] memory siblings,
         bytes32 lowerEndpointDigest,
         bytes32[] memory continuityRoots,
         bytes32 wantedSignature
     ) {
-        INativeQueryVerifier verifier = NativeQueryVerifierLib.getVerifier();
+        IBlockProver verifier = BlockProverLib.proverAt();
 
         bool verified = verifier.verifyAndEmit(
             chainKey,
             blockHeight,
             encodedTransaction,
-            INativeQueryVerifier.MerkleProof({root: merkleRoot, siblings: siblings}),
-            INativeQueryVerifier.ContinuityProof({
+            IBlockProver.MerkleProof({root: merkleRoot, siblings: siblings}),
+            IBlockProver.ContinuityProof({
                 lowerEndpointDigest: lowerEndpointDigest,
                 roots: continuityRoots
             })

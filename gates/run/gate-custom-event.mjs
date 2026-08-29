@@ -1,8 +1,26 @@
+/*
+  Run it with:
+
+    FOUNDRY_PROFILE=gates forge build
+    cd gates && npm ci && node run/gate-custom-event.mjs
+
+  The artifact is resolved from this file rather than from the working
+  directory, which is what it used to do and what made it unrunnable anywhere
+  but the one directory somebody happened to be standing in.
+*/
 import { ethers } from "ethers";
 import { proofProvider } from "@gluwa/usc-sdk";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const CREATION = JSON.parse(fs.readFileSync("GateProbe.json","utf8")).bytecode.object;
+const here = path.dirname(fileURLToPath(import.meta.url));
+const artifact = path.join(here, "..", "..", "out", "GateProbe.sol", "GateProbe.json");
+if (!fs.existsSync(artifact)) {
+  console.error(`no build at ${artifact}\nbuild it first: FOUNDRY_PROFILE=gates forge build`);
+  process.exit(1);
+}
+const CREATION = JSON.parse(fs.readFileSync(artifact, "utf8")).bytecode.object;
 const cc  = new ethers.JsonRpcProvider("https://rpc.cc3-testnet.creditcoin.network");
 const eth = new ethers.JsonRpcProvider("https://ethereum-rpc.publicnode.com");
 const pb  = new proofProvider.service.ProofBuilder(3, "https://prover.cc3-testnet.creditcoin.network");

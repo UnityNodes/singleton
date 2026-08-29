@@ -69,6 +69,17 @@ step "web: npm ci and build"      bash -c 'cd web && npm ci --silent && npm run 
 step "worker: npm ci"             bash -c 'cd worker && npm ci --silent'
 step "worker/provision.mjs --check" bash -c 'DEPLOYER_KEY_FILE=/dev/null node worker/provision.mjs --check'
 
+# The gates are the probes that cleared the technical unknowns before any of
+# this was built, and README offers them as something a judge can re-run. They
+# were not: one imported a file that was never committed, both read their
+# artifact as a bare filename out of whatever directory somebody was standing
+# in, and neither had a package.json. That went unnoticed from the first commit
+# because nothing here ever ran them.
+step "gates: build the probes"    bash -c 'FOUNDRY_PROFILE=gates forge build'
+step "gates: npm ci"              bash -c 'cd gates && npm ci --silent'
+step "gates: finality, live"      bash -c 'cd gates && node run/gate-finality.mjs'
+step "gates: custom event, live"  bash -c 'cd gates && node run/gate-custom-event.mjs | grep -q "GATE: PASS"'
+
 echo
 if [ "$fail" -eq 0 ]; then
   echo "a clone builds, tests, audits and reads the live chain with nothing borrowed"

@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -219,12 +220,19 @@ mark("6 quorum");
  * The narration is about settlement and release, so the screen has to be the
  * asset that was settled and released. The register opens on deed 43, which is
  * the standing refusal; deed 42 is the one with the five entry history.
+ *
+ * The state and the trail arrive separately, and this shot is the trail. The
+ * state chip is four eth_calls; the history is a sweep of the whole register,
+ * which takes about ten seconds against the public node. Waiting on the chip and
+ * then holding a timer would film the word "reading". The swept line only
+ * renders once the sweep has returned, so that is what the shot waits on.
  */
 await page.goto(`${SITE}/register`, { waitUntil: "domcontentloaded", timeout: 60000 });
 await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
 await say("Settled, released, then the loser re-files legitimately. Five proofs, one asset.");
 await page.getByText("Demo deed #42").first().click();
 await page.getByText("Lien released, asset free again").first().waitFor({ timeout: 45000 });
+await page.getByText("the whole life of this register").waitFor({ timeout: 60000 });
 await page.evaluate(() => window.__scrollToText("history"));
 await wait(7200);
 mark("7 history");
@@ -255,3 +263,31 @@ const raw = await video.path();
 const named = path.join(outDir, "raw.webm");
 fs.renameSync(raw, named);
 console.log(`\nrecorded ${((Date.now() - t0) / 1000).toFixed(1)}s -> ${named}`);
+
+/*
+  Playwright writes VP8 in a webm, which Safari will not play and which several
+  submission forms refuse. The encode belongs here rather than in a line somebody
+  has to remember, because docs/DEMO.md called this recording reproducible while
+  the only thing the script produced was the webm: the mp4 that actually ships
+  was made by hand, and the hand was not written down.
+
+  Constant 25fps and yuv420p are what make it play everywhere; the webm's own
+  timing is variable, so -r on the input rather than the output is what keeps the
+  duration honest instead of resampling it.
+*/
+const mp4 = path.join(outDir, "singleton.mp4");
+const encode = spawnSync(
+  "ffmpeg",
+  ["-y", "-r", "25", "-i", named, "-c:v", "libx264", "-preset", "slow", "-crf", "20",
+   "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", mp4],
+  { stdio: ["ignore", "ignore", "pipe"] },
+);
+if (encode.error || encode.status !== 0) {
+  console.error(
+    `\nffmpeg did not encode the mp4. The webm above is intact.\n` +
+      `${encode.error?.message ?? encode.stderr?.toString().trim().split("\n").slice(-3).join("\n")}`,
+  );
+  process.exit(1);
+}
+console.log(`encoded -> ${mp4}`);
+console.log(`ship it with: cp ${mp4} web/public/demo/singleton.mp4`);
