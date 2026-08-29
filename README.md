@@ -63,8 +63,11 @@ auction rather than a repayment. Fifteen proofs, every hash in
 | Demo assets | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64`, token 43 claimed with a refusal on file, token 42 through its whole life |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
 
-**A record is only as good as the quorum that attested it, so the quorum is part
-of the record.** Creditcoin bonds seven attestors for Sepolia and four for
+**A record inherits the security of an attestor set, so the set is part of the
+record.** The number stored is the one bonded for that chain when the record was
+filed. It is not the set that stood behind the original attestation of the
+source block, which is a different number and, on Creditcoin, is not reachable
+from inside a transaction at all. Caveat 11 says so with the case that shows it. Creditcoin bonds seven attestors for Sepolia and four for
 Ethereum, a hundred CTC each, and those numbers move: read at historical
 heights, Sepolia went 0 to 1 to 6 to 7 between 2026-05-01 and 2026-07-09, and
 Ethereum went 0 to 1 to 3 to 4, having appeared on the supported chain list a

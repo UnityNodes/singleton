@@ -62,7 +62,15 @@ contract QuorumTest is SourceChain {
 
     // ------------------------------------------------ the number is recorded
 
-    function test_theLienRecordsTheAttestorSetThatStoodBehindIt() public {
+    /**
+     * The set bonded at filing, and not the set that attested the source block.
+     *
+     * Those differ in practice, by one on the headline mainnet proof, and the
+     * second is not reachable: `getAttestorsCount` takes no height. Caveat 11
+     * carries the worked case. The name of this test says which number it is,
+     * because the first name said the other one.
+     */
+    function test_theLienRecordsTheAttestorSetBondedWhenItWasFiled() public {
         bytes32 assetKey = _fileHarborPledge(1);
 
         SingletonRegistry.Record memory r = registry.getStatus(assetKey);

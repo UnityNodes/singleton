@@ -76,6 +76,13 @@ Ethereum also appeared on `get_supported_chains` before a single attestor was
 bonded for it. Being on the supported list is not the same as being backed, and
 this project uses that list everywhere to decide what is readable.
 
+One thing this records precisely, because it was got wrong in the first writing
+of it. The number kept with a lien is the set bonded when the lien was **filed**,
+not the set that stood behind the original attestation of the source block. Those
+differ, and `getAttestorsCount` takes no height, so the second is not reachable
+from inside a transaction. Caveat 11 in [CAVEATS.md](CAVEATS.md) carries the
+worked case and the way to read the other number from outside.
+
 Nothing that consumes an attestation writes them down. A record made while seven
 attestors stood behind it and a record made while two did are stored identically
 by every bridge, oracle and message layer, so the question "how much was standing

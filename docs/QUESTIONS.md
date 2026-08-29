@@ -13,13 +13,13 @@ written as a limit rather than argued away.
 
 ## The protocol engineer
 
-**"You use two precompiles and attest two chains. What else does the platform
+**"You use three precompiles and attest two chains. What else does the platform
 expose, and why did you not touch it?"**
 
 The hardest question on the sheet, because the usual reading of depth is
-breadth. BlockProver and ChainInfo are the two surfaces a witness needs:
-one proves a log was included, the other says how far the attestation has
-reached. Every other surface is listed with a stated reason in
+breadth. BlockProver, ChainInfo and AttestorStash are the three surfaces a
+witness needs: one proves a log was included, one says how far the attestation
+has reached, and the third says how much bonded stake is behind it. Every other surface is listed with a stated reason in
 [SURFACES.md](SURFACES.md), because an unused surface with no reason next to it
 is an oversight rather than a decision.
 
@@ -264,6 +264,20 @@ what has to stay free for the priority rule to work.
 | Testnet only | Low | Six proofs read Ethereum mainnet. The registry is on testnet because that is where the faucet is. |
 
 ## The quorum questions, asked the hostile way
+
+**"Which number is `Security.attestors`, and why is it the one that was never
+involved?"** The sharpest question anyone has asked about this project, from a
+Creditcoin engineer on the 2026-08-29 panel, and it lands. The stored number is
+the set bonded when the record was **filed**, not the set that stood behind the
+attestation of the source block. For the NFTfi loan this submission headlines,
+those are 4 and 3 respectively, and the difference is reproducible with two
+archive calls. `AttestorStash` exposes nothing that takes a height, so the
+attesting-time count cannot be read from inside a transaction at all; it is
+reachable only from outside, which is how the history table in
+[VERIFICATION.md](VERIFICATION.md) was built. The floor half of the reading is
+sound and stays, because admission control should be gated on today's set. The
+wording was wrong in four places and is now caveat 11, with the worked case.
+
 
 **"Recording a number nobody checks is theatre."** It is checked. The same read
 that stores the count enforces a floor against it, and the floor has refused a

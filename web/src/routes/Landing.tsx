@@ -387,7 +387,7 @@ export default function Landing() {
               },
               {
                 k: "attestorstash 0x0FD4",
-                v: "How many bonded attestors stood behind that attestation, read in the same transaction and written down with the record. Below a stated floor, nothing is filed at all.",
+                v: "How many attestors were bonded for that chain when the record was filed, read in the same transaction and written down with it. Below a stated floor, nothing is filed at all.",
               },
               {
                 k: "the register",

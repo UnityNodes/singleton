@@ -480,6 +480,46 @@ majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
 
+## What a hostile panel found that we had not
+
+Five judge personas were run against the current submission on 2026-08-29, each
+reading the code and calling the live chain, and every question they raised was
+then checked by a separate agent told to refute the answer rather than confirm
+it. Thirty-nine questions, and the count of answers that "did not hold" was 31,
+which is not the number it looks like: the verifiers were instructed to default
+to failure when they could not confirm something themselves, so that figure mixes
+"this is false" with "I could not check it". Triaging it by hand was the work.
+
+One finding was worth the whole exercise, and it is reproduced here rather than
+taken on trust.
+
+**Which number is `Security.attestors`.** The register stores the attestor set
+bonded when the record is filed. Every document described it as the set that
+attested the source block. Those are different, and on the mainnet proof this
+submission leads with they differ:
+
+| | |
+|---|---|
+| NFTfi loan 16928, source | Ethereum block 25,506,517 |
+| First CC3 block whose attested tip covers it | 5,110,417, where `getAttestorsCount(3)` is **3** |
+| Earliest block satisfying the 64 confirmation rule | about 5,110,478, still **3** |
+| What the record stored | **4**, in the log of `0x0b54c68f...` |
+| The tip it recorded | 25,798,240, which is 291,723 Ethereum blocks above the source |
+
+Five plausible height-taking selectors on `AttestorStash` were tried and all five
+rejected, so the attesting-time count is not reachable from inside a transaction.
+The contract could not store it. What was wrong was the label, in four places,
+and caveat 11 now carries the case.
+
+Two things were checked before touching anything. The floor half of the reading
+is sound and stays: admission control should be gated on today's set, which is
+what the live `QuorumTooThin` refusal shows. And editing the comment in
+`src/SingletonRegistry.sol` was tested rather than assumed: changing one word in
+it moves the metadata hash in the bytecode, so the deployed registry would stop
+matching the source. The struct's own defining sentence already says "at the
+moment it was made", which is the correct half, so it is left alone and the
+reason is written down.
+
 ## Before judging
 
 `./script/before-judging.sh` runs what can go stale while nobody is looking: the

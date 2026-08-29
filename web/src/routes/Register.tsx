@@ -218,7 +218,7 @@ export default function Register() {
             <span
               key={chainId}
               className="flex items-center gap-2"
-              title={`Creditcoin has attested ${SOURCES[Number(chainId)].name} to this block, on the word of ${facts.attestors} bonded attestors. A pledge is accepted once it is ${facts.depth} blocks deep, and only while at least ${facts.floor} attestors are bonded.`}
+              title={`Creditcoin has attested ${SOURCES[Number(chainId)].name} to this block. ${facts.attestors} attestors are bonded for it right now, which is the number a record filed now would carry. A pledge is accepted once it is ${facts.depth} blocks deep, and only while at least ${facts.floor} are bonded.`}
             >
               <span
                 className={`ping inline-block size-1.5 shrink-0 rounded-full ${
@@ -629,9 +629,10 @@ export default function Register() {
                 accepted at {chain.depth} blocks deep
                 {opening && record.security.attestors > 0 && (
                   <>
-                    , on the word of{" "}
+                    , with{" "}
                     <b className="tabular font-medium text-paper">{record.security.attestors}</b>{" "}
-                    attestors bonded {ctc(record.security.minBond)} each
+                    attestors bonded {ctc(record.security.minBond)} each on this chain when the
+                    record was filed
                   </>
                 )}
               </Step>

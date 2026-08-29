@@ -317,3 +317,51 @@ What the floor cannot do is make a thin set safe. If Creditcoin's attestors for
 a chain are compromised rather than merely few, the count reads high and the
 proofs are worthless, and no number this contract can read would say so. The
 floor is a check on how much security is standing, not on whether it is honest.
+
+## 11. The recorded quorum is the one bonded at filing, not at attestation
+
+A hostile review on 2026-08-29 asked which number `Security.attestors` holds, and
+the answer is narrower than the way this project had been describing it.
+
+The registry reads `getAttestorsCount(chainKey)` inside the transaction that
+accepts a proof. That is the set bonded **at the moment the record is filed**. It
+is not the set that stood behind Creditcoin's original attestation of the source
+block, and the two are measurably different.
+
+The worked case is the headline mainnet proof in this submission. NFTfi loan
+16928 was taken at Ethereum block 25,506,517. Creditcoin's attested tip for chain
+key 3 first covered that height at CC3 block 5,110,417, and
+`getAttestorsCount(3)` at that block returns **3**. The confirmation depth does
+not rescue it either: the earliest tip satisfying `height + 64` is reached around
+CC3 5,110,478, where the count is still 3. The record was filed months later and
+stored **4**, which the `AttestationWitnessed` log in
+`0x0b54c68f65649096bb124eed889f728f68ae6affcb70e101de9d7807253145a1` preserves.
+
+**Why the contract stores the filing number.** `AttestorStash` exposes
+`getAttestorsCount(uint64)` and `getMinBondRequirement(uint64)` and nothing that
+takes a height, checked by calling five plausible historical selectors and having
+all five rejected. The attesting-time count is not reachable from inside a
+transaction. It is reachable from outside, with an archive `eth_call` at the CC3
+block where the attested tip first covered the source height, which is exactly
+how the history table in [VERIFICATION.md](VERIFICATION.md) was built.
+
+**One half of the reading is right and stays.** As the floor, the filing-time
+number is the correct input: admission control decides whether to write today, so
+today's set is what should gate it. The live refusal `QuorumTooThin(1, 7, 8)` in
+`0xe19625fe701992994240bc6db4695669172558da26fddde694e27b25642be6ef` is that
+half working.
+
+**And the record carries the evidence of its own staleness**, which nothing said
+before. `Security.attestedTip` for that lien is 25,798,240 against a source
+height of 25,506,517: the proof was 291,723 Ethereum blocks old, about six weeks,
+when it was filed. A reader who wants the attesting-time quorum has the two
+numbers needed to go and fetch it.
+
+The wording was wrong in four places and is corrected: the register page, the
+landing page, the README and [SURFACES.md](SURFACES.md). It is left alone in
+`src/SingletonRegistry.sol`, whose defining sentence for the struct already says
+"at the moment it was made", and for a reason worth stating: editing a comment in
+that file changes the metadata hash embedded in the bytecode, so the deployed
+registry would no longer match the source in this repository. Tested rather than
+assumed. Correcting a comment there costs a redeploy, a fifteen proof replay and
+a re-recorded video, which buys no truth that this caveat does not already carry.
