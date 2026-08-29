@@ -471,13 +471,34 @@ window when one bonded attestor, and for a moment none, stood behind them. The
 floor of three would have refused those proofs until roughly block 4,900,000.
 
 **And the exposure runs the other way too, today.** Ethereum carries four
-attestors against a floor of three. One deregistration halts Ethereum reads on
-this registry, which would stop the mainnet half of the demo. That is the guard
+attestors against a floor of three. The guard refuses below the floor and not at
+it, so one departure leaves three and still records; the second halts Ethereum
+reads on this registry, which would stop the mainnet half of the demo. That is the guard
 working, not a fault, and the floor was not lowered to two to make the number
 comfortable: three is the smallest set in which no single attestor is a
 majority, and picking the threshold to fit the outcome is the thing this file
 exists to prevent. `provision.mjs --check` prints the margin so nobody has to
 notice it the hard way.
+
+## Six days later, the check said something we had written down wrongly
+
+Run on 2026-08-29 after a week of not touching it. Everything held: the attestor
+sets are still 7 and 4, the configuration still matches the plan, all six URLs
+answer, 89 tests pass, the audit is clean, and the two demo deeds are still on
+record as claimed with the borrower still holding them.
+
+The check itself was the thing that was wrong. `provision.mjs --check` printed
+"one deregistration from halting this chain" for Ethereum, and four other places
+repeated it. The guard is `attestors < floor`: it refuses **below** the floor and
+not at it. Four bonded against a floor of three survives the first departure with
+three still standing, and stops on the second.
+
+The error ran against us rather than for us, overstating our own exposure, which
+is the rarer direction and no better. The number is computed now,
+`bonded - floor + 1`, and `test_aSetExactlyAtTheFloorStillRecords` pins the
+boundary: a set exactly at the floor records and carries the thin number with it,
+one below is refused. Change the comparison to `<=` and the test fails naming
+`QuorumTooThin(1, 3, 3)`.
 
 ## Reading the submission the way it is received
 

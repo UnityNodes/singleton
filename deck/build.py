@@ -163,7 +163,8 @@ slide('''
     raised the floor above the live set on purpose and the chain refused a real proof:
     <code>QuorumTooThin(1, 7, 8)</code>, transaction <code>0xe19625fe</code>, still there.</p>
     <p class="body"><b>It points at us too.</b> Ethereum carries four attestors against our floor of three.
-    One deregistration halts the mainnet half of this demo. We did not lower the floor to two to make that
+    Two deregistrations halt the mainnet half of this demo, because the guard refuses below the floor and
+    not at it. We did not lower the floor to two to make that
     go away, because three is the smallest set where no single attestor is a majority.</p>
   </div>
 </div>''')
@@ -181,7 +182,7 @@ slide('''
   716k to 634k.</p></li>
 </ol>
 <p class="foot-note">Also corrected: a caveat claiming an administrator cannot fabricate, which was false,
-and the vacuous test that backed it. 88 tests, every attack kept as a regression.</p>''')
+and the vacuous test that backed it. 89 tests, every attack kept as a regression.</p>''')
 
 slide('''
 <h2 class="display">Said before anybody has to ask.</h2>
@@ -206,7 +207,7 @@ slide('''
 <div class="stats">
   <div><span class="big">15</span><p>inclusion proofs on CC3 testnet, every hash published</p></div>
   <div><span class="big">2 / 2</span><p>attested source chains read, Sepolia and Ethereum mainnet</p></div>
-  <div><span class="big">88</span><p>tests, including both reviews kept as regressions</p></div>
+  <div><span class="big">89</span><p>tests, including both reviews kept as regressions</p></div>
   <div><span class="big">0</span><p>wallets, backends and indexers between the page and the chain</p></div>
 </div>
 <div class="chips wide">

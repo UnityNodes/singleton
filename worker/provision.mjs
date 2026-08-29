@@ -98,12 +98,19 @@ for (const chain of PLAN) {
     } else if (bonded - FLOOR <= 1) {
       /*
         Not a misconfiguration, so not counted as wrong, but not silence either.
-        A check that prints "matches the plan" while one deregistration would
-        halt the chain has told the operator the less useful of two true things.
+        A check that prints "matches the plan" while the chain is a
+        deregistration or two from halting has told the operator the less useful
+        of two true things. The count is stated rather than the word "one",
+        because the guard refuses below the floor and not at it: four bonded
+        against a floor of three survives one departure and stops on the second.
         Both live sets have moved inside the window this node still answers
         from: Sepolia 0 to 1 to 6 to 7, Ethereum 0 to 1 to 3 to 4.
       */
-      console.log(`  margin ${bonded - FLOOR}: one deregistration from halting this chain`);
+      const departures = bonded - FLOOR + 1;
+      console.log(
+        `  margin ${bonded - FLOOR}: ${departures} deregistration${departures === 1 ? "" : "s"}` +
+          ` would halt this chain`,
+      );
     }
   } else if (floor !== FLOOR) {
     const tx = await registry.setMinAttestors(chainKey, FLOOR);

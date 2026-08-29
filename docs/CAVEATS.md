@@ -290,8 +290,9 @@ to 6 to 7 between 2026-05-01 and 2026-07-09; Ethereum went 0 to 1 to 3 to 4
 between 2026-05-01 and 2026-07-16, and spent part of that window on the
 supported chain list with no attestors behind it at all. The floor would have
 refused Ethereum proofs for most of May. It also sits one attestor below the
-current Ethereum set, so a single deregistration would halt the mainnet half of
-this project's own demo. The full table is in
+current Ethereum set. The guard refuses below the floor and not at it, so the
+first departure leaves three and changes nothing; the second halts the mainnet
+half of this project's own demo. The full table is in
 [VERIFICATION.md](VERIFICATION.md).
 
 That is the intended trade. A first to file register whose records are only as

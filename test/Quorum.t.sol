@@ -264,4 +264,34 @@ contract QuorumTest is SourceChain {
         vm.expectCall(STASH_ADDR, abi.encodeWithSelector(COUNT, SEPOLIA), 1);
         registry.registerPledges(b);
     }
+
+    /**
+     * The floor is a floor, not a fence one above it.
+     *
+     * `attestors < floor` refuses below the floor and not at it, which is the
+     * intended reading and was written down wrongly in four places: with four
+     * bonded against a floor of three, the project claimed one departure would
+     * halt it. It takes two. The error ran against us rather than for us, which
+     * is the rarer direction and no better.
+     */
+    function test_aSetExactlyAtTheFloorStillRecords() public {
+        stash.setAttestorsCount(SEPOLIA, MIN_ATTESTORS);
+
+        bytes32 assetKey = _fileHarborPledge(1);
+
+        SingletonRegistry.Record memory r = registry.getStatus(assetKey);
+        assertEq(
+            uint8(r.state), uint8(SingletonRegistry.AssetState.PLEDGED), "at the floor, on file"
+        );
+        assertEq(r.security.attestors, MIN_ATTESTORS, "and the record says how thin it was");
+
+        stash.setAttestorsCount(SEPOLIA, MIN_ATTESTORS - 1);
+        SingletonRegistry.Proof memory p = _relay(_harborPledge(2));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.QuorumTooThin.selector, SEPOLIA, MIN_ATTESTORS - 1, MIN_ATTESTORS
+            )
+        );
+        registry.registerPledge(p);
+    }
 }
