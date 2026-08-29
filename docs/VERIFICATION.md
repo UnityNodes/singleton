@@ -155,7 +155,15 @@ the on-chain payload does not carry.
 **Attestation lag, measured the same day.** Sepolia attested tip 11,509,840
 against a head of 11,509,880: 40 blocks, roughly eight minutes. With
 `MIN_CONFIRMATIONS = 64` a fresh pledge becomes registrable about twenty minutes
-after it is mined. That is the wait the relay polls out, not a failure mode.
+after it is mined. Re-measured on 2026-08-29 the lag was 34 blocks on Sepolia and
+35 on Ethereum, so the twenty minutes holds.
+
+That used to end "which is the wait the relay polls out, not a failure mode",
+which was too comfortable. It is a wait for the relay and a window for the
+register, and caveat 14 now carries what happens inside it: the tip advances in
+jumps of ten source blocks, so two pledges in the same ten block band become
+registrable at the same instant and priority falls to whoever reaches Creditcoin
+first.
 
 **`ReceiptFields` field order.** `(uint8 receiptStatus, uint64 receiptGasUsed,
 LogEntry[] receiptLogs, bytes receiptLogsBloom)`. Logs come before the bloom, and

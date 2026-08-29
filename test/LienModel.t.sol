@@ -10,6 +10,7 @@ import {RwaDeed} from "../src/emitters/RwaDeed.sol";
 import {HarborCredit} from "../src/emitters/HarborCredit.sol";
 import {MeridianCredit} from "../src/emitters/MeridianCredit.sol";
 import {AtlasVault} from "./mocks/AtlasVault.sol";
+import {LockedCollateralAdapter} from "../src/adapters/LockedCollateralAdapter.sol";
 
 /**
  * What the lien model says when nobody is looking at the happy path.
@@ -161,14 +162,58 @@ contract LienModelTest is SourceChain {
         registry.reportCollision(later);
     }
 
+    /**
+     * The earlier pledge can lose, and lose silently.
+     *
+     * Priority here is decided by which proof reaches Creditcoin first, not by
+     * which pledge is older on the source chain, and the two come apart. A
+     * pledge is unregistrable until the attested tip has passed it by the
+     * confirmation depth, which is about twenty minutes, and the tip advances in
+     * jumps of ten source blocks, so two pledges within the same ten block band
+     * become registrable in the same instant with no head start for the earlier.
+     *
+     * Losing that race would be tolerable if it left a mark. It does not. The
+     * later pledge takes the asset, the earlier one is refused as
+     * `AssetNotFree`, and the refusal list will not take it either, because
+     * `reportCollision` rejects anything older than the record on file. The
+     * guard is right about what it was written for, an ancient closed lien filed
+     * against whoever holds the asset today, and it cannot tell that case apart
+     * from this one. So the honest earlier lender ends with no entry anywhere.
+     */
+    function test_theEarlierPledgeCanLoseTheRaceAndLeaveNoTrace() public {
+        SingletonRegistry.Proof memory earlier = _harborPledge(1000 ether);
+        SingletonRegistry.Proof memory later = _meridianPledge(750 ether);
+        assertLt(earlier.height, later.height, "Harbor pledged first on the source chain");
+
+        registry.registerPledge(later);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.AssetNotFree.selector, assetKey, address(meridian)
+            )
+        );
+        registry.registerPledge(earlier);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.StaleCollision.selector, earlier.height, later.height
+            )
+        );
+        registry.reportCollision(earlier);
+
+        assertEq(registry.collisionCount(assetKey), 0, "and nothing on the refusal list either");
+    }
+
     // ---------------------------------------------------------------- 3
 
     /**
      * The registry accepts a pledge from an emitter whose adapter has declared
-     * that it cannot prove a release, and there is no other way out of the
-     * record. The asset is claimed forever.
+     * that it cannot prove a release. Nothing the source chain does afterwards
+     * gets the asset back: it emits the release, the registry refuses to read
+     * it, and the record stands. The one thing that lifts it is the next test,
+     * and it is not something any party to the lien can do.
      */
-    function test_anAdapterWithoutAReleaseTrapsTheAssetPermanently() public {
+    function test_anAdapterWithoutAReleaseTrapsTheAssetUntilAnAdminActs() public {
         NoReleaseAdapter half = new NoReleaseAdapter();
         registry.setAdapter(SEPOLIA, address(atlas), address(half));
 
@@ -193,7 +238,8 @@ contract LienModelTest is SourceChain {
         registry.registerRelease(release);
 
         // The source chain has handed the collateral back and the registry
-        // still says the asset is taken, with no path that can change it.
+        // still says the asset is taken. There is one path that changes it, and
+        // it belongs to the administrator rather than to anybody involved.
         assertEq(
             uint8(registry.getStatus(assetKey).state),
             uint8(SingletonRegistry.AssetState.SETTLED),
@@ -217,6 +263,56 @@ contract LienModelTest is SourceChain {
             )
         );
         registry.registerPledge(honest);
+    }
+
+    /**
+     * The adapter power runs backwards as well as forwards.
+     *
+     * `AdminPower.t.sol` shows the administrator writing a lien against an asset
+     * whose owner was never involved. The same lever clears one: swapping the
+     * half adapter for the reference one lets the *real* `CollateralUnlocked`
+     * log, which the source chain had already emitted and which the registry had
+     * already refused, go through and free the asset.
+     *
+     * That is the trap above being lifted, so calling it permanent was wrong.
+     * But the cure is the exact power caveat 9 exists to bound: the record moves
+     * because an administrator changed what a log means, not because anything
+     * new happened on the source chain. A registry that needs its operator to
+     * unstick it is not neutral at that moment, and the honest way to say so is
+     * to test it rather than to claim there is no path at all.
+     */
+    function test_theAdminLiftsThatTrapByInstallingAFullerAdapter() public {
+        NoReleaseAdapter half = new NoReleaseAdapter();
+        registry.setAdapter(SEPOLIA, address(atlas), address(half));
+
+        vm.recordLogs();
+        vm.prank(BORROWER);
+        bytes32 positionId = atlas.lock(address(deed), TOKEN_ID, 1200 ether);
+        registry.registerPledge(_relay(_log(half.LOCKED_SIG())));
+
+        vm.recordLogs();
+        atlas.clear(positionId);
+        registry.registerSettlement(_relay(_log(half.CLEARED_SIG())));
+
+        vm.recordLogs();
+        atlas.unlock(positionId);
+        SingletonRegistry.Proof memory release = _relay(_log(half.UNLOCKED_SIG()));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.TransitionUnsupported.selector, address(atlas), uint8(2)
+            )
+        );
+        registry.registerRelease(release);
+
+        registry.setAdapter(SEPOLIA, address(atlas), address(new LockedCollateralAdapter()));
+        registry.registerRelease(release);
+
+        assertEq(
+            uint8(registry.getStatus(assetKey).state),
+            uint8(SingletonRegistry.AssetState.FREE),
+            "the same log, refused a moment ago, now frees the asset"
+        );
     }
 
     // ---------------------------------------------------------------- 4

@@ -276,6 +276,21 @@ protocol. It is the one place where being wrong looks like being right, which is
 why each one stays short enough to read in a sitting and is tested against real
 logs captured from the chain it claims to read.
 
+**And the adapter lever runs backwards as well as forwards**, which this file
+did not say until 2026-08-29. `test_theAdminCanFabricateThroughAnAdapter` shows
+an administrator writing a lien against an asset whose owner was never involved.
+`test_theAdminLiftsThatTrapByInstallingAFullerAdapter` shows the same lever
+clearing one: an emitter whose adapter cannot prove a release traps its asset,
+and swapping that adapter for a fuller one lets the real release log, already
+emitted on the source chain and already refused here, go through and free it.
+
+The second is more comfortable than the first and should not be. Both move a
+record because an administrator changed what a log means, and in neither case did
+anything new happen on the source chain. A registry that needs its operator to
+unstick it is not neutral at that moment. It is written down here because
+`test/LienModel.t.sol` used to say the trap had "no path that can change it",
+which was false, and a false reassurance is worse than the admission it hides.
+
 ## 10. The attestor floor is a liveness dial, and it points both ways
 
 The registry reads how many attestors are bonded for a source chain and refuses
@@ -441,3 +456,41 @@ What bounds it: the loss is bounded by gas, is repairable by refiling the
 remaining members, and cannot produce a false record, because the griefer can
 only replay a proof that was already valid. What would remove it is binding the
 nullifier or the batch to a submitter, which costs a redeploy and is not built.
+
+## 14. Priority is decided on Creditcoin, and the earlier pledge can lose it
+
+A pledge cannot be filed until the attested tip has passed its source height by
+the confirmation depth. Measured on 2026-08-29, Creditcoin's tip trails the head
+by 34 blocks on Sepolia and 35 on Ethereum, and the depth is 64, so the wait is
+about twenty minutes on either chain. That is the window in which the register
+knows nothing about a lien that already exists.
+
+Two things about that window are worse than the wait itself.
+
+**The tip moves in jumps of ten.** Read at successive Creditcoin heights, the
+attested tip for both chains advances 10 source blocks at a time and never 1. So
+two pledges whose source heights fall inside the same ten block band, about two
+minutes, clear the finality guard in the same instant. The earlier one gets no
+head start at all, and which of them takes the asset is decided by whose
+Creditcoin transaction lands first.
+
+**The loser of that race leaves no trace.** The later pledge takes the asset. The
+earlier one is refused with `AssetNotFree`, which is right. But it cannot be
+filed as a refusal either: `reportCollision` rejects any proof older than the
+record on file, because a lien closed years ago is not evidence about whoever
+holds the asset today. That guard is correct for what it was written for and
+cannot tell that case apart from this one, so the honest earlier lender ends with
+no entry anywhere. `test_theEarlierPledgeCanLoseTheRaceAndLeaveNoTrace` is the
+whole sequence.
+
+This is the same inversion caveat 7 names, reached by a different road. There the
+borrower chose the winner by making a pledge unregistrable; here the clock does.
+
+What bounds it. Twenty minutes is a short window against the life of a loan, and
+a lender who waits for the register to see their own pledge before disbursing
+closes it entirely, which is the integration this design wants anyway. The
+`minConfirmations` dial trades the window against reorg safety and is per chain,
+so a chain with faster finality can carry a smaller number. What would remove it
+is ordering by source height rather than by arrival, which means holding a
+window open for late arrivals and deciding how long, and that is a different
+register from this one.
