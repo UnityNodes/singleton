@@ -520,6 +520,52 @@ matching the source. The struct's own defining sentence already says "at the
 moment it was made", which is the correct half, so it is left alone and the
 reason is written down.
 
+The rest of the triage produced three more corrections and one live defect,
+listed here because each one was a statement this repository made and could not
+support.
+
+**The register showed a judge an empty history, and had for three days.** The
+page swept logs eight windows of 4,000 blocks back from the head, a fixed 32,000
+block lookback. That was the whole life of the register when it was written. By
+2026-08-26 the demo's records had fallen out of the bottom of it, and from then
+until 2026-08-29 every asset on the page rendered a trail of nothing while the
+state above it read correctly. Nothing caught it: `before-judging.sh` checked
+that `/register` served markup, and `audit-claims.mjs` reads the chain and never
+the page. The floor is now the block the register was created in, 5,344,289,
+which the audit holds to the chain by asserting the address has code there and
+none in the block before. Windows went from 4,000 to 16,000 because the node
+scans linearly and serves these queries one at a time, so width pays and
+concurrency does not: 13 slices of 4,000 across 4 lanes took 20 seconds, 4 slices
+of 16,000 took 6, and 8 lanes lost 3 slices to timeouts while going slower than
+4. A slice that fails is now retried once split in half, and a slice that still
+fails is counted on the page instead of being swallowed. `script/history-still-visible.mjs`
+reads the bundle the site is serving, pulls the floor and the width out of it,
+and repeats the sweep against the chain; it fails on zero entries and it is in
+`before-judging.sh`.
+
+**`eth_getCode` was the wrong probe for a precompile.** `docs/SURFACES.md` said
+the six Creditcoin precompiles all carry code, eight lines under a promise that
+everything on the page was confirmed by calling the chain. `eth_getCode` returns
+`0x` for all of them, including the three this project calls in production, and
+for `0x0FD5` and `0x13BB` too. These are Substrate precompiles with no EVM
+bytecode. The conclusion was right and the evidence was not: the six answer an
+unknown selector with `revert Unknown selector`, and the two empty addresses
+return empty for any input at all. The page now says that.
+
+**An administrator can strand an asset already on file.** `docs/CAVEATS.md` said
+"no administrator and no attestor rotation can strand an asset already on file".
+The attestor half is true, because the floor is read only on entry. The
+confirmation depth is not: `setMinConfirmations` has no upper bound and
+`_requireFinal` sits inside `_readSourceEvent`, which settlement and release both
+go through. Raising the depth refuses the exits as readily as the entrances, and
+only the same key can lower it again. `test_theAdminStrandsAnAssetByRaisingTheConfirmationDepth`
+now pins it, and the caveat says so.
+
+**The content policy names two hosts, not one.** `web/README.md` said the policy
+allowed "exactly one connection target". The served header allows the testnet RPC
+and the mainnet RPC, so that `?rpc=` has somewhere legitimate to point. Nothing
+else is reachable, which was the part that mattered, but the count was wrong.
+
 ## Before judging
 
 `./script/before-judging.sh` runs what can go stale while nobody is looking: the

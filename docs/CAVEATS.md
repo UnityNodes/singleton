@@ -305,8 +305,18 @@ Two things bound it.
 
 The floor gates entry and never exit, tested in
 `test_aThinnedAttestorSetDoesNotTrapAnAssetAlreadyOnFile`. A settlement or a
-release goes through whatever the attestor set is doing, so no administrator and
-no attestor rotation can strand an asset already on file.
+release goes through whatever the attestor set is doing, so no attestor rotation
+can strand an asset already on file.
+
+That used to read "no administrator and no attestor rotation", which was false,
+and it is corrected here rather than quietly. The confirmation depth is a second
+dial and it does not behave like the floor: `_requireFinal` sits inside
+`_readSourceEvent`, which every proof consuming call shares, so raising the depth
+refuses settlements and releases as readily as it refuses new pledges. An
+administrator who sets it high enough holds an asset pledged until the same
+administrator lowers it, which is what `test_theAdminStrandsAnAssetByRaisingTheConfirmationDepth`
+now pins. Nothing recovers from it without that key. It belongs in caveat 9 with
+the rest of the administrator's reach.
 
 Zero is refused. `setMinAttestors(chainKey, 0)` reverts `QuorumNotSet`, and a
 chain with no floor stated records nothing at all rather than recording

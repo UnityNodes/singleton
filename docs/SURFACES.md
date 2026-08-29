@@ -11,8 +11,16 @@ docs page that lists precompiles omits BlockProver and ChainInfo entirely, and
 research into this that leaned on repository paths turned out to be citing files
 nobody had opened. Where a figure below has no call behind it, it is not here.
 
-The six Creditcoin specific precompiles all carry code; `0x0FD5` and `0x13BB`
-are empty, so the set does not simply continue. Whether anything else is
+A note on how the set was probed, because the obvious way is wrong here.
+`eth_getCode` returns `0x` for every address in this document, including the
+three this project calls in production. These are Substrate precompiles, not
+deployed contracts, and they have no EVM bytecode to return. An earlier version
+of this page said the six carry code, which was a claim `eth_getCode` cannot
+support and which the chain contradicts. What separates them is behaviour: the
+six answer an unknown selector with `revert Unknown selector`, while `0x0FD5`
+and `0x13BB` return empty for any input at all, which is what the EVM answers
+for an address where nothing is registered. So the set does not simply continue,
+but the evidence is the refusal, not the code. Whether anything else is
 registered at an address not probed here is not claimed either way.
 
 ## In use

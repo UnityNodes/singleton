@@ -182,7 +182,7 @@ slide('''
   716k to 634k.</p></li>
 </ol>
 <p class="foot-note">Also corrected: a caveat claiming an administrator cannot fabricate, which was false,
-and the vacuous test that backed it. 89 tests, every attack kept as a regression.</p>''')
+and the vacuous test that backed it. 90 tests, every attack kept as a regression.</p>''')
 
 slide('''
 <h2 class="display">Said before anybody has to ask.</h2>
@@ -207,7 +207,7 @@ slide('''
 <div class="stats">
   <div><span class="big">15</span><p>inclusion proofs on CC3 testnet, every hash published</p></div>
   <div><span class="big">2 / 2</span><p>attested source chains read, Sepolia and Ethereum mainnet</p></div>
-  <div><span class="big">89</span><p>tests, including both reviews kept as regressions</p></div>
+  <div><span class="big">90</span><p>tests, including both reviews kept as regressions</p></div>
   <div><span class="big">0</span><p>wallets, backends and indexers between the page and the chain</p></div>
 </div>
 <div class="chips wide">

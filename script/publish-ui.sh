@@ -4,7 +4,8 @@
 #
 # The site is a static bundle served by Caddy from /var/www/singleton behind a
 # Cloudflare origin certificate, with a content policy that lets the page reach
-# exactly one host: the Creditcoin RPC it reads the register from.
+# the two Creditcoin RPCs and nothing else: the testnet one it reads by default,
+# and the mainnet one so that `?rpc=` has somewhere to point.
 #
 #   ./script/publish-ui.sh
 

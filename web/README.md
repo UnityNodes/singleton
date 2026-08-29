@@ -61,6 +61,10 @@ and they have to be checked again.
 
 Builds and copies `web/dist` to `/var/www/singleton`, which Caddy serves behind
 a Cloudflare origin certificate. The content policy there allows no inline
-scripts, no external scripts, styles or fonts, and exactly one connection
-target: the Creditcoin RPC. Fonts are never inlined as `data:` URIs, because
+scripts, no external scripts, styles or fonts, and two connection targets, both
+of them a Creditcoin RPC: `rpc.cc3-testnet.creditcoin.network`, which the page
+reads by default, and `rpc.cc3.creditcoin.network`, so that `?rpc=` can be
+pointed at mainnet without editing the policy. Nothing else is reachable, which
+is the part that matters, but "exactly one" was the wrong count and is corrected
+here. Fonts are never inlined as `data:` URIs, because
 that policy names `font-src 'self'` and an inlined subset would silently fail.

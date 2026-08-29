@@ -155,6 +155,49 @@ contract AdminPowerTest is SourceChain {
         );
     }
 
+    /// The floor on the attestor set gates entry and never exit, so the caveats
+    /// used to say no administrator could strand an asset already on file. The
+    /// confirmation depth is the other dial, and it sits on the shared read
+    /// path rather than on entry, so it reaches the exits the floor cannot.
+    function test_theAdminStrandsAnAssetByRaisingTheConfirmationDepth() public {
+        bytes32 assetKey = registry.registerPledge(_harborPledge(1000 ether));
+
+        SingletonRegistry.Proof memory settle = _harborSettle();
+        SingletonRegistry.Proof memory release = _harborRelease();
+
+        registry.setMinConfirmations(SEPOLIA, 1_000_000);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.NotFinal.selector, settle.height, TIP, uint64(1_000_000)
+            )
+        );
+        registry.registerSettlement(settle);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.NotFinal.selector, release.height, TIP, uint64(1_000_000)
+            )
+        );
+        registry.registerRelease(release);
+
+        assertEq(
+            uint8(registry.getStatus(assetKey).state),
+            uint8(SingletonRegistry.AssetState.PLEDGED),
+            "the asset is stranded, and only the admin can free it"
+        );
+
+        registry.setMinConfirmations(SEPOLIA, MIN_CONF);
+        registry.registerSettlement(settle);
+        registry.registerRelease(release);
+
+        assertEq(
+            uint8(registry.getStatus(assetKey).state),
+            uint8(SingletonRegistry.AssetState.FREE),
+            "lowering the depth again releases what raising it held"
+        );
+    }
+
     function test_anExcludedEmitterStillCannotFileAnythingNew() public {
         registry.setEmitter(SEPOLIA, address(harbor), false);
         SingletonRegistry.Proof memory p = _harborPledge(1000 ether);

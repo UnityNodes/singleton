@@ -95,7 +95,7 @@ pays once. That accounts for 566,034 of the 593,379 saved. Sharing the continuit
 proof is the remaining 27,345. Measured, then written down, in
 [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
-89 tests cover it, including both suppression attacks that independent reviews
+90 tests cover it, including both suppression attacks that independent reviews
 found on 2026-08-19 and the regressions that keep them closed. The registry and both
 adapters are verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
