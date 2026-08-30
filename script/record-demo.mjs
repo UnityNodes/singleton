@@ -33,12 +33,16 @@ const chromium = await (async () => {
 /**
  * Records the demo against the live site, a little under two minutes.
  *
- * The narration is burned in as captions rather than spoken, because a judge
- * reviewing dozens of entries watches muted, and a caption a reader can pause on
- * carries a hash better than a voice can. Timings follow docs/DEMO.md; change
- * one and the chapter list on the demo page has to be re-checked against frames.
+ * The narration is burned in as captions and, separately, spoken by
+ * script/build-narration.mjs. Captions stay even with voice: a judge who scrubs
+ * muted, or pauses on a hash, still reads the line the voice is saying. This
+ * script only produces the silent recording and the timeline that pins each
+ * caption to the second it appeared; the voice is a second pass over its output,
+ * not a change to what happens here. Timings follow docs/DEMO.md; change one and
+ * the chapter list on the demo page has to be re-checked against frames.
  *
  *   node script/record-demo.mjs [outDir]
+ *   node script/build-narration.mjs [outDir]
  */
 const SITE = process.env.SITE ?? "https://singleton.unitynodes.com";
 /* The standing refusal on deed 43, on the registry the site currently reads. */
@@ -137,7 +141,11 @@ console.log(`  explorer warm after ${((Date.now() - warmedAt) / 1000).toFixed(1)
 await warmup.close();
 
 const page = await context.newPage();
-const say = (text) => page.evaluate((t) => window.__cap(t), text);
+const timeline = [];
+const say = (text) => {
+  if (text) timeline.push({ at: (Date.now() - t0) / 1000, text });
+  return page.evaluate((t) => window.__cap(t), text);
+};
 const wait = (ms) => page.waitForTimeout(ms);
 const mark = (label) => console.log(`  ${((Date.now() - t0) / 1000).toFixed(1)}s  ${label}`);
 
@@ -171,9 +179,9 @@ mark("3 hold");
  * eth_call that starts after the bundle has loaded. Waiting on the state chip
  * waits for the chain, which is the thing being demonstrated.
  */
-await say("Singleton watched from outside. First to file is on record.");
 await page.goto(`${SITE}/register`, { waitUntil: "domcontentloaded", timeout: 60000 });
 await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
+await say("Singleton watched from outside. First to file is on record.");
 await page.mouse.move(1300, 180, { steps: 24 });
 await wait(6200);
 mark("4 register");
@@ -263,6 +271,16 @@ const raw = await video.path();
 const named = path.join(outDir, "raw.webm");
 fs.renameSync(raw, named);
 console.log(`\nrecorded ${((Date.now() - t0) / 1000).toFixed(1)}s -> ${named}`);
+
+/*
+  Every line, at the second it actually appeared on screen. script/build-narration.mjs
+  reads this to place speech against the same recording rather than against a
+  guess, which is the difference between a voice that lands on the number it is
+  naming and one that drifts against footage after a re-record changes a wait().
+*/
+const timelinePath = path.join(outDir, "timeline.json");
+fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2));
+console.log(`timeline  -> ${timelinePath}`);
 
 /*
   Playwright writes VP8 in a webm, which Safari will not play and which several
