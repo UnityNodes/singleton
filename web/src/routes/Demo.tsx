@@ -246,7 +246,7 @@ export default function Demo() {
               {
                 k: "read the refusal",
                 v: "The failed transaction from the video, on Blockscout, decoding to AssetNotFree with the asset key and the incumbent lender.",
-                href: `${CFG.explorer}/tx/0x9f3c0067f084e0fb5a512d2ba6f8cc8c2e41c6ba371f7ae836c984a72e73297b`,
+                href: `${CFG.explorer}/tx/0xff2f99910101ee7e28755361f362d13693fb3b1f673ca20c5bd7d29a3d34c962`,
               },
               {
                 k: "read the contracts",

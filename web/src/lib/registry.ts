@@ -8,7 +8,7 @@
 
 const params = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
 
-const DEPLOYED = "0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7";
+const DEPLOYED = "0xcD9017e3C541cAF973987E23e02694111C25032C";
 
 export const CFG = {
   rpc: params.get("rpc") ?? "https://rpc.cc3-testnet.creditcoin.network",
@@ -35,7 +35,7 @@ export const CFG = {
  * which is the only way to catch a floor that has gone blind. Every other check
  * in this repository stayed green through three days of exactly that.
  */
-export const SWEEP = { genesis: 5_344_289, size: 16_000, lanes: 4 };
+export const SWEEP = { genesis: 5_397_612, size: 16_000, lanes: 4 };
 
 /// Null when the page was pointed at a register whose first block it cannot know.
 export const GENESIS: number | null =

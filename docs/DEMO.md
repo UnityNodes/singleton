@@ -9,7 +9,7 @@ a demo mode: it is the product, because a register that had to be trusted with
 keys would not be neutral.
 
 **Live**: <https://singleton.unitynodes.com>
-**Registry**: `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7` on CC3 testnet, verified
+**Registry**: `0xcD9017e3C541cAF973987E23e02694111C25032C` on CC3 testnet, verified
 **Evidence**: fifteen inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
 
 ---
@@ -53,7 +53,7 @@ Timecodes below are read off frames of the recording, not off this plan. Change
 | 3 | 0:20 to 0:28 | Hold on 02, cursor still | "Neither contract can read the other's logs. So both lend." |
 | 4 | 0:28 to 0:37 | Open the register, Demo deed 43, claimed, refusal on file | "Singleton watched from outside. First to file is on record." |
 | 5 | 0:37 to 0:54 | The red panel, then the failed transaction on Blockscout | "The second pledge was refused on chain. Open the failure yourself." |
-| 6 | 0:54 to 1:09 | The chain of custody, the attestor line inside the inclusion proof | "Each record keeps the attestor set that stood behind it. Seven, bonded." then "Raise the floor above the live set and it refuses: QuorumTooThin, 0xe19625fe." |
+| 6 | 0:54 to 1:09 | The chain of custody, the attestor line inside the inclusion proof | "Each record keeps the attestor set that stood behind it. Seven, bonded." then "Raise the floor above the live set and it refuses: QuorumTooThin, 0x9ecf965f." |
 | 7 | 1:09 to 1:33 | The other deed opened, five entries from pledge to re-pledge | "Settled, released, then the loser re-files legitimately. Five proofs, one asset." |
 | 8 | 1:33 to 1:44 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
 | 9 | 1:44 to 1:53 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |

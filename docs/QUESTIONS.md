@@ -179,7 +179,7 @@ two instances, made batch pledges work, and dropped mainnet gas from 716k to
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**
 
-Yes. The live registry `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7` was deployed after both fixes and all
+Yes. The live registry `0xcD9017e3C541cAF973987E23e02694111C25032C` was deployed after both fixes and all
 fifteen proofs were replayed onto it. Every previous instance is left on chain
 and named in the verification log with the reason it was superseded, rather than
 quietly removed. There are several, because each measurement that changed the
@@ -288,7 +288,7 @@ wording was wrong in four places and is now caveat 11, with the worked case.
 
 **"Recording a number nobody checks is theatre."** It is checked. The same read
 that stores the count enforces a floor against it, and the floor has refused a
-real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0xe19625fe701992994240bc6db4695669172558da26fddde694e27b25642be6ef`,
+real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0x9ecf965f4569f9c70c11003852450fd415aa5c174529cfd6a67985336897ae92`,
 status 0, on a verified contract so the error decodes. The register also exposes
 the count publicly, so a lending protocol reading it can apply a stricter
 standard than ours without asking us to change anything.
@@ -329,7 +329,7 @@ would have to name the slashing condition it depends on, and there is none to
 name.
 
 **"The admin is one EOA and there is no way to rotate it."** True, and stronger
-than a grep: the deployed runtime at `0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7`
+than a grep: the deployed runtime at `0xcD9017e3C541cAF973987E23e02694111C25032C`
 contains no `setAdmin`, `transferAdmin`, `acceptAdmin`, `transferOwnership` or
 `renounceOwnership` selector, so rotation is impossible on this instance rather
 than merely unwritten. What that does and does not mean is worth being precise

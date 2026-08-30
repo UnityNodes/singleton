@@ -46,7 +46,7 @@ const chromium = await (async () => {
  */
 const SITE = process.env.SITE ?? "https://singleton.unitynodes.com";
 /* The standing refusal on deed 43, on the registry the site currently reads. */
-const REFUSAL = "0x9f3c0067f084e0fb5a512d2ba6f8cc8c2e41c6ba371f7ae836c984a72e73297b";
+const REFUSAL = "0xff2f99910101ee7e28755361f362d13693fb3b1f673ca20c5bd7d29a3d34c962";
 const EXPLORER = "https://creditcoin-testnet.blockscout.com/tx";
 const outDir = process.argv[2] ?? path.join(os.tmpdir(), "singleton-demo");
 
@@ -218,7 +218,7 @@ await page.getByText("claimed, first to file").waitFor({ timeout: 45000 });
 await say("Each record keeps the attestor set that stood behind it. Seven, bonded.");
 await page.evaluate(() => window.__scrollToText("inclusion proof"));
 await wait(7000);
-await say("Raise the floor above the live set and it refuses: QuorumTooThin, 0xe19625fe.");
+await say("Raise the floor above the live set and it refuses: QuorumTooThin, 0x9ecf965f.");
 await wait(6600);
 mark("6 quorum");
 

@@ -378,7 +378,7 @@ key 3 first covered that height at CC3 block 5,110,417, and
 not rescue it either: the earliest tip satisfying `height + 64` is reached around
 CC3 5,110,478, where the count is still 3. The record was filed months later and
 stored **4**, which the `AttestationWitnessed` log in
-`0x0b54c68f65649096bb124eed889f728f68ae6affcb70e101de9d7807253145a1` preserves.
+`0xebf39c5210b98ae5bd17f2a84bdc7b51f314c036ade402d8e2c522a6a4472a41` preserves.
 
 **Why the contract stores the filing number.** `AttestorStash` exposes
 `getAttestorsCount(uint64)` and `getMinBondRequirement(uint64)` and nothing that
@@ -391,13 +391,13 @@ how the history table in [VERIFICATION.md](VERIFICATION.md) was built.
 **One half of the reading is right and stays.** As the floor, the filing-time
 number is the correct input: admission control decides whether to write today, so
 today's set is what should gate it. The live refusal `QuorumTooThin(1, 7, 8)` in
-`0xe19625fe701992994240bc6db4695669172558da26fddde694e27b25642be6ef` is that
+`0x9ecf965f4569f9c70c11003852450fd415aa5c174529cfd6a67985336897ae92` is that
 half working.
 
 **And the record carries the evidence of its own staleness**, which nothing said
-before. `Security.attestedTip` for that lien is 25,798,240 against a source
-height of 25,506,517: the proof was 291,723 Ethereum blocks old, about six weeks,
-when it was filed. A reader who wants the attesting-time quorum has the two
+before. `Security.attestedTip` for that lien is 25,864,740 against a source
+height of 25,506,517: the proof was 358,223 Ethereum blocks old, about seven
+weeks, when it was filed. A reader who wants the attesting-time quorum has the two
 numbers needed to go and fetch it.
 
 The wording was wrong in four places and is corrected: the register page, the

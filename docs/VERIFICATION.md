@@ -349,6 +349,16 @@ byte. The three agree to within one percent, and `minConfirmations(uint64)`
 gives the same three numbers plus a constant 416, so the slope is a property of
 the code and not of the function called.
 
+**A fourth point, from the 2026-08-30 redeploy that added the adapter freeze and
+the batch duplicate check.** `0xcD9017e3C541cAF973987E23e02694111C25032C`, 14,859
+bytes, `admin()` costs 218,907 gas: 13.23 gas per byte against the same no-code
+baseline, on the fourth deployment in a row. The two features added that day
+cost about 570 bytes and roughly 7,500 gas on every call to this contract, not
+only the calls that touch either fix, for the same reason threading the quorum
+read out of `_readSourceEvent` mattered in the first place: Creditcoin does not
+charge a function for what it does, it charges every call for how large the
+contract is.
+
 Stated narrowly on purpose. Two much smaller contracts on the same chain, the
 NFTfi and Blend adapters at 1,156 and 1,445 bytes, do **not** sit on that line,
 so this is a measured relationship across three sizes of one contract rather
