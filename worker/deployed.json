@@ -17,5 +17,8 @@
   "nftfi": "0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D",
   "blend": "0x29469395eAf6f95920E59F858042f0e28D98a20B",
   "previousRegistry": "0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7",
-  "minAttestors": 3
+  "minAttestors": 3,
+  "consentedCredit": "0xA295904659dc1f29EcA8B31F1696aEce47C97b5E",
+  "consentedAdapter": "0x54dDAd4c0b0bbcF00b2A094383490602A1B1457B",
+  "consentedDeedTokenId": 900
 }

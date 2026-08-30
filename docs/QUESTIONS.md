@@ -180,7 +180,7 @@ two instances, made batch pledges work, and dropped mainnet gas from 716k to
 fixed code?"**
 
 Yes. The live registry `0xcD9017e3C541cAF973987E23e02694111C25032C` was deployed after both fixes and all
-fifteen proofs were replayed onto it. Every previous instance is left on chain
+sixteen proofs were replayed onto it. Every previous instance is left on chain
 and named in the verification log with the reason it was superseded, rather than
 quietly removed. There are several, because each measurement that changed the
 contract got its own deployment rather than a claim.
@@ -260,7 +260,7 @@ what has to stay free for the priority rule to work.
 | Objection | Likely | How it is answered |
 |---|---|---|
 | The adapter and allowlist reintroduce a trusted party | High | Bounded: proof decides existence, adapter decides meaning. Caveat 9, written first. |
-| Both demo lenders are yours, so the collision is staged | High | True, and conceded first. Six of the fifteen proofs read NFTfi and Blur Blend on mainnet, which shows the reader works on protocols that never heard of us. Both of those escrow, so they cannot show the collision. The collision is ours because the non-custodial market is thin, and caveat 6 says so. |
+| Both demo lenders are yours, so the collision is staged | High | True, and conceded first. Six of the sixteen proofs read NFTfi and Blur Blend on mainnet, which shows the reader works on protocols that never heard of us. Both of those escrow, so they cannot show the collision. The collision is ours because the non-custodial market is thin, and caveat 6 says so. |
 | A positive record prevents nothing | High | Said first, on the landing page and in the demo. UCC-9 has governed on exactly that basis for fifty years. |
 | An indexer could do this off chain | Medium | It could, and then the register is a company. The point is the witness being a precompile. |
 | Adoption requires lenders to publish their book | Medium | Filing buys priority. That is the whole incentive UCC-9 runs on. |

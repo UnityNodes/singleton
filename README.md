@@ -47,7 +47,7 @@ life against two unrelated lenders on Sepolia: pledged, a second pledge refused
 live, the refusal kept on file, settled, released, and re-pledged by the lender
 that lost the first race. Six more proofs read two real protocols on Ethereum
 mainnet, which have never heard of it, including a lien that ended in a failed
-auction rather than a repayment. Fifteen proofs, every hash in
+auction rather than a repayment. Sixteen proofs, every hash in
 [docs/VERIFICATION.md](docs/VERIFICATION.md), replayable with
 `node worker/demo.mjs`.
 
@@ -60,8 +60,9 @@ auction rather than a repayment. Fifteen proofs, every hash in
 | Registry, CC3 testnet | `0xcD9017e3C541cAF973987E23e02694111C25032C`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
-| Demo assets | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64`, token 43 claimed with a refusal on file, token 42 through its whole life |
+| Demo assets | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64`, token 43 claimed with a refusal on file, token 42 through its whole life, token 900 pledged with a signed EIP-712 consent |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
+| Consented Credit, Sepolia | `0xA295904659dc1f29EcA8B31F1696aEce47C97b5E`, the one lender whose pledge the registry cannot record without a signature from the token's owner |
 
 **A record inherits the security of an attestor set, so the set is part of the
 record.** The number stored is the one bonded for that chain when the record was
@@ -95,7 +96,7 @@ pays once. That accounts for 566,034 of the 593,379 saved. Sharing the continuit
 proof is the remaining 27,345. Measured, then written down, in
 [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
-93 tests cover it, including both suppression attacks that independent reviews
+98 tests cover it, including both suppression attacks that independent reviews
 found on 2026-08-19 and the regressions that keep them closed. The registry and both
 adapters are verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of

@@ -29,6 +29,19 @@ const BLEND_ABI = [
   "event Seize(uint256 lienId,address collection)",
 ];
 
+/*
+  ConsentedCredit's Pledged carries an EIP-712 signature next to the claim it
+  backs, which the relay does not need to check: that check happens twice
+  already, once in the emitter and independently again in ConsentedAdapter on
+  Creditcoin. The relay only needs the same five fields every other schema
+  reads. Settled and Released are byte identical to Harbor's shape.
+*/
+const CONSENTED_CREDIT_ABI = [
+  "event Pledged(address indexed collateralToken,uint256 indexed tokenId,address indexed borrower,uint256 amount,bytes32 pledgeInstanceId,uint256 nonce,uint8 v,bytes32 r,bytes32 s)",
+  "event Settled(address indexed collateralToken,uint256 indexed tokenId,address indexed borrower,uint256 amount,bytes32 pledgeInstanceId)",
+  "event Released(address indexed collateralToken,uint256 indexed tokenId,address indexed borrower,uint256 amount,bytes32 pledgeInstanceId)",
+];
+
 export const SCHEMAS = [
   {
     name: "singleton",
@@ -98,6 +111,18 @@ export const SCHEMAS = [
         instanceId: ethers.zeroPadValue(ethers.toBeHex(parsed.args.lienId), 32),
       };
     },
+  },
+  {
+    name: "consented-credit",
+    abi: CONSENTED_CREDIT_ABI,
+    events: { pledge: "Pledged", collision: "Pledged", settle: "Settled", release: "Released" },
+    read: (parsed) => ({
+      token: parsed.args.collateralToken,
+      tokenId: parsed.args.tokenId,
+      borrower: parsed.args.borrower,
+      amount: parsed.args.amount,
+      instanceId: parsed.args.pledgeInstanceId,
+    }),
   },
 ];
 

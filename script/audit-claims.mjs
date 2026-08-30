@@ -588,14 +588,24 @@ if (known.size > 0) {
   still owns it. If that ever stopped being true the demo would have become
   quietly custodial and every document here would still read the same.
 */
-const PLEDGED_SIG = "0xbfb86e5d7136ec550644fc6d0fcc8e6504e3dc19aacdeec2dec3d459854b4823";
+/*
+  Two shapes so far, both keeping the borrower in the same third topic:
+  Harbor and Meridian's five-field Pledged, and ConsentedCredit's nine-field
+  one, which adds a nonce and a signature after the same five. A signature
+  matched here is not verified, only located; the registry and its adapter
+  already did the verifying, on chain, before this ever ran.
+*/
+const PLEDGED_SIGS = new Set([
+  "0xbfb86e5d7136ec550644fc6d0fcc8e6504e3dc19aacdeec2dec3d459854b4823",
+  "0x5a077d7ebc8de6067485f5c85d4a0d67b1d7d5de246d5c0588a4940de20aa516",
+]);
 const demo = JSON.parse(read("worker/demo.json"));
 const registryOf = (sel, arg) => call(deployed.registry, sel + arg);
 /* Several steps move the same asset, so the count is of assets and not of steps. */
 const checkedAssets = new Set();
 for (const step of demo.steps.filter((x) => x.operation === "pledge")) {
   const r = await receipt(SEPOLIA, step.tx);
-  const log = r?.logs?.find((l) => l.topics[0]?.toLowerCase() === PLEDGED_SIG);
+  const log = r?.logs?.find((l) => PLEDGED_SIGS.has(l.topics[0]?.toLowerCase()));
   if (!log) continue;
   const token = "0x" + log.topics[1].slice(26);
   const tokenId = BigInt(log.topics[2]);

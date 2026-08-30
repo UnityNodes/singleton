@@ -65,6 +65,7 @@ export const COLLATERAL: Record<string, string> = {
 export const OURS = new Set([
   "0xaad02e7bebc37acb5dc67c42f70d61d8c86df3e5",
   "0xfa72380654232c5538d1f17e2d8d6c261bd263ad",
+  "0xa295904659dc1f29eca8b31f1696aece47c97b5e",
 ]);
 
 export const isOurs = (address: string) => OURS.has(address.toLowerCase());
@@ -74,6 +75,7 @@ export const PROTOCOLS: Record<string, string> = {
   "0xfa72380654232c5538d1f17e2d8d6c261bd263ad": "Meridian Credit",
   "0xb6adec2acc851d30d5fb64f3137234bcdcbbad0d": "NFTfi v3",
   "0x29469395eaf6f95920e59f858042f0e28d98a20b": "Blur Blend",
+  "0xa295904659dc1f29eca8b31f1696aece47c97b5e": "Consented Credit",
 };
 
 const SELECTOR = {
@@ -419,6 +421,7 @@ export const ENTRY_WORDS: Record<EntryKind, string> = {
 export const KNOWN_ASSETS = [
   { chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", tokenId: "43" },
   { chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", tokenId: "42" },
+  { chainId: 11155111, token: "0xee79491615882b5421dACEb765564f4c4a09dd64", tokenId: "900" },
   { chainId: 1, token: "0xd774557b647330C91Bf44cfEAB205095f7E6c367", tokenId: "7819" },
   { chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", tokenId: "8189" },
   { chainId: 1, token: "0xBd3531dA5CF5857e7CfAA92426877b022e612cf8", tokenId: "4271" },

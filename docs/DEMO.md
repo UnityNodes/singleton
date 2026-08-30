@@ -10,7 +10,7 @@ keys would not be neutral.
 
 **Live**: <https://singleton.unitynodes.com>
 **Registry**: `0xcD9017e3C541cAF973987E23e02694111C25032C` on CC3 testnet, verified
-**Evidence**: fifteen inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
+**Evidence**: sixteen inclusion proofs, every hash in [VERIFICATION.md](VERIFICATION.md)
 
 ---
 

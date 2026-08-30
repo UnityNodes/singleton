@@ -65,15 +65,40 @@ For custodial pledges this closes: require a `Transfer` of the token to the
 emitter in the same receipt, and a griefer cannot forge it, because a real
 transfer needs the owner's key.
 
-For non-custodial liens there is no transfer to require, so this stays a genuine
-limit. What softens it:
+For non-custodial liens there is no transfer to require, so this stayed a
+genuine limit for every lender in this project until 2026-08-30. What softens
+it, for a lender that has not opted into the cryptographic version below:
 
 - the allowlist is kept minimal, append-mostly, and visible on-chain, so the
   worst case is a detectable and reversible freeze by a named party rather than
   a silent fabrication by an indexer nobody audits
-- roadmap: an owner-signed consent, EIP-712, carried inside the pledge event.
-  That converts the mitigation into cryptographic prevention, at the cost of
-  requiring the protocol to opt in
+
+**And, for a lender that opts in, built rather than named.** `ConsentedCredit`
+on Sepolia requires an EIP-712 signature from the token's real owner over
+`(token, tokenId, owner, nonce)` before it will emit a pledge at all, and that
+signature travels inside the log next to the claim it backs. `ConsentedAdapter`
+on Creditcoin recomputes the identical digest from nothing but the log and the
+emitter's own address, proven by the receipt, and refuses to translate a pledge
+whose signature does not recover to the owner it names. It does not ask
+`ConsentedCredit` whether the signature was valid; it is independently true or
+independently false, checked directly in `test_theAdapterIndependentlyRefusesAForgedConsent`
+against a log the emitter itself never wrote.
+
+That is a real difference from the softening above, not a stronger version of
+the same idea. The allowlist mitigation depends on somebody noticing a bad
+actor and removing it after the fact. This one makes the fabrication
+impossible to construct in the first place, for exactly the emitters that
+carry a signature. It is why the two are written as alternatives rather than
+as a ladder: an emitter either ships this log shape and gets the cryptographic
+answer, or it does not and gets the detect-and-remove one.
+
+What it does not do. It does not retrofit Harbor, Meridian, NFTfi or Blend,
+none of which sign anything, so the softened version above is still what
+covers all four of the demo's real lenders. It does not touch custodial
+protocols, which caveat 6 already closes a different way. And it costs the
+protocol a real integration change, requiring an owner's signature at the
+point of pledging, which is exactly the "at the cost of requiring the protocol
+to opt in" this caveat named before building anything.
 
 **A related question, asked and measured rather than left open.** Refusals are
 unbounded: anybody may keep filing them against a live lien, and releasing that

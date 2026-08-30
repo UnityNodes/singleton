@@ -104,6 +104,12 @@
       "sourceRpc": "https://ethereum-rpc.publicnode.com",
       "note": "its auction failed and the lender seized it, which also ends the lien",
       "expect": "recorded"
+    },
+    {
+      "operation": "pledge",
+      "tx": "0xfa30f32d466dff0585b02563078dd3565524f63aba92bcb72e4f8c3a00bd867c",
+      "note": "ConsentedCredit lends against deed 900, the owner signed EIP-712 consent independently re-checked by the adapter",
+      "expect": "recorded"
     }
   ]
 }
