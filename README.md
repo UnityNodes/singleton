@@ -54,31 +54,32 @@ auction rather than a repayment. Sixteen proofs, every hash in
 | | |
 |---|---|
 | The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
-| The demo, 1:53 | [/demo](https://singleton.unitynodes.com/demo), voiced and captioned, no wallet needed to follow it |
+| The demo, 1:37 | [/demo](https://singleton.unitynodes.com/demo), voiced and captioned, no wallet needed to follow it |
 | The deck | [singleton-deck.pdf](https://singleton.unitynodes.com/singleton-deck.pdf), eleven slides |
 | The one pager | [singleton-one-pager.pdf](https://singleton.unitynodes.com/singleton-one-pager.pdf) |
 | Registry, CC3 testnet | `0xcD9017e3C541cAF973987E23e02694111C25032C`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
+| Consented Credit, Sepolia | `0xA295904659dc1f29EcA8B31F1696aEce47C97b5E`, the one lender whose pledge the registry cannot record without a signature from the token's owner |
 | Demo assets | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64`, token 43 claimed with a refusal on file, token 42 through its whole life, token 900 pledged with a signed EIP-712 consent |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
-| Consented Credit, Sepolia | `0xA295904659dc1f29EcA8B31F1696aEce47C97b5E`, the one lender whose pledge the registry cannot record without a signature from the token's owner |
 
 **A record inherits the security of an attestor set, so the set is part of the
 record.** The number stored is the one bonded for that chain when the record was
 filed. It is not the set that stood behind the original attestation of the
 source block, which is a different number and, on Creditcoin, is not reachable
-from inside a transaction at all. Caveat 11 says so with the case that shows it. Creditcoin bonds seven attestors for Sepolia and four for
-Ethereum, a hundred CTC each, and those numbers move: read at historical
-heights, Sepolia went 0 to 1 to 6 to 7 between 2026-05-01 and 2026-07-09, and
-Ethereum went 0 to 1 to 3 to 4, having appeared on the supported chain list a
-month before a single attestor was bonded for it. Every bridge and oracle
-shipped so far stores a record made under seven the same way as one made under
-two. This registry reads the count and the bond inside the transaction that
-accepts a proof, keeps both with the lien and with every refusal, emits them in a
-log that outlives the record itself, and refuses to file anything at all once the
-set has fallen below a stated floor. The floor gates entry and never exit, so no
-attestor rotation can strand an asset already on file.
+from inside a transaction at all. Caveat 11 says so with the case that shows
+it. Creditcoin bonds seven attestors for Sepolia and four for Ethereum, a
+hundred CTC each, and those numbers move: read at historical heights, Sepolia
+went 0 to 1 to 6 to 7 between 2026-05-01 and 2026-07-09, and Ethereum went 0
+to 1 to 3 to 4, having appeared on the supported chain list a month before a
+single attestor was bonded for it. Every bridge and oracle shipped so far
+stores a record made under seven the same way as one made under two. This
+registry reads the count and the bond inside the transaction that accepts a
+proof, keeps both with the lien and with every refusal, emits them in a log
+that outlives the record itself, and refuses to file anything at all once the
+set has fallen below a stated floor. The floor gates entry and never exit, so
+no attestor rotation can strand an asset already on file.
 
 Many pledges can be filed from one continuity proof. Measured on chain, not
 estimated: four pledges filed one at a time cost 1,582,616 gas, and the same four
@@ -184,6 +185,27 @@ both are proven.
 Nothing was deployed on mainnet and nothing was asked of either protocol.
 Creditcoin attests Ethereum, so an existing loan can simply be read.
 
+### A lender that signs, not just emits
+
+An adapter interprets a log, but nothing stops the log itself from being a lie:
+a malicious or careless allowlisted protocol can emit a pledge against
+collateral it never touched, which is caveat 5's global freeze griefing.
+[`ConsentedCredit`](src/emitters/ConsentedCredit.sol) closes that for any
+lender willing to change its integration: the token's owner signs an EIP-712
+message over the exact asset, and that signature travels inside the log.
+[`ConsentedAdapter`](src/adapters/ConsentedAdapter.sol) recomputes the same
+digest independently, on Creditcoin, from nothing but the log and the
+emitter's own address, and refuses to translate a pledge whose signature does
+not recover to the owner it names. It never asks the emitter whether the
+signature was valid, checked directly in
+`test_theAdapterIndependentlyRefusesAForgedConsent` against a log the emitter
+itself never wrote.
+
+This does not retrofit Harbor, Meridian, NFTfi or Blend, none of which sign
+anything, so caveat 5's older mitigation is still what covers all four of the
+demo's real lenders. It is a second answer for a lender that opts in, not a
+stronger version of the first.
+
 ---
 
 ## How this is kept honest
@@ -206,9 +228,13 @@ that turned out to be false. Caveat 6 carries the correction.
 
 `./script/before-judging.sh` is the one to run before submitting or presenting.
 It is read only and needs no key: the tests, the audit, the configuration on
-chain, the six links a judge opens, and the attestor margin behind the source
-chains. Nothing it checks lives in this repository, which is the point. The
-submission sits untouched for days and the world underneath it moves.
+chain, the six links a judge opens, the register's own history sweep against
+the bundle actually served, and the attestor margin behind the source chains.
+Nothing it checks lives in this repository, which is the point. The submission
+sits untouched for days and the world underneath it moves. The history check
+exists because one of those days already happened: a fixed lookback window
+outran the register's own records, and every other check here stayed green
+through three days of an empty page.
 
 `./script/from-a-clone.sh` answers the other half of that: it clones this
 repository into a temporary directory and runs the tests, the deck build, the
