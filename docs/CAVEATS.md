@@ -69,11 +69,11 @@ For non-custodial liens there is no transfer to require, so this stays a genuine
 limit. What softens it:
 
 - the allowlist is kept minimal, append-mostly, and visible on-chain, so the
- worst case is a detectable and reversible freeze by a named party rather than
- a silent fabrication by an indexer nobody audits
+  worst case is a detectable and reversible freeze by a named party rather than
+  a silent fabrication by an indexer nobody audits
 - roadmap: an owner-signed consent, EIP-712, carried inside the pledge event.
- That converts the mitigation into cryptographic prevention, at the cost of
- requiring the protocol to opt in
+  That converts the mitigation into cryptographic prevention, at the cost of
+  requiring the protocol to opt in
 
 **A related question, asked and measured rather than left open.** Refusals are
 unbounded: anybody may keep filing them against a live lien, and releasing that

@@ -363,7 +363,7 @@ should suggest otherwise.
 
 - The unused-surface question needed a document, not a sentence. It got one.
 - The adapter objection is the one to raise unprompted, because answering it
- after it is asked reads as damage control and answering it first reads as
- having thought about it.
+  after it is asked reads as damage control and answering it first reads as
+  having thought about it.
 - The market answer had to stop reaching for the trillion dollar number and
- name the small measurable one instead.
+  name the small measurable one instead.
