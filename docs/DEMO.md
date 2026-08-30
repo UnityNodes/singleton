@@ -1,4 +1,4 @@
-# Demo, a hundred and fourteen seconds
+# Demo, a hundred and thirteen seconds
 
 One asset, two lenders, a refusal anybody can open. Then the same registry
 pointed at two protocols on Ethereum mainnet that never heard of it.
@@ -33,11 +33,14 @@ build, test or verify anything.
 
 ```bash
 PLAYWRIGHT=/path/to/node_modules/playwright-core node script/record-demo.mjs
+ELEVENLABS_API_KEY=... node script/build-narration.mjs
 ```
 
-Without the variable it resolves `playwright-core` normally and says so plainly
-if it is missing. It used to import an absolute path into a different project on
-one machine, so the recorder could not run on a clone at all.
+Without the `PLAYWRIGHT` variable the recorder resolves `playwright-core`
+normally and says so plainly if it is missing. It used to import an absolute
+path into a different project on one machine, so the recorder could not run on
+a clone at all. The narration step needs only the ElevenLabs key; everything it
+places is timed off the recording the first command just made.
 
 Timecodes below are read off frames of the recording, not off this plan. Change
 `script/record-demo.mjs` and every number here and in the chapter list on
@@ -45,17 +48,17 @@ Timecodes below are read off frames of the recording, not off this plan. Change
 
 | # | Time | On screen | Spoken |
 |---|---|---|---|
-| 1 | 0:00 to 0:11 | Landing hero, the coil turning | "A borrower pledges one tokenised deed and takes a loan." |
-| 2 | 0:11 to 0:20 | Scroll to the collision band, hold on 01 and 02 | "An hour later they pledge the same deed to a second lender." |
+| 1 | 0:00 to 0:12 | Landing hero, the coil turning | "A borrower pledges one tokenised deed and takes a loan." |
+| 2 | 0:12 to 0:20 | Scroll to the collision band, hold on 01 and 02 | "An hour later they pledge the same deed to a second lender." |
 | 3 | 0:20 to 0:28 | Hold on 02, cursor still | "Neither contract can read the other's logs. So both lend." |
 | 4 | 0:28 to 0:37 | Open the register, Demo deed 43, claimed, refusal on file | "Singleton watched from outside. First to file is on record." |
 | 5 | 0:37 to 0:54 | The red panel, then the failed transaction on Blockscout | "The second pledge was refused on chain. Open the failure yourself." |
 | 6 | 0:54 to 1:09 | The chain of custody, the attestor line inside the inclusion proof | "Each record keeps the attestor set that stood behind it. Seven, bonded." then "Raise the floor above the live set and it refuses: QuorumTooThin, 0xe19625fe." |
-| 7 | 1:09 to 1:27 | The other deed opened, five entries from pledge to re-pledge | "Settled, released, then the loser re-files legitimately. Five proofs, one asset." |
-| 8 | 1:27 to 1:37 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
-| 9 | 1:37 to 1:46 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
+| 7 | 1:09 to 1:33 | The other deed opened, five entries from pledge to re-pledge | "Settled, released, then the loser re-files legitimately. Five proofs, one asset." |
+| 8 | 1:33 to 1:44 | Rail, NFTfi collateral 7819 and two Pudgy Penguins | "Real NFTfi and Blur Blend loans on Ethereum mainnet, read unmodified." |
+| 9 | 1:44 to 1:53 | The green free panel, hold on the last sentence | "A positive record and a priority rule. Never proof of absence." |
 
-Total 1:46. Step 5 is the moment; it lands at 35 percent of the runtime.
+Total 1:53. Step 5 is the moment; it lands at 33 percent of the runtime.
 
 Step 6 is the only one whose second caption is not on the screen it plays over.
 The attestor line is, and the refusal it names is a transaction anybody can
@@ -68,13 +71,21 @@ wait. So each mark sits a few seconds inside its step, on settled content, and
 every one of them was checked against a frame.
 
 The recording is reproducible: `node script/record-demo.mjs` drives the live
-site, burns the narration in as captions, and writes both the raw webm and the
-mp4 served from `/demo`. That was not true until 2026-08-29. The script stopped
-at the webm and the mp4 was encoded by hand, so "reproducible" was a claim about
-a step nobody had written down. The ffmpeg call is now the last thing the script
-does, and it fails loudly rather than leaving a webm somebody has to guess at. Captions rather than a
-voice track, because a judge reviewing dozens of entries watches muted, and a
-caption can be paused on a hash.
+site, burns the narration in as captions, and writes the raw webm, the silent
+mp4 served from `/demo`, and a timeline of when each caption appeared. That was
+not true until 2026-08-29. The script stopped at the webm and the mp4 was
+encoded by hand, so "reproducible" was a claim about a step nobody had written
+down. The ffmpeg call is now the last thing the script does, and it fails loudly
+rather than leaving a webm somebody has to guess at.
+
+A second script, `script/build-narration.mjs`, reads that timeline and speaks
+each caption with ElevenLabs, placed at the second it appeared rather than read
+straight through, then muxes the result onto the video without re-encoding the
+picture. The captions stay: a viewer who scrubs muted, or pauses on a hash,
+reads the same line the voice says. Splitting the two scripts means a caption
+wording change re-records video and voice together, correctly, while a voice-only
+change (a different voice, different phrasing of a spoken line) never touches the
+picture.
 
 ## Staging the refusal
 

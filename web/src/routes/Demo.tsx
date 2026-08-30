@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CFG, short } from "@/lib/registry";
 
 const VIDEO = "/demo/singleton.mp4";
-const RUNTIME = 106;
+const RUNTIME = 113;
 
 /**
  * Timecodes are read off frames of the recording in script/record-demo.mjs, not
@@ -18,11 +18,11 @@ const CHAPTERS = [
   { at: 14, title: "and the same deed again", line: "An hour later, a second lender, no shared anything." },
   { at: 22, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
   { at: 31, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
-  { at: 45, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
-  { at: 58, title: "what stood behind the record", line: "The attestor set the registry believed, kept with the lien." },
-  { at: 80, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
-  { at: 91, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
-  { at: 99, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
+  { at: 47, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
+  { at: 64, title: "what stood behind the record", line: "The attestor set the registry believed, kept with the lien." },
+  { at: 87, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
+  { at: 98, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
+  { at: 106, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
 ];
 
 const STACK = [
@@ -148,7 +148,7 @@ export default function Demo() {
                       </svg>
                     </button>
                     <span className="label absolute left-4 top-4 border border-line bg-ink/80 px-2.5 py-1 backdrop-blur">
-                      {clock(RUNTIME)} &middot; captioned, no sound
+                      {clock(RUNTIME)} &middot; voiced and captioned
                     </span>
                   </>
                 )}

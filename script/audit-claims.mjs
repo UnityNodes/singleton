@@ -401,8 +401,8 @@ if (seconds !== null) {
     { rel: "docs/DEMO.md", re: /^Total (\d:\d\d)\./m, what: "a total" },
     { rel: "docs/DEMO.md", re: /^\| \d \| \d:\d\d to (\d:\d\d) \|/gm, what: "a last chapter ending" },
     { rel: "README.md", re: /\| The demo, (\d:\d\d) \|/, what: "a running time" },
-    { rel: "deck/one-pager.html", re: /\/demo, (\d:\d\d), captioned/, what: "a running time" },
-    { rel: "deck/build.py", re: /\/demo, (\d:\d\d), captioned/, what: "a running time" },
+    { rel: "deck/one-pager.html", re: /\/demo, (\d:\d\d), voiced and captioned/, what: "a running time" },
+    { rel: "deck/build.py", re: /\/demo, (\d:\d\d), voiced and captioned/, what: "a running time" },
   ];
   /*
     The site says the running time in words rather than digits, and said "ninety
@@ -423,6 +423,43 @@ if (seconds !== null) {
           `${rel} says the demo runs ${under ? "under " : ""}${phrase}, and the video is ${clock(seconds)}`,
         );
       }
+    }
+  }
+  /*
+    docs/DEMO.md spells its own running time out in its title, in words, and
+    that line sat at "a hundred and fourteen seconds" through two separate
+    corrections of the actual duration in the body of the same file, because
+    nothing had ever looked at the title. The fixed phrases above only cover a
+    handful of exact strings; a title's number moves every time the recording
+    does, so it is parsed rather than matched.
+  */
+  const ONES = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+    ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+    sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  };
+  const TENS = {
+    twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+  };
+  const wordsToNumber = (phrase) => {
+    let total = 0, current = 0;
+    for (const w of phrase.toLowerCase().split(/[\s-]+/)) {
+      if (w === "a" || w === "and") continue;
+      if (w === "hundred") { current = (current || 1) * 100; continue; }
+      if (TENS[w] !== undefined) { current += TENS[w]; continue; }
+      if (ONES[w] !== undefined) { current += ONES[w]; continue; }
+      return null;
+    }
+    return total + current || null;
+  };
+  const titleMatch = read("docs/DEMO.md").match(/^# Demo, ([a-z][a-z\s-]+) seconds$/m);
+  if (seconds !== null && titleMatch) {
+    checkedCounts++;
+    const claimed = wordsToNumber(titleMatch[1]);
+    if (claimed === null || Math.abs(claimed - Math.round(seconds)) > 1) {
+      findings.push(
+        `docs/DEMO.md title says "${titleMatch[1]} seconds", and the video is ${Math.round(seconds)}`,
+      );
     }
   }
   for (const t of totals) {
