@@ -93,9 +93,21 @@ contract AdminPowerTest is SourceChain {
         return _relay(_log(registry.RELEASED_SIG()));
     }
 
-    /// The adapter is where the admin's real power is. It cannot invent a log,
-    /// but it decides what a real log means, and that is enough to file a lien
-    /// against an asset whose owner was never involved.
+    /**
+     * The adapter is where the admin's real power is. It cannot invent a log,
+     * but it decides what a real log means, and that is enough to file a lien
+     * against an asset whose owner was never involved.
+     *
+     * The freeze added after this test was first written closes what happens
+     * next, not what happens here: it cannot stop a lying adapter from being
+     * the very first thing installed for an emitter, because there is nothing
+     * yet to freeze. What it does is lock the lie in immediately, the moment it
+     * is used. The admin cannot even swap the adapter back afterward, which
+     * is worse in one way (the lie can never be corrected by the same lever
+     * that told it) and better in the one that matters more (nobody, including
+     * this admin, can ever install a second, different lie against the same
+     * emitter later).
+     */
     function test_theAdminCanFabricateThroughAnAdapter() public {
         FabricatingAdapter liar = new FabricatingAdapter(address(deed), UNTOUCHED_ID);
         registry.setAdapter(SEPOLIA, address(harbor), address(liar));
@@ -107,12 +119,12 @@ contract AdminPowerTest is SourceChain {
         assertEq(uint8(r.state), uint8(SingletonRegistry.AssetState.PLEDGED), "never pledged");
         assertEq(deed.ownerOf(UNTOUCHED_ID), UNINVOLVED, "and still owned by somebody else");
 
-        registry.setAdapter(SEPOLIA, address(harbor), address(0));
-        assertEq(
-            uint8(registry.getStatus(fabricated).state),
-            uint8(SingletonRegistry.AssetState.PLEDGED),
-            "removing the adapter does not undo what it wrote"
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.AdapterFrozen.selector, SEPOLIA, address(harbor)
+            )
         );
+        registry.setAdapter(SEPOLIA, address(harbor), address(0));
     }
 
     /// The boundary that does hold: no adapter can produce a record from a

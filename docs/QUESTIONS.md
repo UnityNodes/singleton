@@ -147,8 +147,15 @@ record still points at a transaction that happened even when the meaning
 attached to it is a lie. They cannot take an asset either: the registry holds no
 funds and the certificate is soulbound.
 
-The mitigation is not built and is named rather than implied: a timelock on
-`setAdapter`, or adapters frozen per emitter after first use.
+Narrower than it was when this question was first answered. Of the two
+mitigations named then, a timelock on `setAdapter` or adapters frozen per
+emitter after first use, the second is built: `adapterOf[chainKey][emitter]`
+locks the first time it is actually used to read a log, and `setAdapter`
+reverts `AdapterFrozen` afterward. A compromised key can still install the
+first, lying adapter on an emitter that has never been read before, because
+there is nothing yet to freeze. It cannot install a second one, and it cannot
+undo the first once used, on any emitter with real history. Caveat 9 has the
+worked case both ways.
 
 **"Two High severity bugs were found on 2026-08-19. What else is unfound?"**
 
@@ -356,7 +363,7 @@ should suggest otherwise.
 
 - The unused-surface question needed a document, not a sentence. It got one.
 - The adapter objection is the one to raise unprompted, because answering it
-  after it is asked reads as damage control and answering it first reads as
-  having thought about it.
+ after it is asked reads as damage control and answering it first reads as
+ having thought about it.
 - The market answer had to stop reaching for the trillion dollar number and
-  name the small measurable one instead.
+ name the small measurable one instead.

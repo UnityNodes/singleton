@@ -169,6 +169,16 @@ contract SingletonRegistry {
     /// Zero means the emitter's logs are read directly.
     mapping(uint64 => mapping(address => address)) public adapterOf;
 
+    /**
+     * Whether this chain and emitter's decoding rule has ever actually been
+     * used to read a real log. Set once, inside `_readEvent`, the first time
+     * that happens, and checked by `setAdapter`. A rule that has never been
+     * used has nothing behind it to protect; a rule that has is what a lender
+     * reading past records is trusting, and letting it change afterward is the
+     * exact power caveat 9 names.
+     */
+    mapping(uint64 => mapping(address => bool)) public adapterFrozen;
+
     /// Confirmation depth before a source block is accepted. Stricter for L2s.
     mapping(uint64 => uint64) public minConfirmations;
 
@@ -271,6 +281,7 @@ contract SingletonRegistry {
     error ConfirmationsNotSet(uint64 chainKey);
     error QuorumNotSet(uint64 chainKey);
     error QuorumTooThin(uint64 chainKey, uint64 attestors, uint64 required);
+    error AdapterFrozen(uint64 chainKey, address emitter);
     error CollateralNotIdentified();
     error InstanceAlreadyOpen(address emitter, bytes32 instanceId);
     error UnknownInstance(address emitter, bytes32 instanceId);
@@ -295,7 +306,17 @@ contract SingletonRegistry {
         emit EmitterAllowed(chainKey, emitter, allowed);
     }
 
+    /**
+     * Locked the first time this emitter's decoding rule is actually used, in
+     * either direction. An administrator who installs a lying adapter on a
+     * brand new emitter still writes whatever that first read says, because
+     * nothing was there before to lock; but every read after the first is
+     * against a rule that cannot be swapped, so a fabrication cannot be undone
+     * and a correction cannot be undone either. Both are the same lever, and
+     * removing the lever removes both directions of it. Named in caveat 9.
+     */
     function setAdapter(uint64 chainKey, address emitter, address adapter) external onlyAdmin {
+        if (adapterFrozen[chainKey][emitter]) revert AdapterFrozen(chainKey, emitter);
         adapterOf[chainKey][emitter] = adapter;
         emit AdapterSet(chainKey, emitter, adapter);
     }
@@ -366,7 +387,24 @@ contract SingletonRegistry {
      * is refused with a continuity mismatch, and every forged member of an
      * otherwise honest batch is refused too.
      */
-    function registerPledges(BatchProof calldata b) external returns (bytes32[] memory assetKeys) {
+    /**
+     * `duplicate[i]` is true when member `i` had already been recorded, by an
+     * identical pledge, before this transaction ran.
+     *
+     * That case used to revert the whole batch, with `ProofAlreadyConsumed`:
+     * anybody watching the mempool for a pending batch can lift one member's
+     * proof and file it alone first, for free, since the record it produces is
+     * correct regardless of who submits it. The relayer paid for the whole
+     * batch verify and got nothing. Skipping an exact duplicate instead of
+     * reverting on it removes the incentive to do that, because the batch now
+     * succeeds anyway. A member that fails for any other reason still reverts
+     * the whole transaction, unchanged: only "this precise pledge already
+     * landed" is treated as harmless, never "something about this looks off."
+     */
+    function registerPledges(BatchProof calldata b)
+        external
+        returns (bytes32[] memory assetKeys, bool[] memory duplicate)
+    {
         uint256 count = b.heights.length;
         if (count == 0) revert EmptyBatch();
         if (
@@ -389,18 +427,58 @@ contract SingletonRegistry {
         if (!ok) revert ProofRejected();
 
         assetKeys = new bytes32[](count);
+        duplicate = new bool[](count);
         for (uint256 i; i < count; i++) {
             _requireFinal(b.chainKey, b.heights[i], security.attestedTip);
             if (!allowedEmitter[b.chainKey][b.emitters[i]]) {
                 revert EmitterNotAllowed(b.chainKey, b.emitters[i]);
             }
-            _burnBatchNullifier(b, i, KIND_PLEDGE);
-
+            /*
+              Decoded before the nullifier is burned, on purpose: a member that
+              was already recorded by an identical pledge somewhere else has
+              also already burned this exact nullifier, and burning it again
+              here would revert on that alone, before duplicate detection below
+              ever ran. Reading first costs nothing extra, since the proof
+              itself was already verified once for the whole batch above.
+            */
             SourceEvent memory pledge = _readEvent(
                 b.chainKey, b.encodedTransactions[i], b.emitters[i], b.logIndexes[i], KIND_PLEDGE
             );
+            bytes32 assetKey = _pledgeAssetKey(b.chainKey, pledge);
+
+            if (_isSameFilingAlready(assetKey, pledge)) {
+                assetKeys[i] = assetKey;
+                duplicate[i] = true;
+                continue;
+            }
+
+            _burnBatchNullifier(b, i, KIND_PLEDGE);
             assetKeys[i] = _recordPledge(b.chainKey, b.heights[i], pledge, security);
         }
+    }
+
+    /// True when the asset is already PLEDGED by this exact pledge, field for
+    /// field, rather than by something else that happens to share the key.
+    function _isSameFilingAlready(bytes32 assetKey, SourceEvent memory pledge)
+        private
+        view
+        returns (bool)
+    {
+        Record storage r = _records[assetKey];
+        return r.state == AssetState.PLEDGED && r.emitter == pledge.emitter
+            && r.borrower == pledge.borrower && r.amount == pledge.amount
+            && r.instanceId == pledge.instanceId;
+    }
+
+    /// The asset a pledge claims, or a revert if it never named one. Shared by
+    /// the single and batch paths so they agree on what "the same asset" means.
+    function _pledgeAssetKey(uint64 chainKey, SourceEvent memory pledge)
+        private
+        pure
+        returns (bytes32)
+    {
+        if (pledge.token == address(0)) revert CollateralNotIdentified();
+        return _assetKey(chainKey, pledge.token, pledge.tokenId);
     }
 
     function _recordPledge(
@@ -409,8 +487,7 @@ contract SingletonRegistry {
         SourceEvent memory pledge,
         Security memory security
     ) private returns (bytes32 assetKey) {
-        if (pledge.token == address(0)) revert CollateralNotIdentified();
-        assetKey = _assetKey(chainKey, pledge.token, pledge.tokenId);
+        assetKey = _pledgeAssetKey(chainKey, pledge);
 
         Record storage r = _records[assetKey];
         if (r.state != AssetState.FREE) revert AssetNotFree(assetKey, r.emitter);
@@ -648,10 +725,10 @@ contract SingletonRegistry {
     // ----------------------------------------------------------- internals
 
     /// Verifies the proof, then reads exactly one log of the requested kind out
-    /// of the receipt it carries.
+    /// of the receipt it carries. Not view: reading a log through an adapter for
+    /// the first time freezes that adapter, inside `_readEvent`.
     function _readSourceEvent(Proof calldata p, uint8 kind)
         private
-        view
         returns (SourceEvent memory found)
     {
         _requireVerified(p);
@@ -674,7 +751,7 @@ contract SingletonRegistry {
         address emitter,
         uint32 logIndex,
         uint8 kind
-    ) private view returns (SourceEvent memory found) {
+    ) private returns (SourceEvent memory found) {
         EvmV1Decoder.ReceiptFields memory receipt =
             EvmV1Decoder.decodeReceiptFields(encodedTransaction);
         if (receipt.receiptStatus != 1) revert SourceTransactionReverted();
@@ -687,6 +764,8 @@ contract SingletonRegistry {
 
         address adapter = adapterOf[chainKey][emitter];
         _requireSignature(adapter, emitter, kind, log);
+
+        if (!adapterFrozen[chainKey][emitter]) adapterFrozen[chainKey][emitter] = true;
 
         found.emitter = emitter;
         if (adapter == address(0)) {

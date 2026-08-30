@@ -233,7 +233,7 @@ contract QuorumTest is SourceChain {
             entries[i] = _harborPledge(i + 1);
         }
 
-        bytes32[] memory keys = registry.registerPledges(_relayBatch(entries));
+        (bytes32[] memory keys,) = registry.registerPledges(_relayBatch(entries));
 
         for (uint256 i; i < keys.length; i++) {
             SingletonRegistry.Record memory r = registry.getStatus(keys[i]);

@@ -69,11 +69,11 @@ For non-custodial liens there is no transfer to require, so this stays a genuine
 limit. What softens it:
 
 - the allowlist is kept minimal, append-mostly, and visible on-chain, so the
-  worst case is a detectable and reversible freeze by a named party rather than
-  a silent fabrication by an indexer nobody audits
+ worst case is a detectable and reversible freeze by a named party rather than
+ a silent fabrication by an indexer nobody audits
 - roadmap: an owner-signed consent, EIP-712, carried inside the pledge event.
-  That converts the mitigation into cryptographic prevention, at the cost of
-  requiring the protocol to opt in
+ That converts the mitigation into cryptographic prevention, at the cost of
+ requiring the protocol to opt in
 
 **A related question, asked and measured rather than left open.** Refusals are
 unbounded: anybody may keep filing them against a live lien, and releasing that
@@ -276,20 +276,38 @@ protocol. It is the one place where being wrong looks like being right, which is
 why each one stays short enough to read in a sitting and is tested against real
 logs captured from the chain it claims to read.
 
-**And the adapter lever runs backwards as well as forwards**, which this file
-did not say until 2026-08-29. `test_theAdminCanFabricateThroughAnAdapter` shows
-an administrator writing a lien against an asset whose owner was never involved.
-`test_theAdminLiftsThatTrapByInstallingAFullerAdapter` shows the same lever
-clearing one: an emitter whose adapter cannot prove a release traps its asset,
-and swapping that adapter for a fuller one lets the real release log, already
-emitted on the source chain and already refused here, go through and free it.
+**The adapter lever used to run backwards as well as forwards**, which this
+file did not say until 2026-08-29. `test_theAdminCanFabricateThroughAnAdapter`
+showed an administrator writing a lien against an asset whose owner was never
+involved. A companion test showed the same lever clearing one: an emitter whose
+adapter cannot prove a release traps its asset, and swapping that adapter for a
+fuller one let the real release log, already emitted on the source chain and
+already refused here, go through and free it.
 
-The second is more comfortable than the first and should not be. Both move a
-record because an administrator changed what a log means, and in neither case did
-anything new happen on the source chain. A registry that needs its operator to
-unstick it is not neutral at that moment. It is written down here because
-`test/LienModel.t.sol` used to say the trap had "no path that can change it",
-which was false, and a false reassurance is worse than the admission it hides.
+The second was more comfortable than the first and should not have been. Both
+moved a record because an administrator changed what a log means, and in
+neither case did anything new happen on the source chain. A registry that needs
+its operator to unstick it is not neutral at that moment. It was written down
+here because `test/LienModel.t.sol` used to say the trap had "no path that can
+change it", which was false, and a false reassurance is worse than the
+admission it hides.
+
+**Both directions are now closed, by the same mechanism.** `adapterOf[chainKey][emitter]`
+freezes the first time it is actually used to read a log, in `_readEvent`, and
+`setAdapter` reverts `AdapterFrozen` afterward. This does not stop the
+fabrication above: on a brand new emitter the very first use can already be the
+lying one, and freezing only locks in whatever that first use was. What it
+removes is *swapping a second adapter in afterward*, in either direction.
+`test_theAdminCanFabricateThroughAnAdapter` now shows the fabrication landing
+and then the swap back reverting `AdapterFrozen`, which means the lie can no
+longer even be undone by the same lever that told it.
+`test_theTrapCannotBeLiftedOnceTheAdapterIsFrozen` (renamed from the test that
+used to show the opposite) shows the recovery path closing the same way: once
+an emitter's adapter has read one real log, no admin, honest or otherwise, can
+ever change what that emitter's logs mean again. An asset trapped by an honest
+gap in an adapter, rather than by anything adversarial, now has no recovery at
+all. That is the trade named above, taken on purpose: a registry that cannot be
+unstuck by its own operator is more neutral at every other moment for it.
 
 ## 10. The attestor floor is a liveness dial, and it points both ways
 
@@ -424,38 +442,59 @@ And this is an argument for the roadmap item already named in caveat 5: an
 owner-signed consent carried in the pledge would let the same signature schema
 carry a release. It is named as a direction, not claimed as built.
 
-## 13. A batch can be griefed by spending one of its members first
+## 13. A batch used to be griefed by spending one of its members first
 
-`registerPledges` is all or nothing, and the reason is in the contract: partial
+`registerPledges` was all or nothing, and the reason is in the contract: partial
 success would leave a relayer unable to answer "did my pledge land" from the
-transaction alone. The cost of that choice is a denial of service that needs no
-capital.
+transaction alone. The cost of that choice was a denial of service that needed
+no capital.
 
 Nullifiers key on the source event, `keccak256(domain, chainKey, height, txIndex,
 logIndex)`, and carry no `msg.sender`. `registerPledge` is permissionless. So
 anybody watching the mempool, which on the default RPC for this project answers
-`txpool_content` in the clear, can take one member out of a pending batch,
-file it alone, and the batch then reverts `ProofAlreadyConsumed` for every member.
-`test_aProofCannotBeSpentAloneAndThenInABatch` is that sequence.
+`txpool_content` in the clear, could take one member out of a pending batch,
+file it alone, and the batch would revert `ProofAlreadyConsumed` for every
+member.
 
-The victim pays more than gas for a refused transaction. The quorum read and the
+The victim paid more than gas for a refused transaction. The quorum read and the
 whole batch `verify` are paid before the loop that discovers the collision, which
 on a four item batch is most of the 989,237 gas measured in
 [VERIFICATION.md](VERIFICATION.md).
 
-The griefer's own filing is real and it lands, which is what makes this cheap:
+The griefer's own filing was real and it landed, which is what made this cheap:
 the pledge is recorded to the emitter named in the source event, not to
-`msg.sender`, so a griefer spends one CC3 transaction and files somebody else's
-pledge for them. Nothing is stolen. The registry's state ends up correct for that
-one member and wrong for the relayer's expectations about the other three, which
-is precisely the ambiguity the all-or-nothing rule was argued to prevent: a
-revert now means either nothing landed, or one thing landed inside a stranger's
-transaction.
+`msg.sender`, so a griefer spent one CC3 transaction and filed somebody else's
+pledge for them. Nothing was stolen. The registry's state ended up correct for
+that one member and wrong for the relayer's expectations about the other three,
+which was precisely the ambiguity the all-or-nothing rule was argued to
+prevent: a revert meant either nothing landed, or one thing landed inside a
+stranger's transaction.
 
-What bounds it: the loss is bounded by gas, is repairable by refiling the
-remaining members, and cannot produce a false record, because the griefer can
-only replay a proof that was already valid. What would remove it is binding the
-nullifier or the batch to a submitter, which costs a redeploy and is not built.
+**The fix that was first written down here did not survive being checked.**
+This caveat used to say the remedy was "binding the nullifier or the batch to a
+submitter." Tracing it through the code shows that does not work: adding
+`msg.sender` to the nullifier only changes which error a griefed batch reverts
+with. The griefer's front-run filing still calls `_recordPledge`, which still
+sets the asset's state away from `FREE`. When the batch later reaches that same
+member, its own `_recordPledge` call still finds the asset not `FREE` and still
+reverts the whole transaction, now with `AssetNotFree` instead of
+`ProofAlreadyConsumed`. The nullifier was never the check actually causing the
+failure; the asset state was. Binding it to a submitter was the wrong lever.
+
+**What actually closes it: a batch tells an exact duplicate apart from a real
+anomaly, and only reverts on the second one.** When a member would fail because
+the asset is already `PLEDGED`, `registerPledges` now compares the existing
+record's emitter, borrower, amount and instance id against this member's own
+decoded pledge. Identical on all four means this precise pledge already landed
+through some other transaction, which is the griefing case, and is harmless: the
+record it would have written already exists. The member is skipped rather than
+reverting the batch, and `duplicate[i]` in the return value says which slots
+that happened to. Any difference in those four fields is a genuine anomaly, two
+different lenders racing for the same asset rather than a front-run, and it
+still reverts the whole batch, unchanged. `test_aFrontRunMemberIsSkippedRatherThanTakingTheBatchDown`
+is the griefing case; `test_aCollisionInsideABatchTakesTheWholeBatch` is the
+genuine one, and still passes without modification, which is what confirms the
+two are told apart correctly rather than the check simply being loosened.
 
 ## 14. Priority is decided on Creditcoin, and the earlier pledge can lose it
 

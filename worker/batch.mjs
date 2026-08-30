@@ -99,3 +99,20 @@ console.log(`\nsubmitted ${tx.hash}`);
 console.log(`mined     block ${mined.blockNumber}, gas ${mined.gasUsed}`);
 console.log(`per pledge ${mined.gasUsed / BigInt(members.length)}`);
 console.log(`explorer  ${EXPLORER}/tx/${tx.hash}`);
+
+/*
+  A member somebody front-ran out of this batch does not fire PledgeRecorded,
+  because it was already recorded before this transaction ran. Counting that
+  event rather than trusting members.length is what actually tells an operator
+  a griefing skip happened, without a separate staticCall.
+*/
+const recorded = mined.logs.filter((log) => {
+  try { return registry.interface.parseLog(log)?.name === "PledgeRecorded"; }
+  catch { return false; }
+}).length;
+if (recorded < members.length) {
+  console.log(
+    `  ${members.length - recorded} of ${members.length} were already filed before this ` +
+      `transaction ran, and were skipped rather than taking the whole batch down`,
+  );
+}
