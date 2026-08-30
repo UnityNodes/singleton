@@ -98,8 +98,8 @@ proof is the remaining 27,345. Measured, then written down, in
 [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 100 tests cover it, including both suppression attacks that independent reviews
-found on 2026-08-19 and the regressions that keep them closed. The registry and both
-adapters are verified on Blockscout, so the refusal in the demo decodes to
+found on 2026-08-19 and the regressions that keep them closed. The registry is
+verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
 hex.
 
