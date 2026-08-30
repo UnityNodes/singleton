@@ -359,6 +359,16 @@ read out of `_readSourceEvent` mattered in the first place: Creditcoin does not
 charge a function for what it does, it charges every call for how large the
 contract is.
 
+**A fifth point, from the same day's second redeploy, replacing the decoded
+field comparison in the batch duplicate check with the nullifier-identity
+check caveat 13 now describes.** `0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c`,
+14,850 bytes, `admin()` costs 218,789 gas: 13.23 gas per byte, unchanged. The
+redesign extracted the nullifier computation `_burn` already did into
+`_nullifierOf` and called it from both `_burn` and `registerPledges`, deleting
+`_isSameFilingAlready` entirely, and came out 9 bytes smaller despite fixing a
+real vulnerability in the code it replaced, which is the fourth point's own
+warning holding: size, not which fix, is what this chain bills for.
+
 Stated narrowly on purpose. Two much smaller contracts on the same chain, the
 NFTfi and Blend adapters at 1,156 and 1,445 bytes, do **not** sit on that line,
 so this is a measured relationship across three sizes of one contract rather
@@ -977,7 +987,7 @@ does. `script/DeployRegistry.s.sol` is kept for chains whose RPC returns the
 field.
 
 **Live on CC3 testnet.** Current registry
-`0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7`, decoder linked to
+`0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c`, decoder linked to
 `0x731c345d79Fb8BbDC541f9DF3b6317585F849F9f`, `minConfirmations[1] = 64`,
 `minAttestors[1] = 3`, admin `0x59De8802122068A3fc2950812d4621E8Aa0F8516`.
 
@@ -987,8 +997,12 @@ allowlisted first sits there looking configured while every proof against it
 reverts.
 
 Adapters: NFTfi `0xE51eD7b5e8Fda55053C91726B0739813510FE913`, Blend
-`0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67`, both pure and stateless. They hold
-no state, so a redeploy of the registry reuses them.
+`0xB1bf092e8e16F0892b95E1550DbF3c49d4644c67`, and, on Sepolia,
+`ConsentedCredit` `0x2324Fa3fdF59D287530FbeE88824F3587e5E4a6B` paired with
+`ConsentedAdapter` `0xd240EeEea0EBbe13a6c1275Ee8f5448b2dBCd570`. All four are
+pure and stateless, so a redeploy of the registry reuses them; `ConsentedCredit`
+itself is not stateless, and was redeployed alongside the registry on
+2026-08-30 for the reason the next paragraph gives.
 
 Configuring a fresh registry is one command, `node worker/provision.mjs`, and
 `node worker/provision.mjs --check` reads any registry back against the same
@@ -1027,6 +1041,29 @@ Two more were superseded on 2026-08-19 by the two reviews caveat 7 describes.
 `0x90f03329aF069BbC4AB4d34c03c9c6DF1Fcc32d4` predates the receipt poisoning fix.
 `0x020a11bCF77eDF881ca7FFE865390E8192CeC187` carried a full twelve proof run and
 still inferred which emitter a proof was about, which the second review broke.
+
+Three more come from 2026-08-30, all superseded the same day they went live.
+`0xcccE8847a63f6fD460FA86CDaE8a05bAe102e0F7` predates the adapter freeze and
+the first shape of the batch duplicate check.
+`0xcD9017e3C541cAF973987E23e02694111C25032C` carried both of those and a full
+sixteen proof run, including the first `ConsentedCredit` pledge, and was
+superseded the same day when a hostile review found its batch check compared
+each member's decoded fields rather than its nullifier, which a lying adapter
+could exploit to make every later real pledge on that emitter vanish rather
+than register; caveat 13 has the mechanism.
+`0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c` is the current registry, carrying
+the nullifier-identity fix and the same sixteen proofs replayed onto it, the
+sixteenth signed fresh because it also depends on the `ConsentedCredit` fix
+below.
+
+The same review found `ConsentedCredit`'s signed struct did not name the
+principal, so a relayer holding a valid signature could carry someone else's
+transaction but write its own loan amount into it.
+`0xA295904659dc1f29EcA8B31F1696aEce47C97b5E`, paired with `ConsentedAdapter`
+`0x54dDAd4c0b0bbcF00b2A094383490602A1B1457B`, predates that fix and is
+superseded by `0x2324Fa3fdF59D287530FbeE88824F3587e5E4a6B` paired with
+`0xd240EeEea0EBbe13a6c1275Ee8f5448b2dBCd570`, both deployed 2026-08-30, which
+sign and check `(token, tokenId, owner, principal, nonce)`.
 
 Their transactions remain valid evidence of what the code did at the time, which
 is the reason they are listed rather than quietly dropped.

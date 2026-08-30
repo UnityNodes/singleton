@@ -8,7 +8,7 @@
 
 const params = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
 
-const DEPLOYED = "0xcD9017e3C541cAF973987E23e02694111C25032C";
+const DEPLOYED = "0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c";
 
 export const CFG = {
   rpc: params.get("rpc") ?? "https://rpc.cc3-testnet.creditcoin.network",
@@ -35,7 +35,7 @@ export const CFG = {
  * which is the only way to catch a floor that has gone blind. Every other check
  * in this repository stayed green through three days of exactly that.
  */
-export const SWEEP = { genesis: 5_397_612, size: 16_000, lanes: 4 };
+export const SWEEP = { genesis: 5_398_350, size: 16_000, lanes: 4 };
 
 /// Null when the page was pointed at a register whose first block it cannot know.
 export const GENESIS: number | null =
@@ -65,7 +65,7 @@ export const COLLATERAL: Record<string, string> = {
 export const OURS = new Set([
   "0xaad02e7bebc37acb5dc67c42f70d61d8c86df3e5",
   "0xfa72380654232c5538d1f17e2d8d6c261bd263ad",
-  "0xa295904659dc1f29eca8b31f1696aece47c97b5e",
+  "0x2324fa3fdf59d287530fbee88824f3587e5e4a6b",
 ]);
 
 export const isOurs = (address: string) => OURS.has(address.toLowerCase());
@@ -75,7 +75,7 @@ export const PROTOCOLS: Record<string, string> = {
   "0xfa72380654232c5538d1f17e2d8d6c261bd263ad": "Meridian Credit",
   "0xb6adec2acc851d30d5fb64f3137234bcdcbbad0d": "NFTfi v3",
   "0x29469395eaf6f95920e59f858042f0e28d98a20b": "Blur Blend",
-  "0xa295904659dc1f29eca8b31f1696aece47c97b5e": "Consented Credit",
+  "0x2324fa3fdf59d287530fbee88824f3587e5e4a6b": "Consented Credit",
 };
 
 const SELECTOR = {

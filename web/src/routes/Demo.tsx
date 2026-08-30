@@ -246,11 +246,11 @@ export default function Demo() {
               {
                 k: "read the refusal",
                 v: "The failed transaction from the video, on Blockscout, decoding to AssetNotFree with the asset key and the incumbent lender.",
-                href: `${CFG.explorer}/tx/0xff2f99910101ee7e28755361f362d13693fb3b1f673ca20c5bd7d29a3d34c962`,
+                href: `${CFG.explorer}/tx/0xcd1a09091a83e8c3d8d30266d7918b720ef43c58a76dd35c9c1eacc66f91927d`,
               },
               {
                 k: "read the contracts",
-                v: "The registry, the adapters, 98 tests, and the caveats written before anybody had to ask for them.",
+                v: "The registry, the adapters, 100 tests, and the caveats written before anybody had to ask for them.",
                 href: "https://github.com/UnityNodes/singleton",
               },
             ].map((door) => {

@@ -84,7 +84,7 @@ proof of that log. The second exists through BlockProver <code>0x0FD2</code> and
 <div class="stats">
   <div><span class="big">16</span><p>inclusion proofs on CC3 testnet, every hash published</p></div>
   <div><span class="big good">2 / 2</span><p>attested source chains read, Sepolia and Ethereum mainnet</p></div>
-  <div><span class="big">98</span><p>tests, both security reviews kept as regressions</p></div>
+  <div><span class="big">100</span><p>tests, both security reviews kept as regressions</p></div>
   <div><span class="big warm">0</span><p>wallets, backends or indexers between the page and the chain</p></div>
 </div>
 
@@ -125,13 +125,13 @@ index and log index. Every unused surface carries a written reason in <code>docs
 <p>The first: a borrower could attach a decoy log carrying the registry's own event signature and make their
 genuine pledge permanently unregisterable. The second found the fix incomplete, because the emitter was still
 inferred from a receipt the borrower orders. The registry now searches for nothing: the relayer names the emitter
-and the log index and the registry only checks. A batch pledge became supported rather than refused, and mainnet
-gas fell from 716k to 634k. Both attacks are kept as regression tests, along with a corrected caveat that had
+and the log index and the registry only checks. A batch pledge became supported rather than refused. Both
+attacks are kept as regression tests, along with a corrected caveat that had
 claimed an administrator cannot fabricate, which was false.</p>
 
 <h2>Addresses</h2>
 <div class="addr">
-<b>Registry</b> 0xcD9017e3C541cAF973987E23e02694111C25032C &middot; CC3 testnet, verified on Blockscout<br>
+<b>Registry</b> 0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c &middot; CC3 testnet, verified on Blockscout<br>
 <b>Read on mainnet</b> NFTfi v3 0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D<br>
 <span style="opacity:0">Read on mainnet </span>Blur Blend 0x29469395eAf6f95920E59F858042f0e28D98a20B<br>
 <b>Demo lenders</b> Harbor 0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5 &middot; Meridian 0xfA72380654232c5538d1F17e2D8d6c261bd263AD

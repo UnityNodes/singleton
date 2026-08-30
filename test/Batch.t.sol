@@ -7,6 +7,7 @@ import {SingletonRegistry} from "../src/SingletonRegistry.sol";
 import {RwaDeed} from "../src/emitters/RwaDeed.sol";
 import {HarborCredit} from "../src/emitters/HarborCredit.sol";
 import {MeridianCredit} from "../src/emitters/MeridianCredit.sol";
+import {FabricatingAdapter} from "./AdminPower.t.sol";
 
 /**
  * Many pledges, one continuity proof.
@@ -193,6 +194,56 @@ contract BatchTest is SourceChain {
             uint8(SingletonRegistry.AssetState.PLEDGED),
             "and it lands, which a full revert would have prevented"
         );
+    }
+
+    /**
+     * A batch used to be able to tell "the same filing" apart from "a genuine
+     * anomaly" only by comparing what an adapter decoded, and a review on
+     * 2026-08-30 found where that comes apart: an adapter frozen on its very
+     * first, fabricating use (an accepted cost of the freeze, caveat 9) always
+     * decodes to the same fixed output regardless of what log it is handed.
+     * Under the old check, a second, completely real pledge from that same
+     * emitter, submitted in a batch, would decode to those same fixed fields,
+     * be waved through as a harmless duplicate, and vanish: no record, no
+     * revert, and its real nullifier never burned. One accepted lie would have
+     * silently swallowed every honest pledge after it.
+     *
+     * Checking the nullifier instead of the decoded fields closes that: this
+     * second pledge's own proof was never spent, so it is decoded and
+     * recorded normally, collides with the fabricated record at the same
+     * assetKey, and takes the whole batch down with `AssetNotFree`, exactly
+     * as a genuine anomaly should.
+     */
+    function test_aSecondRealPledgeThroughALyingAdapterTakesTheBatchDownRatherThanVanishing()
+        public
+    {
+        FabricatingAdapter liar = new FabricatingAdapter(address(deed), 1);
+        registry.setAdapter(SEPOLIA, address(harbor), address(liar));
+
+        registry.registerPledge(_relay(_harborPledges(1)[0]));
+        bytes32 fabricated = registry.assetKeyOf(SEPOLIA, address(deed), 1);
+        assertEq(
+            uint8(registry.getStatus(fabricated).state),
+            uint8(SingletonRegistry.AssetState.PLEDGED),
+            "the first, fabricated pledge landed"
+        );
+
+        Vm.Log[] memory second = new Vm.Log[](1);
+        vm.recordLogs();
+        vm.prank(BORROWER);
+        harbor.openLien(address(deed), 2, 700 ether);
+        second[0] = _log(registry.PLEDGED_SIG());
+        SingletonRegistry.BatchProof memory b = _relayBatch(second);
+
+        // The incumbent is Harbor's real, log-checked address, never the
+        // adapter's fabricated borrower: `_readEvent` binds `emitter` to the
+        // proof's own `emitter` parameter, which an adapter cannot touch.
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SingletonRegistry.AssetNotFree.selector, fabricated, address(harbor)
+            )
+        );
+        registry.registerPledges(b);
     }
 
     function test_anEmptyBatchIsRefused() public {

@@ -36,6 +36,16 @@ interface IDeed721 {
  * A settlement or release only ever closes a record this registry already
  * requires to match its own incumbent, which is a different guard, checked
  * elsewhere.
+ *
+ * The signed struct names the principal, and did not until a review on
+ * 2026-08-30 found why it had to: this contract lets anybody submit
+ * `openLien`, so the owner's signature is the only thing distinguishing a
+ * real pledge from one a relayer wrote the terms of. Signing only
+ * `(token, tokenId, owner, nonce)` let any relayer holding a valid signature
+ * call `openLien` with a principal of its own choosing, spending the owner's
+ * real nonce on a loan the owner never agreed to and blocking the honest
+ * transaction behind it. The principal is now part of what is signed, so a
+ * relayer can carry the transaction but cannot write its terms.
  */
 contract ConsentedCredit {
     event Pledged(
@@ -90,8 +100,9 @@ contract ConsentedCredit {
     bytes32 private constant DOMAIN_TYPE_HASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-    bytes32 public constant CONSENT_TYPE_HASH =
-        keccak256("PledgeConsent(address token,uint256 tokenId,address owner,uint256 nonce)");
+    bytes32 public constant CONSENT_TYPE_HASH = keccak256(
+        "PledgeConsent(address token,uint256 tokenId,address owner,uint256 principal,uint256 nonce)"
+    );
 
     /*
       Pinned rather than read from block.chainid. This contract is deployed on
@@ -134,12 +145,15 @@ contract ConsentedCredit {
         );
     }
 
-    function consentDigest(address token, uint256 tokenId, address owner, uint256 nonce)
-        public
-        view
-        returns (bytes32)
-    {
-        bytes32 structHash = keccak256(abi.encode(CONSENT_TYPE_HASH, token, tokenId, owner, nonce));
+    function consentDigest(
+        address token,
+        uint256 tokenId,
+        address owner,
+        uint256 principal,
+        uint256 nonce
+    ) public view returns (bytes32) {
+        bytes32 structHash =
+            keccak256(abi.encode(CONSENT_TYPE_HASH, token, tokenId, owner, principal, nonce));
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
     }
 
@@ -164,7 +178,8 @@ contract ConsentedCredit {
         address owner = IDeed721(collateral).ownerOf(tokenId);
         if (consumedNonce[owner][nonce]) revert NonceAlreadyUsed(owner, nonce);
 
-        address recovered = ecrecover(consentDigest(collateral, tokenId, owner, nonce), v, r, s);
+        address recovered =
+            ecrecover(consentDigest(collateral, tokenId, owner, principal, nonce), v, r, s);
         if (recovered != owner) revert ConsentDidNotMatchTheOwner(recovered, owner);
 
         bytes32 slot = keccak256(abi.encodePacked(collateral, tokenId));

@@ -41,6 +41,7 @@ export const REGISTRY_ABI = [
   "error ConfirmationsNotSet(uint64 chainKey)",
   "error QuorumNotSet(uint64 chainKey)",
   "error QuorumTooThin(uint64 chainKey,uint64 attestors,uint64 required)",
+  "error AdapterFrozen(uint64 chainKey,address emitter)",
   "error CollateralNotIdentified()",
   "error InstanceAlreadyOpen(address emitter,bytes32 instanceId)",
   "error UnknownInstance(address emitter,bytes32 instanceId)",

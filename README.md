@@ -57,10 +57,10 @@ auction rather than a repayment. Sixteen proofs, every hash in
 | The demo, 1:37 | [/demo](https://singleton.unitynodes.com/demo), voiced and captioned, no wallet needed to follow it |
 | The deck | [singleton-deck.pdf](https://singleton.unitynodes.com/singleton-deck.pdf), eleven slides |
 | The one pager | [singleton-one-pager.pdf](https://singleton.unitynodes.com/singleton-one-pager.pdf) |
-| Registry, CC3 testnet | `0xcD9017e3C541cAF973987E23e02694111C25032C`, verified on Blockscout |
+| Registry, CC3 testnet | `0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c`, verified on Blockscout |
 | Harbor Credit, Sepolia | `0xaaD02e7Bebc37Acb5dc67c42F70d61d8C86dF3e5` |
 | Meridian Credit, Sepolia | `0xfA72380654232c5538d1F17e2D8d6c261bd263AD` |
-| Consented Credit, Sepolia | `0xA295904659dc1f29EcA8B31F1696aEce47C97b5E`, the one lender whose pledge the registry cannot record without a signature from the token's owner |
+| Consented Credit, Sepolia | `0x2324Fa3fdF59D287530FbeE88824F3587e5E4a6B`, the one lender whose pledge the registry cannot record without a signature from the token's owner |
 | Demo assets | `RwaDeed 0xee79491615882b5421dACEb765564f4c4a09dd64`, token 43 claimed with a refusal on file, token 42 through its whole life, token 900 pledged with a signed EIP-712 consent |
 | Read from mainnet | NFTfi v3 `0xB6adEc2ACc851d30d5fB64f3137234BCDCBBad0D` and Blur Blend `0x29469395eAf6f95920E59F858042f0e28D98a20B`, both unmodified |
 
@@ -97,7 +97,7 @@ pays once. That accounts for 566,034 of the 593,379 saved. Sharing the continuit
 proof is the remaining 27,345. Measured, then written down, in
 [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
-98 tests cover it, including both suppression attacks that independent reviews
+100 tests cover it, including both suppression attacks that independent reviews
 found on 2026-08-19 and the regressions that keep them closed. The registry and both
 adapters are verified on Blockscout, so the refusal in the demo decodes to
 `AssetNotFree(bytes32 assetKey, address incumbent)` rather than to a blob of
@@ -249,8 +249,9 @@ fault survived twice.
 
 ```
 src/            registry and interfaces
-  emitters/     the two Sepolia lenders and the demo RWA deed
-  adapters/     NFTfi v3, Blur Blend, and a reference for a locked schema
+  emitters/     the three Sepolia lenders and the demo RWA deed
+  adapters/     NFTfi v3, Blur Blend, a signature-checking desk, and a
+                reference for a locked schema
   vendor/       EvmV1Decoder, vendored from @gluwa/usc-contracts
 worker/         off-chain relay: proofs, lifecycle, admin
 web/            the site: landing page, register and demo, React and Vite

@@ -33,6 +33,11 @@ const PLAN = [
     emitters: [
       { name: "Harbor Credit", address: requireAddress("harbor") },
       { name: "Meridian Credit", address: requireAddress("meridian") },
+      {
+        name: "Consented Credit",
+        address: requireAddress("consentedCredit"),
+        adapter: requireAddress("consentedAdapter"),
+      },
     ],
   },
   {

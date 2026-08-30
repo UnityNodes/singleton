@@ -55,12 +55,15 @@ contract ConsentedCreditTest is SourceChain {
         registry.setAdapter(SEPOLIA, address(credit), address(adapter));
     }
 
-    function _sign(uint256 key, address token, uint256 tokenId, address asOwner, uint256 nonce)
-        internal
-        view
-        returns (uint8 v, bytes32 r, bytes32 s)
-    {
-        bytes32 digest = credit.consentDigest(token, tokenId, asOwner, nonce);
+    function _sign(
+        uint256 key,
+        address token,
+        uint256 tokenId,
+        address asOwner,
+        uint256 principal,
+        uint256 nonce
+    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+        bytes32 digest = credit.consentDigest(token, tokenId, asOwner, principal, nonce);
         (v, r, s) = vm.sign(key, digest);
     }
 
@@ -70,7 +73,7 @@ contract ConsentedCreditTest is SourceChain {
      * to submit it.
      */
     function test_aSignedConsentRegistersThroughAnUninvolvedRelayer() public {
-        (uint8 v, bytes32 r, bytes32 s) = _sign(OWNER_KEY, address(deed), DEED_ID, owner, 1);
+        (uint8 v, bytes32 r, bytes32 s) = _sign(OWNER_KEY, address(deed), DEED_ID, owner, 500 ether, 1);
 
         vm.recordLogs();
         address relayer = address(0xC0FFEE);
@@ -89,7 +92,8 @@ contract ConsentedCreditTest is SourceChain {
     /// The desk itself refuses a consent from anybody but the token's real
     /// owner, which is the first of two independent checks, not the only one.
     function test_theEmitterRefusesAConsentSignedByAnybodyButTheOwner() public {
-        (uint8 v, bytes32 r, bytes32 s) = _sign(ATTACKER_KEY, address(deed), DEED_ID, owner, 1);
+        (uint8 v, bytes32 r, bytes32 s) =
+            _sign(ATTACKER_KEY, address(deed), DEED_ID, owner, 500 ether, 1);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -102,7 +106,7 @@ contract ConsentedCreditTest is SourceChain {
     /// The same nonce cannot open a second lien once spent, so a signature
     /// captured once cannot be replayed against a later loan.
     function test_theEmitterRefusesAReusedNonce() public {
-        (uint8 v, bytes32 r, bytes32 s) = _sign(OWNER_KEY, address(deed), DEED_ID, owner, 7);
+        (uint8 v, bytes32 r, bytes32 s) = _sign(OWNER_KEY, address(deed), DEED_ID, owner, 500 ether, 7);
         credit.openLien(address(deed), DEED_ID, 500 ether, 7, v, r, s);
 
         deed.mint(owner, DEED_ID + 1);
@@ -110,6 +114,28 @@ contract ConsentedCreditTest is SourceChain {
             abi.encodeWithSelector(ConsentedCredit.NonceAlreadyUsed.selector, owner, 7)
         );
         credit.openLien(address(deed), DEED_ID + 1, 100 ether, 7, v, r, s);
+    }
+
+    /**
+     * A review on 2026-08-30 found that the signed struct never named the
+     * principal, so a relayer holding a real, valid signature over
+     * `(token, tokenId, owner, nonce)` could carry the transaction and still
+     * write its own number into `openLien`'s `principal` argument: `ecrecover`
+     * never saw it, so it could not object. The relayer here is not the
+     * signer, exactly as `test_aSignedConsentRegistersThroughAnUninvolvedRelayer`
+     * intends, but it is dishonest about the one term the owner never agreed
+     * to.
+     */
+    function test_theEmitterRefusesAConsentCarriedWithADifferentPrincipal() public {
+        (uint8 v, bytes32 r, bytes32 s) =
+            _sign(OWNER_KEY, address(deed), DEED_ID, owner, 500 ether, 1);
+
+        // Whatever ecrecover happens to compute against a digest nobody signed
+        // is not the point; that it is never `owner` is. Only the selector is
+        // checked, matching how this suite already treats a mismatched digest.
+        vm.prank(address(0xC0FFEE));
+        vm.expectRevert();
+        credit.openLien(address(deed), DEED_ID, 1 wei, 1, v, r, s);
     }
 
     /**
@@ -121,7 +147,8 @@ contract ConsentedCreditTest is SourceChain {
      * entirely, this is what would still stop it.
      */
     function test_theAdapterIndependentlyRefusesAForgedConsent() public {
-        (uint8 v, bytes32 r, bytes32 s) = _sign(ATTACKER_KEY, address(deed), DEED_ID, owner, 1);
+        (uint8 v, bytes32 r, bytes32 s) =
+            _sign(ATTACKER_KEY, address(deed), DEED_ID, owner, 500 ether, 1);
 
         bytes32[] memory topics = new bytes32[](4);
         topics[0] = adapter.PLEDGED_SIG();
@@ -148,7 +175,8 @@ contract ConsentedCreditTest is SourceChain {
 
     /// A genuine signature over one asset does not authorise a different one.
     function test_theAdapterRefusesAConsentReplayedAgainstADifferentAsset() public {
-        (uint8 v, bytes32 r, bytes32 s) = _sign(OWNER_KEY, address(deed), DEED_ID, owner, 1);
+        (uint8 v, bytes32 r, bytes32 s) =
+            _sign(OWNER_KEY, address(deed), DEED_ID, owner, 500 ether, 1);
 
         bytes32[] memory topics = new bytes32[](4);
         topics[0] = adapter.PLEDGED_SIG();

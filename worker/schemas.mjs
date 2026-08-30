@@ -168,11 +168,41 @@ export function findSourceEvent(receipt, operation, emitter) {
     }
   }
 
-  if (hits.length !== 1) {
-    const seen = hits.map((h) => `${h.schema.name}:${h.parsed.name}`).join(", ") || "none";
+  /*
+    Two schemas naming the same event shape is not ambiguity, it is two names
+    for one fact: `consented-credit`'s Settled and Released are declared byte
+    identical to `singleton`'s on purpose, and adding that schema made every
+    Harbor and Meridian settle or release match both, which used to throw here
+    as "found 2" before this ran a single real settlement. Collapsed by
+    position instead, and only collapsed when every schema that matched a
+    given log actually agrees on what it means; two schemas disagreeing about
+    the same log is the one case still worth throwing on.
+  */
+  const byPosition = new Map();
+  const same = (a, b) =>
+    JSON.stringify(a, (_, v) => (typeof v === "bigint" ? v.toString() : v))
+    === JSON.stringify(b, (_, v) => (typeof v === "bigint" ? v.toString() : v));
+  for (const hit of hits) {
+    const existing = byPosition.get(hit.position);
+    if (!existing) {
+      byPosition.set(hit.position, hit);
+      continue;
+    }
+    if (existing.parsed.name !== hit.parsed.name || !same(existing.fields, hit.fields)) {
+      throw new Error(
+        `log at position ${hit.position} from ${emitter} means two different things: ` +
+          `${existing.schema.name} reads ${existing.parsed.name} ${JSON.stringify(existing.fields)}, ` +
+          `${hit.schema.name} reads ${hit.parsed.name} ${JSON.stringify(hit.fields)}`,
+      );
+    }
+  }
+  const deduped = [...byPosition.values()];
+
+  if (deduped.length !== 1) {
+    const seen = deduped.map((h) => `${h.schema.name}:${h.parsed.name}`).join(", ") || "none";
     throw new Error(
-      `expected exactly one ${operation} log from ${emitter}, found ${hits.length} (${seen})`,
+      `expected exactly one ${operation} log from ${emitter}, found ${deduped.length} (${seen})`,
     );
   }
-  return hits[0];
+  return deduped[0];
 }

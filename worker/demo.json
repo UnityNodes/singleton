@@ -107,7 +107,7 @@
     },
     {
       "operation": "pledge",
-      "tx": "0xfa30f32d466dff0585b02563078dd3565524f63aba92bcb72e4f8c3a00bd867c",
+      "tx": "0xc954437f8152d9390c93ec3c67105f0586fd7cd0eb57a81686c63837e40cd88b",
       "note": "ConsentedCredit lends against deed 900, the owner signed EIP-712 consent independently re-checked by the adapter",
       "expect": "recorded"
     }

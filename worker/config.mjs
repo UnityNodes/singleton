@@ -50,6 +50,9 @@ export const addresses = {
   nftfiAdapter: process.env.NFTFI_ADAPTER ?? deployed.nftfiAdapter,
   blend: process.env.BLEND ?? deployed.blend,
   blendAdapter: process.env.BLEND_ADAPTER ?? deployed.blendAdapter,
+  consentedCredit: process.env.CONSENTED_CREDIT ?? deployed.consentedCredit,
+  consentedAdapter: process.env.CONSENTED_ADAPTER ?? deployed.consentedAdapter,
+  consentedDeedTokenId: process.env.CONSENTED_DEED_TOKEN_ID ?? deployed.consentedDeedTokenId,
 };
 
 export function saveDeployed(patch) {

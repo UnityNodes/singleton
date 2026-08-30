@@ -388,18 +388,38 @@ contract SingletonRegistry {
      * otherwise honest batch is refused too.
      */
     /**
-     * `duplicate[i]` is true when member `i` had already been recorded, by an
-     * identical pledge, before this transaction ran.
+     * `duplicate[i]` is true when member `i`'s own proof, identified by its
+     * nullifier and nothing else, had already been spent before this
+     * transaction ran. `assetKeys[i]` is zero for a duplicate: nothing about it
+     * is decoded, on purpose, see below.
      *
      * That case used to revert the whole batch, with `ProofAlreadyConsumed`:
      * anybody watching the mempool for a pending batch can lift one member's
      * proof and file it alone first, for free, since the record it produces is
      * correct regardless of who submits it. The relayer paid for the whole
-     * batch verify and got nothing. Skipping an exact duplicate instead of
-     * reverting on it removes the incentive to do that, because the batch now
-     * succeeds anyway. A member that fails for any other reason still reverts
-     * the whole transaction, unchanged: only "this precise pledge already
-     * landed" is treated as harmless, never "something about this looks off."
+     * batch verify and got nothing. Skipping a proof that was already spent
+     * removes the incentive to do that, because the batch now succeeds anyway.
+     *
+     * A first version of this fix decoded every member before deciding, and
+     * called two different pledges "the same filing" when their decoded
+     * fields matched. That is not the same claim as "this is the proof that
+     * was already spent," and a review on 2026-08-30 found where they come
+     * apart: an adapter frozen on its very first, fabricating use (caveat 9
+     * already accepts that as the cost of the freeze) returns the same fixed
+     * fields for every log it is ever handed. Under the old check, every
+     * later *genuine* pledge on that emitter, submitted in a batch, would
+     * decode to those same fixed fields, be waved through as a "duplicate",
+     * and vanish: no record, no revert, and its real nullifier never burned,
+     * so the same real proof stays spendable indefinitely. One accepted lie
+     * would have silently swallowed every honest pledge after it.
+     *
+     * Checking the nullifier instead of the decode closes that: it is true
+     * only for the one case this exists to fix, a proof that was already
+     * spent, and it does not depend on anything an adapter's `translate` says.
+     * A member whose nullifier is fresh is decoded and recorded normally, and
+     * if that collides with something else already on file, `_recordPledge`
+     * reverts `AssetNotFree` for the whole batch exactly as before: only "this
+     * proof already ran" is harmless, never "something about this looks off."
      */
     function registerPledges(BatchProof calldata b)
         external
@@ -433,41 +453,20 @@ contract SingletonRegistry {
             if (!allowedEmitter[b.chainKey][b.emitters[i]]) {
                 revert EmitterNotAllowed(b.chainKey, b.emitters[i]);
             }
-            /*
-              Decoded before the nullifier is burned, on purpose: a member that
-              was already recorded by an identical pledge somewhere else has
-              also already burned this exact nullifier, and burning it again
-              here would revert on that alone, before duplicate detection below
-              ever ran. Reading first costs nothing extra, since the proof
-              itself was already verified once for the whole batch above.
-            */
-            SourceEvent memory pledge = _readEvent(
-                b.chainKey, b.encodedTransactions[i], b.emitters[i], b.logIndexes[i], KIND_PLEDGE
-            );
-            bytes32 assetKey = _pledgeAssetKey(b.chainKey, pledge);
 
-            if (_isSameFilingAlready(assetKey, pledge)) {
-                assetKeys[i] = assetKey;
+            bytes32 nullifier =
+                _nullifierOf(KIND_PLEDGE, b.chainKey, b.heights[i], b.merkleProofs[i], b.logIndexes[i]);
+            if (consumed[nullifier]) {
                 duplicate[i] = true;
                 continue;
             }
+            consumed[nullifier] = true;
 
-            _burnBatchNullifier(b, i, KIND_PLEDGE);
+            SourceEvent memory pledge = _readEvent(
+                b.chainKey, b.encodedTransactions[i], b.emitters[i], b.logIndexes[i], KIND_PLEDGE
+            );
             assetKeys[i] = _recordPledge(b.chainKey, b.heights[i], pledge, security);
         }
-    }
-
-    /// True when the asset is already PLEDGED by this exact pledge, field for
-    /// field, rather than by something else that happens to share the key.
-    function _isSameFilingAlready(bytes32 assetKey, SourceEvent memory pledge)
-        private
-        view
-        returns (bool)
-    {
-        Record storage r = _records[assetKey];
-        return r.state == AssetState.PLEDGED && r.emitter == pledge.emitter
-            && r.borrower == pledge.borrower && r.amount == pledge.amount
-            && r.instanceId == pledge.instanceId;
     }
 
     /// The asset a pledge claims, or a revert if it never named one. Shared by
@@ -938,10 +937,23 @@ contract SingletonRegistry {
         IBlockProver.MerkleProof calldata merkleProof,
         uint32 logIndex
     ) private {
-        uint64 txIndex = PROVER.calculateTxIndex(merkleProof);
-        bytes32 nullifier = keccak256(abi.encode(domain, chainKey, height, txIndex, logIndex));
+        bytes32 nullifier = _nullifierOf(domain, chainKey, height, merkleProof, logIndex);
         if (consumed[nullifier]) revert ProofAlreadyConsumed(nullifier);
         consumed[nullifier] = true;
+    }
+
+    /// The identity a proof burns against, computed without spending it. The
+    /// batch path reads this directly so it can tell "already spent" apart
+    /// from "new" before deciding whether there is anything left to decode.
+    function _nullifierOf(
+        uint8 domain,
+        uint64 chainKey,
+        uint64 height,
+        IBlockProver.MerkleProof calldata merkleProof,
+        uint32 logIndex
+    ) private view returns (bytes32) {
+        uint64 txIndex = PROVER.calculateTxIndex(merkleProof);
+        return keccak256(abi.encode(domain, chainKey, height, txIndex, logIndex));
     }
 
     /**

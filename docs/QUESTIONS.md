@@ -172,14 +172,14 @@ suppressed the pledge again.
 Both were the same mistake: the registry inferred something from data the
 attacker controls. It now infers nothing. The relayer names the emitter and the
 log index and the registry only checks, which closed the class rather than the
-two instances, made batch pledges work, and dropped mainnet gas from 716k to
-634k. `test_aDecoyWithTheSameSignatureChangesNothing` and
+two instances and made batch pledges work.
+`test_aDecoyWithTheSameSignatureChangesNothing` and
 `test_anUnrelatedAllowlistedLogDoesNotSuppressAPledge` keep both attacks as regressions.
 
 **"You verified the contracts after the fact. Was the demo recorded against the
 fixed code?"**
 
-Yes. The live registry `0xcD9017e3C541cAF973987E23e02694111C25032C` was deployed after both fixes and all
+Yes. The live registry `0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c` was deployed after both fixes and all
 sixteen proofs were replayed onto it. Every previous instance is left on chain
 and named in the verification log with the reason it was superseded, rather than
 quietly removed. There are several, because each measurement that changed the
@@ -288,7 +288,7 @@ wording was wrong in four places and is now caveat 11, with the worked case.
 
 **"Recording a number nobody checks is theatre."** It is checked. The same read
 that stores the count enforces a floor against it, and the floor has refused a
-real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0x9ecf965f4569f9c70c11003852450fd415aa5c174529cfd6a67985336897ae92`,
+real proof on the live chain: `QuorumTooThin(1, 7, 8)` in `0x7d9c3cef71e28e0c3f43600feb119578d56a17a18881c86d373a50d821e5af16`,
 status 0, on a verified contract so the error decodes. The register also exposes
 the count publicly, so a lending protocol reading it can apply a stricter
 standard than ours without asking us to change anything.
@@ -329,7 +329,7 @@ would have to name the slashing condition it depends on, and there is none to
 name.
 
 **"The admin is one EOA and there is no way to rotate it."** True, and stronger
-than a grep: the deployed runtime at `0xcD9017e3C541cAF973987E23e02694111C25032C`
+than a grep: the deployed runtime at `0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c`
 contains no `setAdmin`, `transferAdmin`, `acceptAdmin`, `transferOwnership` or
 `renounceOwnership` selector, so rotation is impossible on this instance rather
 than merely unwritten. What that does and does not mean is worth being precise

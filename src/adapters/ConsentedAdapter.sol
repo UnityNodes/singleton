@@ -39,8 +39,9 @@ contract ConsentedAdapter is IPledgeAdapter {
     bytes32 private constant DOMAIN_TYPE_HASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-    bytes32 private constant CONSENT_TYPE_HASH =
-        keccak256("PledgeConsent(address token,uint256 tokenId,address owner,uint256 nonce)");
+    bytes32 private constant CONSENT_TYPE_HASH = keccak256(
+        "PledgeConsent(address token,uint256 tokenId,address owner,uint256 principal,uint256 nonce)"
+    );
 
     uint8 internal constant KIND_PLEDGE = 0;
     uint8 internal constant KIND_SETTLE = 1;
@@ -109,8 +110,9 @@ contract ConsentedAdapter is IPledgeAdapter {
                 log.address_
             )
         );
-        bytes32 structHash =
-            keccak256(abi.encode(CONSENT_TYPE_HASH, collateralToken, tokenId, borrower, nonce));
+        bytes32 structHash = keccak256(
+            abi.encode(CONSENT_TYPE_HASH, collateralToken, tokenId, borrower, amount, nonce)
+        );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         address recovered = ecrecover(digest, v, r, s);

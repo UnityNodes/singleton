@@ -75,14 +75,23 @@ it, for a lender that has not opted into the cryptographic version below:
 
 **And, for a lender that opts in, built rather than named.** `ConsentedCredit`
 on Sepolia requires an EIP-712 signature from the token's real owner over
-`(token, tokenId, owner, nonce)` before it will emit a pledge at all, and that
-signature travels inside the log next to the claim it backs. `ConsentedAdapter`
-on Creditcoin recomputes the identical digest from nothing but the log and the
-emitter's own address, proven by the receipt, and refuses to translate a pledge
-whose signature does not recover to the owner it names. It does not ask
-`ConsentedCredit` whether the signature was valid; it is independently true or
-independently false, checked directly in `test_theAdapterIndependentlyRefusesAForgedConsent`
-against a log the emitter itself never wrote.
+`(token, tokenId, owner, principal, nonce)` before it will emit a pledge at
+all, and that signature travels inside the log next to the claim it backs.
+`ConsentedAdapter` on Creditcoin recomputes the identical digest from nothing
+but the log and the emitter's own address, proven by the receipt, and refuses
+to translate a pledge whose signature does not recover to the owner it names.
+It does not ask `ConsentedCredit` whether the signature was valid; it is
+independently true or independently false, checked directly in
+`test_theAdapterIndependentlyRefusesAForgedConsent` against a log the emitter
+itself never wrote.
+
+The principal is part of that signed struct for a reason worth stating,
+because it was not there on the first pass and a review on 2026-08-30 found
+why it had to be: this contract is meant to be relayed by anybody, so a
+signature over `(token, tokenId, owner, nonce)` alone let any relayer holding
+one carry the transaction and still write its own number into the loan
+amount, spending the owner's real nonce on terms the owner never agreed to.
+`test_theEmitterRefusesAConsentCarriedWithADifferentPrincipal` pins the fix.
 
 That is a real difference from the softening above, not a stronger version of
 the same idea. The allowlist mitigation depends on somebody noticing a bad
@@ -400,10 +409,10 @@ The worked case is the headline mainnet proof in this submission. NFTfi loan
 16928 was taken at Ethereum block 25,506,517. Creditcoin's attested tip for chain
 key 3 first covered that height at CC3 block 5,110,417, and
 `getAttestorsCount(3)` at that block returns **3**. The confirmation depth does
-not rescue it either: the earliest tip satisfying `height + 64` is reached around
-CC3 5,110,478, where the count is still 3. The record was filed months later and
+not rescue it either: the earliest tip satisfying `height + 64` is reached at
+CC3 5,110,473, where the count is still 3. The record was filed months later and
 stored **4**, which the `AttestationWitnessed` log in
-`0xebf39c5210b98ae5bd17f2a84bdc7b51f314c036ade402d8e2c522a6a4472a41` preserves.
+`0xbb861cce0f3cae00d5f49512d1a66948bd625a4d5933268105039be97f75e346` preserves.
 
 **Why the contract stores the filing number.** `AttestorStash` exposes
 `getAttestorsCount(uint64)` and `getMinBondRequirement(uint64)` and nothing that
@@ -416,7 +425,7 @@ how the history table in [VERIFICATION.md](VERIFICATION.md) was built.
 **One half of the reading is right and stays.** As the floor, the filing-time
 number is the correct input: admission control decides whether to write today, so
 today's set is what should gate it. The live refusal `QuorumTooThin(1, 7, 8)` in
-`0x9ecf965f4569f9c70c11003852450fd415aa5c174529cfd6a67985336897ae92` is that
+`0x7d9c3cef71e28e0c3f43600feb119578d56a17a18881c86d373a50d821e5af16` is that
 half working.
 
 **And the record carries the evidence of its own staleness**, which nothing said
@@ -506,20 +515,33 @@ reverts the whole transaction, now with `AssetNotFree` instead of
 `ProofAlreadyConsumed`. The nullifier was never the check actually causing the
 failure; the asset state was. Binding it to a submitter was the wrong lever.
 
-**What actually closes it: a batch tells an exact duplicate apart from a real
-anomaly, and only reverts on the second one.** When a member would fail because
-the asset is already `PLEDGED`, `registerPledges` now compares the existing
-record's emitter, borrower, amount and instance id against this member's own
-decoded pledge. Identical on all four means this precise pledge already landed
-through some other transaction, which is the griefing case, and is harmless: the
-record it would have written already exists. The member is skipped rather than
-reverting the batch, and `duplicate[i]` in the return value says which slots
-that happened to. Any difference in those four fields is a genuine anomaly, two
-different lenders racing for the same asset rather than a front-run, and it
-still reverts the whole batch, unchanged. `test_aFrontRunMemberIsSkippedRatherThanTakingTheBatchDown`
+**What actually closes it: a batch checks whether a member's own proof was
+already spent, and only that.** `registerPledges` computes the nullifier for
+each member before deciding anything, exactly the value `consumed[...]` is
+keyed on elsewhere in this contract. Already spent means this precise proof
+landed through some other transaction, which is the griefing case, and is
+harmless: nothing about it is decoded, and the member is skipped with
+`duplicate[i]` set. Not yet spent means it is a member this transaction has
+never seen before, so it is decoded and recorded normally, and if that collides
+with something already on file, `_recordPledge` reverts `AssetNotFree` for the
+whole batch, unchanged. `test_aFrontRunMemberIsSkippedRatherThanTakingTheBatchDown`
 is the griefing case; `test_aCollisionInsideABatchTakesTheWholeBatch` is the
-genuine one, and still passes without modification, which is what confirms the
-two are told apart correctly rather than the check simply being loosened.
+genuine one, and still passes without modification.
+
+**A first version of this fix compared decoded values instead of the
+nullifier, and a review on 2026-08-30 found where that comes apart.** Caveat 9
+already accepts that an admin can freeze a lying adapter on an emitter's very
+first use, one that returns the same fixed fields no matter what log it is
+handed. Under the decoded-value check, every later, genuinely different
+pledge from that same emitter, submitted in a batch, would decode to those
+same fixed fields and be waved through as a duplicate: no record, no revert,
+and its real nullifier never burned, spendable again indefinitely. One
+accepted lie would have silently swallowed every honest pledge on that emitter
+after it, forever, through the batch path alone. Keying on the nullifier
+instead removes the adapter from the decision entirely: whether a member is
+"the same filing" no longer depends on anything a `translate` call says.
+`test_aSecondRealPledgeThroughALyingAdapterTakesTheBatchDownRatherThanVanishing`
+is that case, and it reverts `AssetNotFree` rather than vanishing.
 
 ## 14. Priority is decided on Creditcoin, and the earlier pledge can lose it
 
