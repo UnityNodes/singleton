@@ -54,7 +54,7 @@ auction rather than a repayment. Sixteen proofs, every hash in
 | | |
 |---|---|
 | The site, live | **https://singleton.unitynodes.com** &middot; the register at [/register](https://singleton.unitynodes.com/register) |
-| The demo, 1:37 | [/demo](https://singleton.unitynodes.com/demo), voiced and captioned, no wallet needed to follow it |
+| The demo, 1:38 | [/demo](https://singleton.unitynodes.com/demo), voiced and captioned, no wallet needed to follow it |
 | The deck | [singleton-deck.pdf](https://singleton.unitynodes.com/singleton-deck.pdf), eleven slides |
 | The one pager | [singleton-one-pager.pdf](https://singleton.unitynodes.com/singleton-one-pager.pdf) |
 | Registry, CC3 testnet | `0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c`, verified on Blockscout |

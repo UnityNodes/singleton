@@ -15,14 +15,14 @@ const RUNTIME = 97;
  */
 const CHAPTERS = [
   { at: 0, title: "one asset, one loan", line: "A borrower pledges a tokenised deed and takes a loan." },
-  { at: 14, title: "and the same deed again", line: "An hour later, a second lender, no shared anything." },
-  { at: 22, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
-  { at: 32, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
-  { at: 47, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
-  { at: 63, title: "what stood behind the record", line: "The attestor set the registry believed, kept with the lien." },
-  { at: 72, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
-  { at: 82, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
-  { at: 90, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
+  { at: 13, title: "and the same deed again", line: "An hour later, a second lender, no shared anything." },
+  { at: 21, title: "why nobody notices", line: "An EVM contract cannot read another contract's logs." },
+  { at: 31, title: "the register answers", line: "Deed 43 is claimed by Harbor, with one refusal on file." },
+  { at: 46, title: "the refusal, on a public explorer", line: "A failed transaction decoding to AssetNotFree." },
+  { at: 62, title: "what stood behind the record", line: "The attestor set the registry believed, kept with the lien." },
+  { at: 71, title: "a lien ends more than one way", line: "The other asset, whose lien ran its whole life and closed." },
+  { at: 86, title: "two protocols that never heard of us", line: "Real NFTfi and Blend loans read from Ethereum mainnet." },
+  { at: 91, title: "what it does not claim", line: "A positive record and a priority rule, not proof of absence." },
 ];
 
 const STACK = [

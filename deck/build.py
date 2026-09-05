@@ -211,7 +211,7 @@ slide('''
 </div>
 <div class="chips wide">
   <span>singleton.unitynodes.com</span>
-  <span>/demo, 1:37, voiced and captioned</span>
+  <span>/demo, 1:38, voiced and captioned</span>
   <span>github.com/UnityNodes/singleton</span>
   <span>0x4ed6d1a7c7E18D95D56d2f1171507fECfb9B4b5c</span>
 </div>''')

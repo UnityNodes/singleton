@@ -152,7 +152,7 @@ const mark = (label) => console.log(`  ${((Date.now() - t0) / 1000).toFixed(1)}s
 const t0 = Date.now();
 
 await page.goto(`${SITE}/`, { waitUntil: "networkidle", timeout: 60000 });
-await wait(1800);
+await wait(600);
 
 /* 1. the problem */
 await say("A borrower pledges one tokenised deed and takes a loan.");
