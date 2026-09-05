@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { CFG, short } from "@/lib/registry";
 
 const VIDEO = "/demo/singleton.mp4";
-const RUNTIME = 97;
+const RUNTIME = 98;
 
 /**
  * Timecodes are read off frames of the recording in script/record-demo.mjs, not
